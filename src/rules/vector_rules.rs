@@ -7,14 +7,14 @@ macro_rules! additional_vector {
     ($($x:expr), *) => {{
         let mut vector = im::Vector::new();
         $(
-            vector.push($x);
+            vector.push_back($x);
         )*
         crate::traits::impl_data::Vector(vector)
     }};
     ($($x:expr ,) *) => {{
         let mut vector = im::Vector::new();
         $(
-            vector.push($x);
+            vector.push_back($x);
         )*
         crate::traits::impl_data::Vector(vector)
     }};

@@ -9,6 +9,7 @@ mod utils;
 
 use crate::enums::tab_menus::TabMenus;
 use crate::model::app_state::{AppState, RenameState};
+use crate::model::replace_info::ReplaceInfo;
 use druid::widget::{Axis, Flex, Tabs, TabsEdge, TabsTransition};
 use druid::{AppLauncher, Size, Widget, WidgetExt, WindowDesc};
 
@@ -21,6 +22,9 @@ fn main() {
         rename_state: RenameState {
             dir_path: String::new(),
             file_list: additional_vector![],
+            replace_infos: additional_vector![
+                ReplaceInfo::new()
+            ],
         }
     };
     AppLauncher::with_window(main_window)

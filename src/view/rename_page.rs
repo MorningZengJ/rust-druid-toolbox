@@ -1,15 +1,18 @@
+use crate::enums::material_icon::MaterialIcon;
 use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
+use crate::model::replace_info::ReplaceInfo;
 use crate::traits::directory_choose::DirectoryChoose;
 use crate::utils::file_utils::FileUtils;
 use druid::commands::SHOW_OPEN_PANEL;
-use druid::widget::{Controller, Flex, Label, List, Scroll, TextBox};
-use druid::{Env, Event, EventCtx, FileDialogOptions, LensExt, Widget, WidgetExt};
+use druid::widget::{Checkbox, Controller, Flex, Label, List, Scroll, TextBox};
+use druid::{Env, Event, EventCtx, FileDialogOptions, Insets, KeyOrValue, LensExt, Widget, WidgetExt};
 
 pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
         .with_child(build_dir_path())
         .with_flex_child(build_file_list(), 0.5)
+        .with_flex_child(build_replace_info_list(), 0.5)
 }
 
 fn build_dir_path() -> impl Widget<AppState> {
@@ -36,10 +39,43 @@ fn build_file_list() -> impl Widget<AppState> {
         Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.name))
             .padding(5.0)
     }))
+        .vertical()
         .lens(AppState::rename_state.then(RenameState::file_list))
+        .expand()
 }
 
-fn build_regexp_list() -> impl Widget<AppState> {}
+fn build_replace_info_list() -> impl Widget<AppState> {
+    let concrete_padding = KeyOrValue::Concrete(Insets::uniform_xy(10.0, 0.0));
+    Scroll::new(List::new(move || {
+        let content_input = TextBox::new()
+            .with_placeholder("请输入替换内容")
+            .lens(ReplaceInfo::content)
+            .padding(concrete_padding.clone())
+            .expand_width();
+        let target_input = TextBox::new()
+            .with_placeholder("请输入目标内容")
+            .lens(ReplaceInfo::target)
+            .padding(concrete_padding.clone())
+            .expand_width();
+        let enable_checkbox = Checkbox::new("启用")
+            .lens(ReplaceInfo::enable)
+            .padding(concrete_padding.clone());
+        let regex_checkbox = Checkbox::new("正则")
+            .lens(ReplaceInfo::is_regex)
+            .padding(concrete_padding.clone());
+
+        Flex::row()
+            .with_flex_child(content_input, 0.5)
+            .with_child(MaterialIcon::LastPage.load().padding(concrete_padding.clone()))
+            .with_flex_child(target_input, 0.5)
+            .with_child(enable_checkbox)
+            .with_child(regex_checkbox)
+            .expand_width()
+    }))
+        .vertical()
+        .lens(AppState::rename_state.then(RenameState::replace_infos))
+        .expand()
+}
 
 // controller
 struct SelectPathController;
