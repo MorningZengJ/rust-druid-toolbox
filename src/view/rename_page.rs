@@ -1,42 +1,23 @@
-use crate::additional_directory;
+use crate::model::app_state::{AppState, RenameState};
+use crate::model::file_info::FileInfo;
 use crate::traits::directory_choose::DirectoryChoose;
 use druid::commands::SHOW_OPEN_PANEL;
-use druid::widget::{Controller, Flex, Label, TextBox};
-use druid::{Data, Env, Event, EventCtx, FileDialogOptions, Lens, Widget, WidgetExt};
+use druid::widget::{Controller, Flex, Label, List, Scroll, TextBox};
+use druid::{Env, Event, EventCtx, FileDialogOptions, LensExt, Widget, WidgetExt};
 
-#[derive(Clone, Data, Lens, Default)]
-struct RenameState {
-    dir_path: String,
-
-}
-additional_directory!(RenameState);
-
-struct ToRenameState;
-
-impl Lens<(), RenameState> for ToRenameState {
-    fn with<V, F: FnOnce(&RenameState) -> V>(&self, _: &(), f: F) -> V {
-        f(&RenameState::default())
-    }
-
-    fn with_mut<V, F: FnOnce(&mut RenameState) -> V>(&self, _: &mut (), f: F) -> V {
-        let mut s = RenameState::default();
-        f(&mut s)
-    }
-}
-
-pub fn build_page() -> impl Widget<()> {
+pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
         .with_child(build_dir_path())
-        .lens(ToRenameState)
+        .with_child(build_file_list())
 }
 
-fn build_dir_path() -> impl Widget<RenameState> {
+fn build_dir_path() -> impl Widget<AppState> {
     let dir_path_label = Label::new("文件路径：")
         .fix_width(100.0)
         .padding(5.0);
     let dir_path_input = TextBox::new()
         .with_placeholder("文件路径")
-        .lens(RenameState::dir_path)
+        .lens(AppState::rename_state.then(RenameState::dir_path))
         .expand_width()
         // .fix_width(500.0)
         .border(druid::Color::BLUE, 1.0)
@@ -49,21 +30,40 @@ fn build_dir_path() -> impl Widget<RenameState> {
         .padding(10.0)
 }
 
+fn build_file_list() -> impl Widget<AppState> {
+    Scroll::new(List::new(|| {
+        Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.name))
+            .padding(5.0)
+    }))
+        .lens(AppState::rename_state.then(RenameState::file_list))
+}
+
 // controller
 struct SelectPathController;
 
-impl<B: DirectoryChoose, W: Widget<B>> Controller<B, W> for SelectPathController {
-    fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut B, env: &Env) {
+impl<W: Widget<AppState>> Controller<AppState, W> for SelectPathController {
+    fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut AppState, env: &Env) {
         match event {
             Event::MouseDown(mouse) => {
                 if mouse.button.is_left() && mouse.count == 2 {
-                    let options = FileDialogOptions::new()
+                    let mut options = FileDialogOptions::new()
                         .select_directories()
                         .title("选择文件夹");
-                    let sink = ctx.get_external_handle();
+                    if data.rename_state.dir_path.len() > 0 {
+                        options = options.force_starting_directory(
+                            data.rename_state.dir_path.clone()
+                        );
+                    }
                     ctx.submit_command(
                         SHOW_OPEN_PANEL.with(options.clone())
                     );
+                }
+            }
+            Event::Command(cmd) => {
+                if let Some(file_info) = cmd.get(druid::commands::OPEN_FILE) {
+                    if let Some(path) = file_info.path().to_str() {
+                        data.rename_state.set_dir_path(path);
+                    }
                 }
             }
             _ => {}

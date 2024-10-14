@@ -1,3 +1,4 @@
+use crate::model::app_state::AppState;
 use druid::{Data, Widget};
 
 #[derive(Clone, Data, PartialEq, Debug)]
@@ -7,7 +8,7 @@ pub enum TabMenus {
 }
 
 impl TabMenus {
-    pub fn build_widget(&self) -> Box<dyn Widget<()>> {
+    pub fn build_widget(&self) -> Box<dyn Widget<AppState>> {
         match self {
             TabMenus::Rename => Box::new(
                 crate::view::rename_page::build_page()

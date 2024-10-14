@@ -4,8 +4,10 @@ mod view;
 mod controller;
 mod traits;
 mod delegate;
+mod rules;
 
 use crate::enums::tab_menus::TabMenus;
+use crate::model::app_state::{AppState, RenameState};
 use druid::widget::{Axis, Flex, Tabs, TabsEdge, TabsTransition};
 use druid::{AppLauncher, Size, Widget, WidgetExt, WindowDesc};
 
@@ -14,12 +16,18 @@ fn main() {
     let main_window = WindowDesc::new(flex)
         .window_size(Size::new(800.0, 600.0))
         .title("Druid");
+    let state = AppState {
+        rename_state: RenameState {
+            dir_path: String::new(),
+            file_list: additional_vector![],
+        }
+    };
     AppLauncher::with_window(main_window)
-        .launch(())
+        .launch(state)
         .expect("launch failed");
 }
 
-fn build_tabs() -> impl Widget<()> {
+fn build_tabs() -> impl Widget<AppState> {
     Tabs::new()
         .with_axis(Axis::Vertical)
         .with_edge(TabsEdge::Leading)
