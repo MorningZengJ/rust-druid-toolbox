@@ -5,14 +5,15 @@ use crate::model::replace_info::ReplaceInfo;
 use crate::traits::directory_choose::DirectoryChoose;
 use crate::utils::file_utils::FileUtils;
 use druid::commands::SHOW_OPEN_PANEL;
-use druid::widget::{Checkbox, Controller, Flex, Label, List, Scroll, TextBox};
-use druid::{Env, Event, EventCtx, FileDialogOptions, Insets, KeyOrValue, LensExt, Widget, WidgetExt};
+use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll, TextBox};
+use druid::{Data, Env, Event, EventCtx, FileDialogOptions, Lens, LensExt, Selector, UpdateCtx, Widget, WidgetExt};
 
 pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
         .with_child(build_dir_path())
         .with_flex_child(build_file_list(), 0.5)
         .with_flex_child(build_replace_info_list(), 0.5)
+        .with_child(build_buttons())
 }
 
 fn build_dir_path() -> impl Widget<AppState> {
@@ -45,31 +46,30 @@ fn build_file_list() -> impl Widget<AppState> {
 }
 
 fn build_replace_info_list() -> impl Widget<AppState> {
-    let concrete_padding = KeyOrValue::Concrete(Insets::uniform_xy(10.0, 0.0));
     Scroll::new(List::new(move || {
         let content_input = TextBox::new()
             .with_placeholder("请输入替换内容")
             .lens(ReplaceInfo::content)
-            .padding(concrete_padding.clone())
             .expand_width();
         let target_input = TextBox::new()
             .with_placeholder("请输入目标内容")
             .lens(ReplaceInfo::target)
-            .padding(concrete_padding.clone())
             .expand_width();
         let enable_checkbox = Checkbox::new("启用")
-            .lens(ReplaceInfo::enable)
-            .padding(concrete_padding.clone());
+            .lens(ReplaceInfo::enable);
         let regex_checkbox = Checkbox::new("正则")
-            .lens(ReplaceInfo::is_regex)
-            .padding(concrete_padding.clone());
+            .lens(ReplaceInfo::is_regex);
 
         Flex::row()
+            .with_spacer(10.0)
             .with_flex_child(content_input, 0.5)
-            .with_child(MaterialIcon::LastPage.load().padding(concrete_padding.clone()))
+            .with_child(MaterialIcon::LastPage.load().padding(10.0))
             .with_flex_child(target_input, 0.5)
+            .with_spacer(10.0)
             .with_child(enable_checkbox)
+            .with_spacer(10.0)
             .with_child(regex_checkbox)
+            .with_spacer(10.0)
             .expand_width()
     }))
         .vertical()
@@ -77,10 +77,35 @@ fn build_replace_info_list() -> impl Widget<AppState> {
         .expand()
 }
 
+fn build_buttons() -> impl Widget<AppState> {
+    // 创建第一个按钮
+    let button1 = Button::new("Button 1").on_click(|_ctx, _data: &mut AppState, _env| {
+        // 按钮1的点击处理逻辑
+        println!("Button 1 clicked");
+    });
+
+    // 创建第二个按钮
+    let button2 = Button::new("Button 2").on_click(|_ctx, _data: &mut AppState, _env| {
+        // 按钮2的点击处理逻辑
+        println!("Button 2 clicked");
+    });
+
+    // 将按钮添加到水平布局中
+    Flex::row()
+        .with_child(button1)
+        .with_spacer(8.0)
+        .with_child(button2)
+}
+
 // controller
 struct SelectPathController;
 
+impl SelectPathController {
+    const LIST_FILE: Selector<String> = Selector::new("druid-builtin. menu-file-open");
+}
+
 impl<W: Widget<AppState>> Controller<AppState, W> for SelectPathController {
+
     fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut AppState, env: &Env) {
         match event {
             Event::MouseDown(mouse) => {
@@ -102,13 +127,24 @@ impl<W: Widget<AppState>> Controller<AppState, W> for SelectPathController {
                 if let Some(file_info) = cmd.get(druid::commands::OPEN_FILE) {
                     if let Some(path) = file_info.path().to_str() {
                         data.rename_state.set_dir_path(path);
-                        let vector = FileUtils::list_files(path);
-                        data.rename_state.file_list = vector;
                     }
+                }
+                if let Some(_) = cmd.get(Self::LIST_FILE) {
+                    let vector = FileUtils::list_files(&data.rename_state.dir_path);
+                    data.rename_state.file_list = vector;
                 }
             }
             _ => {}
         }
         child.event(ctx, event, data, env);
+    }
+
+    fn update(&mut self, child: &mut W, ctx: &mut UpdateCtx, old_data: &AppState, data: &AppState, env: &Env) {
+        let path = data.rename_state.dir_path.clone();
+        if (old_data.rename_state.dir_path.same(&path)) {
+            return;
+        }
+        ctx.submit_command(Self::LIST_FILE.with(path));
+        child.update(ctx, old_data, data, env);
     }
 }
