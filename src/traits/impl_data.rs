@@ -36,3 +36,10 @@ impl<T: Data> ListIter<T> for Vector<T> {
         self.0.len()
     }
 }
+
+impl<T: Data> FromIterator<T> for Vector<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> Self {
+        let vector = iter.into_iter().collect();
+        Vector(vector)
+    }
+}

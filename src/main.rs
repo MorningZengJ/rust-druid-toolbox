@@ -5,6 +5,7 @@ mod controller;
 mod traits;
 mod delegate;
 mod rules;
+mod utils;
 
 use crate::enums::tab_menus::TabMenus;
 use crate::model::app_state::{AppState, RenameState};

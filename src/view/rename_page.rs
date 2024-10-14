@@ -1,6 +1,7 @@
 use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::traits::directory_choose::DirectoryChoose;
+use crate::utils::file_utils::FileUtils;
 use druid::commands::SHOW_OPEN_PANEL;
 use druid::widget::{Controller, Flex, Label, List, Scroll, TextBox};
 use druid::{Env, Event, EventCtx, FileDialogOptions, LensExt, Widget, WidgetExt};
@@ -8,7 +9,7 @@ use druid::{Env, Event, EventCtx, FileDialogOptions, LensExt, Widget, WidgetExt}
 pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
         .with_child(build_dir_path())
-        .with_child(build_file_list())
+        .with_flex_child(build_file_list(), 0.5)
 }
 
 fn build_dir_path() -> impl Widget<AppState> {
@@ -38,6 +39,8 @@ fn build_file_list() -> impl Widget<AppState> {
         .lens(AppState::rename_state.then(RenameState::file_list))
 }
 
+fn build_regexp_list() -> impl Widget<AppState> {}
+
 // controller
 struct SelectPathController;
 
@@ -63,6 +66,8 @@ impl<W: Widget<AppState>> Controller<AppState, W> for SelectPathController {
                 if let Some(file_info) = cmd.get(druid::commands::OPEN_FILE) {
                     if let Some(path) = file_info.path().to_str() {
                         data.rename_state.set_dir_path(path);
+                        let vector = FileUtils::list_files(path);
+                        data.rename_state.file_list = vector;
                     }
                 }
             }

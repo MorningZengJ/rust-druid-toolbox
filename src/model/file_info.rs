@@ -7,6 +7,6 @@ pub struct FileInfo {
     pub is_dir: bool,
     pub extension: String,
     pub size: u64,
-    pub created_time: i64,
-    pub modified_time: i64,
+    pub created_time: u64,
+    pub modified_time: u64,
 }
