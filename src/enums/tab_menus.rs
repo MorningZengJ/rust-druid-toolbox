@@ -1,7 +1,8 @@
 use crate::model::app_state::AppState;
 use druid::{Data, Widget};
+use strum_macros::EnumIter;
 
-#[derive(Clone, Data, PartialEq, Debug)]
+#[derive(Clone, Data, PartialEq, Debug, EnumIter)]
 pub enum TabMenus {
     Rename,
     Settings,

@@ -6,6 +6,7 @@ pub struct ReplaceInfo {
     pub target: String,
     pub enable: bool,
     pub is_regex: bool,
+    pub is_error: bool,
 }
 
 impl ReplaceInfo {

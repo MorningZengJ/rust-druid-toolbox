@@ -12,6 +12,8 @@ use crate::model::app_state::{AppState, RenameState};
 use crate::model::replace_info::ReplaceInfo;
 use druid::widget::{Axis, Flex, Tabs, TabsEdge, TabsTransition};
 use druid::{AppLauncher, Size, Widget, WidgetExt, WindowDesc};
+use im::vector;
+use strum::IntoEnumIterator;
 
 fn main() {
     let flex = Flex::row().with_flex_child(build_tabs(), 1.0);
@@ -21,8 +23,8 @@ fn main() {
     let state = AppState {
         rename_state: RenameState {
             dir_path: String::new(),
-            file_list: additional_vector![],
-            replace_infos: additional_vector![
+            file_list: vector![],
+            replace_infos: vector![
                 ReplaceInfo::new()
             ],
         }
@@ -33,17 +35,12 @@ fn main() {
 }
 
 fn build_tabs() -> impl Widget<AppState> {
-    Tabs::new()
+    let mut tabs = Tabs::new()
         .with_axis(Axis::Vertical)
         .with_edge(TabsEdge::Leading)
-        .with_transition(TabsTransition::Slide(100))
-        .with_tab(
-            TabMenus::Rename.title(),
-            TabMenus::Rename.build_widget().expand(),
-        )
-        .with_tab(
-            TabMenus::Settings.title(),
-            TabMenus::Settings.build_widget().expand(),
-        )
-        .expand()
+        .with_transition(TabsTransition::Slide(100));
+    for e in TabMenus::iter() {
+        tabs = tabs.with_tab(e.title(), e.build_widget().expand());
+    }
+    tabs.expand()
 }

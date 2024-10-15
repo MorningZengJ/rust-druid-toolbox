@@ -1,5 +1,5 @@
 use crate::model::file_info::FileInfo;
-use crate::traits::impl_data::Vector;
+use im::Vector;
 use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
