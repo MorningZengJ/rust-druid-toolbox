@@ -5,6 +5,7 @@ use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use druid::lens::Map;
+use druid::text::EditableText;
 use druid::widget::{Checkbox, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
 use druid::{Color, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
 use im::Vector;
@@ -97,6 +98,11 @@ fn build_replace_info_list() -> impl Widget<AppState> {
             ctx.stroke(rect, &color, 2.0);
         });
 
+        let remove_btn = MaterialIcon::RemoveCircleOutline.load()
+            .padding(10.0)
+            .on_click(|_ctx, data: &mut ReplaceInfo, _env| {
+                // todo 从replace_infos中移除data
+            });
         let content_input = TextBox::new()
             .with_placeholder("请输入替换内容")
             .lens(ReplaceInfo::content)
@@ -114,6 +120,7 @@ fn build_replace_info_list() -> impl Widget<AppState> {
 
         Flex::row()
             .with_spacer(10.0)
+            .with_child(remove_btn)
             .with_flex_child(content_input, 0.5)
             .with_child(MaterialIcon::LastPage.load().padding(10.0))
             .with_flex_child(target_input, 0.5)
@@ -135,9 +142,16 @@ fn build_buttons() -> impl Widget<AppState> {
         .border(Color::WHITE, 0.3)
         .rounded(3.0)
         .controller(MouseController::mouse_cursor_pointer())
-        .on_click(|_ctx, _data: &mut AppState, _env| {
-            // 按钮2的点击处理逻辑
-            println!("Button 1 clicked");
+        .on_click(|_ctx, data: &mut AppState, _env| {
+            let mut allow = true;
+            if let Some(last) = data.rename_state.replace_infos.last() {
+                if last.content.is_empty() && last.target.is_empty() {
+                    allow = false;
+                }
+            }
+            if allow {
+                data.rename_state.replace_infos.push_back(ReplaceInfo::new());
+            }
         });
 
     // 创建第二个按钮
