@@ -1,14 +1,12 @@
-use crate::controller::mouse_controller::MouseController;
+use crate::controller::directory_choose_controller::DirectoryChooseController;
+use crate::controller::mouse_controller_factory::MouseController;
 use crate::enums::material_icon::MaterialIcon;
 use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
-use crate::traits::directory_choose::DirectoryChoose;
-use crate::utils::file_utils::FileUtils;
-use druid::commands::SHOW_OPEN_PANEL;
 use druid::lens::Map;
 use druid::widget::{Checkbox, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
-use druid::{Color, Cursor, Data, Env, Event, EventCtx, FileDialogOptions, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
+use druid::{Color, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
 use im::Vector;
 use regex::Regex;
 
@@ -31,7 +29,8 @@ fn build_dir_path() -> impl Widget<AppState> {
         // .fix_width(500.0)
         .border(Color::BLUE, 1.0)
         .background(Color::rgba8(255, 255, 255, 255))
-        .controller(SelectPathController);
+        .controller(DirectoryChooseController::choose());
+    let dir_path_input = dir_path_input.controller(DirectoryChooseController);
     Flex::row()
         .with_child(dir_path_label)
         .with_flex_child(dir_path_input, 0.5)
@@ -131,18 +130,11 @@ fn build_replace_info_list() -> impl Widget<AppState> {
 }
 
 fn build_buttons() -> impl Widget<AppState> {
-    let mouse_controller = MouseController {
-        mouse_move: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env| {
-            ctx.set_cursor(&Cursor::Pointer)
-        }),
-        mouse_dblclick: None,
-        _marker: Default::default(),
-    };
     // 创建第一个按钮
     let button1 = MaterialIcon::PlaylistAdd.load()
         .border(Color::WHITE, 0.3)
         .rounded(3.0)
-        .controller(mouse_controller.clone())
+        .controller(MouseController::mouse_cursor_pointer())
         .on_click(|_ctx, _data: &mut AppState, _env| {
             // 按钮2的点击处理逻辑
             println!("Button 1 clicked");
@@ -152,7 +144,7 @@ fn build_buttons() -> impl Widget<AppState> {
     let button2 = MaterialIcon::BorderColor.load()
         .border(Color::WHITE, 0.3)
         .rounded(3.0)
-        .controller(mouse_controller.clone())
+        .controller(MouseController::mouse_cursor_pointer())
         .on_click(|_ctx, _data: &mut AppState, _env| {
             // 按钮2的点击处理逻辑
             println!("Button 2 clicked");
@@ -164,57 +156,6 @@ fn build_buttons() -> impl Widget<AppState> {
         .with_spacer(20.0)
         .with_child(button2)
         .padding(10.0)
-}
-
-// controller
-struct SelectPathController;
-
-impl SelectPathController {
-    const LIST_FILE: Selector<String> = Selector::new("druid-builtin. menu-file-open");
-}
-
-impl<W: Widget<AppState>> Controller<AppState, W> for SelectPathController {
-    fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut AppState, env: &Env) {
-        match event {
-            Event::MouseDown(mouse) => {
-                if mouse.button.is_left() && mouse.count == 2 {
-                    let mut options = FileDialogOptions::new()
-                        .select_directories()
-                        .title("选择文件夹");
-                    if data.rename_state.dir_path.len() > 0 {
-                        options = options.force_starting_directory(
-                            data.rename_state.dir_path.clone()
-                        );
-                    }
-                    ctx.submit_command(
-                        SHOW_OPEN_PANEL.with(options.clone())
-                    );
-                }
-            }
-            Event::Command(cmd) => {
-                if let Some(file_info) = cmd.get(druid::commands::OPEN_FILE) {
-                    if let Some(path) = file_info.path().to_str() {
-                        data.rename_state.set_dir_path(path);
-                    }
-                }
-                if let Some(_) = cmd.get(Self::LIST_FILE) {
-                    let vector = FileUtils::list_files(&data.rename_state.dir_path);
-                    data.rename_state.file_list = vector;
-                }
-            }
-            _ => {}
-        }
-        child.event(ctx, event, data, env);
-    }
-
-    fn update(&mut self, child: &mut W, ctx: &mut UpdateCtx, old_data: &AppState, data: &AppState, env: &Env) {
-        let path = data.rename_state.dir_path.clone();
-        if old_data.rename_state.dir_path.same(&path) {
-            return;
-        }
-        ctx.submit_command(Self::LIST_FILE.with(path));
-        child.update(ctx, old_data, data, env);
-    }
 }
 
 struct RegexController;
