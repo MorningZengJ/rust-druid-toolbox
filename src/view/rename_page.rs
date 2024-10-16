@@ -1,3 +1,4 @@
+use crate::controller::controllers::Controllers;
 use crate::controller::directory_choose_controller::DirectoryChooseController;
 use crate::controller::mouse_controller_factory::MouseController;
 use crate::enums::material_icon::MaterialIcon;
@@ -5,9 +6,8 @@ use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use druid::lens::Map;
-use druid::text::EditableText;
 use druid::widget::{Checkbox, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
-use druid::{Color, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
+use druid::{Color, Data, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
 use im::Vector;
 use regex::Regex;
 
@@ -31,7 +31,6 @@ fn build_dir_path() -> impl Widget<AppState> {
         .border(Color::BLUE, 1.0)
         .background(Color::rgba8(255, 255, 255, 255))
         .controller(DirectoryChooseController::choose());
-    let dir_path_input = dir_path_input.controller(DirectoryChooseController);
     Flex::row()
         .with_child(dir_path_label)
         .with_flex_child(dir_path_input, 0.5)
@@ -91,6 +90,7 @@ fn build_right_file_list() -> impl Widget<AppState> {
 }
 
 fn build_replace_info_list() -> impl Widget<AppState> {
+    const REMOVE_ITEM: Selector<ReplaceInfo> = Selector::new("toolbox-builtin. remove-item");
     Scroll::new(List::new(move || {
         let painter = Painter::new(|ctx, data: &ReplaceInfo, _env| {
             let rect = ctx.size().to_rect();
@@ -100,8 +100,9 @@ fn build_replace_info_list() -> impl Widget<AppState> {
 
         let remove_btn = MaterialIcon::RemoveCircleOutline.load()
             .padding(10.0)
+            .controller(MouseController::mouse_cursor_pointer())
             .on_click(|_ctx, data: &mut ReplaceInfo, _env| {
-                // todo 从replace_infos中移除data
+                _ctx.submit_notification(REMOVE_ITEM.with(data.clone()));
             });
         let content_input = TextBox::new()
             .with_placeholder("请输入替换内容")
@@ -134,6 +135,18 @@ fn build_replace_info_list() -> impl Widget<AppState> {
         .vertical()
         .lens(AppState::rename_state.then(RenameState::replace_infos))
         .expand()
+        .controller(
+            Controllers::<AppState, _, fn(&mut UpdateCtx, &AppState, &AppState)> {
+                notification: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
+                    if let Event::Notification(notify) = event {
+                        if let Some(item) = notify.get(REMOVE_ITEM) {
+                            data.rename_state.replace_infos.retain(|info| !info.same(item));
+                        }
+                    }
+                }),
+                ..Default::default()
+            }
+        )
 }
 
 fn build_buttons() -> impl Widget<AppState> {
@@ -175,7 +188,7 @@ fn build_buttons() -> impl Widget<AppState> {
 struct RegexController;
 
 impl RegexController {
-    const REGEX_CHANGE: Selector<bool> = Selector::new("druid-builtin. regex-change");
+    const REGEX_CHANGE: Selector<bool> = Selector::new("toolbox-builtin. regex-change");
 }
 
 impl<W: Widget<ReplaceInfo>> Controller<ReplaceInfo, W> for RegexController {

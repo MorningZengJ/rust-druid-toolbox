@@ -9,3 +9,5 @@ regex = "1.11.0"
 strum = "0.26.3"
 strum_macros = "0.26.3"
 im = "15.1.0"
+uuid = { version = "1.10.0", features = ["v4"] }
+getset = "0.1.3"
