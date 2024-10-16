@@ -1,6 +1,7 @@
 use druid::widget::{Svg, SvgData};
 
 pub enum MaterialIcon {
+    ArrowCircleUp,
     BorderColor,
     DeleteOutline,
     LastPage,
@@ -19,6 +20,7 @@ impl MaterialIcon {
 
     fn load_str(&self) -> &'static str {
         match self {
+            MaterialIcon::ArrowCircleUp => include_str!("../../assets/svg/arrow_circle_up.svg"),
             MaterialIcon::BorderColor => include_str!("../../assets/svg/border_color.svg"),
             MaterialIcon::DeleteOutline => include_str!("../../assets/svg/delete_outline.svg"),
             MaterialIcon::LastPage => include_str!("../../assets/svg/last_page.svg"),

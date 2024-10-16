@@ -1,4 +1,6 @@
+use crate::enums::material_icon::MaterialIcon;
 use crate::model::app_state::AppState;
+use druid::widget::Svg;
 use druid::{Data, Widget};
 use strum_macros::EnumIter;
 
@@ -21,9 +23,14 @@ impl TabMenus {
     }
 
     pub fn title(&self) -> &'static str {
+        let (title, _icon) = self.fields();
+        title
+    }
+
+    fn fields(&self) -> (&'static str, Svg) {
         match self {
-            TabMenus::Rename => "重命名",
-            TabMenus::Settings => "设置"
+            TabMenus::Rename => ("重命名", MaterialIcon::BorderColor.load()),
+            TabMenus::Settings => ("设 置", MaterialIcon::Settings.load()),
         }
     }
 }

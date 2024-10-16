@@ -9,10 +9,8 @@ mod utils;
 
 use crate::enums::tab_menus::TabMenus;
 use crate::model::app_state::{AppState, RenameState};
-use crate::model::replace_info::ReplaceInfo;
 use druid::widget::{Axis, Flex, Tabs, TabsEdge, TabsTransition};
 use druid::{AppLauncher, Size, Widget, WidgetExt, WindowDesc};
-use im::vector;
 use strum::IntoEnumIterator;
 
 fn main() {
@@ -21,13 +19,7 @@ fn main() {
         .window_size(Size::new(800.0, 600.0))
         .title("Druid");
     let state = AppState {
-        rename_state: RenameState {
-            dir_path: String::new(),
-            file_list: vector![],
-            replace_infos: vector![
-                ReplaceInfo::new()
-            ],
-        }
+        rename_state: RenameState::new()
     };
     AppLauncher::with_window(main_window)
         .launch(state)

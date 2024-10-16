@@ -1,0 +1,3 @@
+struct CommonUtils;
+
+impl CommonUtils {}

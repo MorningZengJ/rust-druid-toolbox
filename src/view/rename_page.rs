@@ -6,14 +6,17 @@ use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use druid::lens::Map;
-use druid::widget::{Checkbox, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
+use druid::text::EditableText;
+use druid::widget::{Checkbox, Container, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
 use druid::{Color, Data, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
 use im::Vector;
 use regex::Regex;
+use std::path::Path;
 
 pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
         .with_child(build_dir_path())
+        .with_child(build_filter())
         .with_flex_child(build_split_files(), 0.5)
         .with_flex_child(build_replace_info_list(), 0.5)
         .with_child(build_buttons())
@@ -21,21 +24,91 @@ pub fn build_page() -> impl Widget<AppState> {
 
 fn build_dir_path() -> impl Widget<AppState> {
     let dir_path_label = Label::new("文件路径：")
-        .fix_width(100.0)
-        .padding(5.0);
+        .fix_width(100.0);
     let dir_path_input = TextBox::new()
         .with_placeholder("文件路径")
         .lens(AppState::rename_state.then(RenameState::dir_path))
         .expand_width()
         // .fix_width(500.0)
         .border(Color::BLUE, 1.0)
-        .background(Color::rgba8(255, 255, 255, 255))
         .controller(DirectoryChooseController::choose());
+    let arrow_btn = Container::new(MaterialIcon::ArrowCircleUp.load()
+        .border(Color::WHITE, 0.3)
+        .rounded(3.0)
+        .controller(MouseController::mouse_cursor_pointer())
+        .on_click(|_ctx, data: &mut AppState, _env| {
+            if let Some(parent) = Path::new(&data.rename_state.dir_path).parent() {
+                if let Some(path) = parent.to_str() {
+                    data.rename_state.dir_path = path.to_string();
+                }
+            }
+        }))
+        .padding(13.0)
+        .fix_width(50.0);
+
     Flex::row()
+        .with_spacer(10.0)
         .with_child(dir_path_label)
-        .with_flex_child(dir_path_input, 0.5)
+        .with_spacer(10.0)
+        .with_flex_child(dir_path_input, 1.0)
+        .with_spacer(10.0)
+        .with_child(arrow_btn)
+        .with_spacer(10.0)
         .must_fill_main_axis(true)
-        .padding(10.0)
+}
+
+fn build_filter() -> impl Widget<AppState> {
+    const FILTER_CHANGE: Selector<String> = Selector::new("toolbox-builtin. filter-change");
+    let controller = Controllers {
+        command: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
+            if let Event::Command(cmd) = event {
+                if let Some(_) = cmd.get(FILTER_CHANGE) {
+                    data.rename_state.get_filter_file_list();
+                }
+            }
+        }),
+        update: Some(|ctx: &mut UpdateCtx, old: &AppState, data: &AppState| {
+            if old.rename_state.filter.same(&data.rename_state.filter) {
+                return;
+            }
+            ctx.submit_command(FILTER_CHANGE.with(String::new()));
+        }),
+        ..Default::default()
+    };
+    let filter_label = Label::new("过 滤：")
+        .fix_width(100.0);
+    let filter_input = TextBox::new()
+        .with_placeholder("关键字或正则表达式")
+        .lens(AppState::rename_state.then(RenameState::filter)
+            .map(
+                |data| data.0.clone(),
+                |data, content| {
+                    data.0 = content.clone();
+                },
+            )
+        )
+        .controller(controller.clone())
+        .expand_width();
+    let regex_checkbox = Checkbox::new("正则")
+        .fix_width(50.0)
+        .lens(AppState::rename_state.then(RenameState::filter)
+            .map(
+                |data| data.1,
+                |data, is_regex| {
+                    data.1 = is_regex;
+                },
+            )
+        )
+        .controller(controller);
+
+    Flex::row()
+        .with_spacer(10.0)
+        .with_child(filter_label)
+        .with_spacer(10.0)
+        .with_flex_child(filter_input, 1.0)
+        .with_spacer(10.0)
+        .with_child(regex_checkbox)
+        .with_spacer(10.0)
 }
 
 fn build_split_files() -> impl Widget<AppState> {
@@ -51,7 +124,7 @@ fn build_left_file_list() -> impl Widget<AppState> {
             .padding(5.0)
     }))
         .vertical()
-        .lens(AppState::rename_state.then(RenameState::file_list))
+        .lens(AppState::rename_state.then(RenameState::filter_file_list))
         .expand()
 }
 
@@ -80,7 +153,7 @@ fn build_right_file_list() -> impl Widget<AppState> {
         .vertical()
         .lens(AppState::rename_state.then(Map::new(
             |rename_state: &RenameState| {
-                rename_state.file_list.iter().cloned()
+                rename_state.filter_file_list.iter().cloned()
                     .map(|file_info| (file_info, rename_state.replace_infos.clone()))
                     .collect::<Vector<_>>()
             },
@@ -151,7 +224,7 @@ fn build_replace_info_list() -> impl Widget<AppState> {
 
 fn build_buttons() -> impl Widget<AppState> {
     // 创建第一个按钮
-    let button1 = MaterialIcon::PlaylistAdd.load()
+    let add_new_row_btn = MaterialIcon::PlaylistAdd.load()
         .border(Color::WHITE, 0.3)
         .rounded(3.0)
         .controller(MouseController::mouse_cursor_pointer())
@@ -168,21 +241,38 @@ fn build_buttons() -> impl Widget<AppState> {
         });
 
     // 创建第二个按钮
-    let button2 = MaterialIcon::BorderColor.load()
+    let sure_replace_btn = MaterialIcon::BorderColor.load()
         .border(Color::WHITE, 0.3)
         .rounded(3.0)
         .controller(MouseController::mouse_cursor_pointer())
-        .on_click(|_ctx, _data: &mut AppState, _env| {
-            // 按钮2的点击处理逻辑
-            println!("Button 2 clicked");
+        .on_click(|_ctx, data: &mut AppState, _env| {
+            for info in &mut data.rename_state.filter_file_list.iter_mut() {
+                replacements(info, &data.rename_state.replace_infos);
+            }
+            // std::fs::rename(oldname,newname)
         });
 
     // 将按钮添加到水平布局中
     Flex::row()
-        .with_child(button1)
+        .with_child(add_new_row_btn)
         .with_spacer(20.0)
-        .with_child(button2)
+        .with_child(sure_replace_btn)
         .padding(10.0)
+}
+
+fn replacements(info: &mut FileInfo, replace_infos: &Vector<ReplaceInfo>) {
+    for ri in replace_infos {
+        if ri.enable {
+            info.name = if ri.is_regex {
+                match Regex::new(&*ri.content) {
+                    Ok(regex) => regex.replace_all(&info.name, ri.target.clone()).to_string(),
+                    Err(_) => info.name.clone()
+                }
+            } else {
+                info.name.replace(&*ri.content, &*ri.target)
+            };
+        }
+    }
 }
 
 struct RegexController;

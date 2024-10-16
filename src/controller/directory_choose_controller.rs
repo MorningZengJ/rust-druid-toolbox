@@ -31,6 +31,7 @@ impl DirectoryChooseController {
                     if let Some(_) = cmd.get(Self::LIST_FILE) {
                         let vector = FileUtils::list_files(&data.rename_state.dir_path);
                         data.rename_state.file_list = vector;
+                        data.rename_state.get_filter_file_list();
                     }
                 }
             }),
