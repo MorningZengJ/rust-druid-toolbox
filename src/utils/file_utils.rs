@@ -1,4 +1,5 @@
 use crate::model::file_info::FileInfo;
+use crate::utils::common_utils::CommonUtils;
 use im::{vector, Vector};
 use std::fs;
 use std::path::Path;
@@ -26,10 +27,12 @@ impl FileUtils {
                             .duration_since(UNIX_EPOCH)
                             .unwrap_or_default()
                             .as_secs();
+                        let path = entry.path().to_str().unwrap_or_default().to_string();
 
                         FileInfo {
                             name: entry.file_name().into_string().unwrap_or_default(),
-                            path: entry.path().to_str().unwrap_or_default().to_string(),
+                            path: path.clone(),
+                            parent_path: CommonUtils::parent_path(&path),
                             is_dir: file_type.is_dir(),
                             extension: entry.path().extension().and_then(|ext| ext.to_str()).unwrap_or_default().to_string(),
                             size: metadata.len(),

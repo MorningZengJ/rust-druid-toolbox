@@ -5,13 +5,14 @@ use crate::enums::material_icon::MaterialIcon;
 use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
+use crate::utils::common_utils::CommonUtils;
+use crate::utils::date_utils::DateUtils;
 use druid::lens::Map;
 use druid::text::EditableText;
 use druid::widget::{Checkbox, Container, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
 use druid::{Color, Data, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
 use im::Vector;
 use regex::Regex;
-use std::path::Path;
 
 pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
@@ -37,11 +38,7 @@ fn build_dir_path() -> impl Widget<AppState> {
         .rounded(3.0)
         .controller(MouseController::mouse_cursor_pointer())
         .on_click(|_ctx, data: &mut AppState, _env| {
-            if let Some(parent) = Path::new(&data.rename_state.dir_path).parent() {
-                if let Some(path) = parent.to_str() {
-                    data.rename_state.dir_path = path.to_string();
-                }
-            }
+            data.rename_state.dir_path = CommonUtils::parent_path(&data.rename_state.dir_path);
         }))
         .padding(13.0)
         .fix_width(50.0);
@@ -114,22 +111,60 @@ fn build_filter() -> impl Widget<AppState> {
 fn build_split_files() -> impl Widget<AppState> {
     Split::columns(build_left_file_list(), build_right_file_list())
         .draggable(true)
-        .split_point(0.5)
+        .split_point(0.75)
 }
 
 fn build_left_file_list() -> impl Widget<AppState> {
-    Scroll::new(List::new(|| {
-        Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.name))
+    let header = Flex::row()
+        .with_flex_child(
+            Label::new("名称").expand_width(), 0.5,
+        )
+        .with_flex_child(
+            Label::new("类型").expand_width(), 0.15,
+        )
+        .with_flex_child(
+            Label::new("修改时间").expand_width(), 0.2,
+        )
+        .with_flex_child(
+            Label::new("大小").expand_width(), 0.15,
+        )
+        .expand_width();
+
+    let scroll_list = Scroll::new(List::new(|| {
+        let name_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.name))
             .with_line_break_mode(LineBreaking::WordWrap)
-            .padding(5.0)
+            .expand_width();
+        let type_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.extension))
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .expand_width();
+        let modified_time_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", DateUtils::format_by_pattern(item.modified_time, "%Y-%m-%d %H:%M")))
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .expand_width();
+        let size_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.size))
+            .with_line_break_mode(LineBreaking::WordWrap)
+            .expand_width();
+        Flex::row()
+            .with_flex_child(name_label, 0.5)
+            .with_flex_child(type_label, 0.15)
+            .with_flex_child(modified_time_label, 0.2)
+            .with_flex_child(size_label, 0.15)
     }))
         .vertical()
         .lens(AppState::rename_state.then(RenameState::filter_file_list))
-        .expand()
+        .expand();
+
+    Flex::column()
+        .with_child(header)
+        .with_flex_child(scroll_list, 1.0)
 }
 
 fn build_right_file_list() -> impl Widget<AppState> {
-    Scroll::new(List::new(|| {
+    let header = Flex::row()
+        .with_flex_child(
+            Label::new("名称").expand_width(), 1.0,
+        )
+        .expand_width();
+    let scroll_list = Scroll::new(List::new(|| {
         Label::new(|(item, replace_infos): &(FileInfo, Vector<ReplaceInfo>), _env: &Env| {
             let mut text = item.name.clone();
             let mut infos = replace_infos.clone();
@@ -159,7 +194,10 @@ fn build_right_file_list() -> impl Widget<AppState> {
             },
             |_: &mut RenameState, _: Vector<(FileInfo, Vector<ReplaceInfo>)>| {},
         )))
-        .expand()
+        .expand();
+    Flex::column()
+        .with_child(header)
+        .with_flex_child(scroll_list, 1.0)
 }
 
 fn build_replace_info_list() -> impl Widget<AppState> {
@@ -247,9 +285,22 @@ fn build_buttons() -> impl Widget<AppState> {
         .controller(MouseController::mouse_cursor_pointer())
         .on_click(|_ctx, data: &mut AppState, _env| {
             for info in &mut data.rename_state.filter_file_list.iter_mut() {
-                replacements(info, &data.rename_state.replace_infos);
+                let replace_infos = &data.rename_state.replace_infos;
+                for ri in replace_infos {
+                    if ri.enable {
+                        info.name = if ri.is_regex {
+                            match Regex::new(&*ri.content) {
+                                Ok(regex) => regex.replace_all(&info.name, ri.target.clone()).to_string(),
+                                Err(_) => info.name.clone()
+                            }
+                        } else {
+                            info.name.replace(&*ri.content, &*ri.target)
+                        };
+                        println!("path: {:?}, parent_path: {}", info.path, info.parent_path);
+                        // std::fs::rename(oldname,newname)
+                    }
+                }
             }
-            // std::fs::rename(oldname,newname)
         });
 
     // 将按钮添加到水平布局中
@@ -258,21 +309,6 @@ fn build_buttons() -> impl Widget<AppState> {
         .with_spacer(20.0)
         .with_child(sure_replace_btn)
         .padding(10.0)
-}
-
-fn replacements(info: &mut FileInfo, replace_infos: &Vector<ReplaceInfo>) {
-    for ri in replace_infos {
-        if ri.enable {
-            info.name = if ri.is_regex {
-                match Regex::new(&*ri.content) {
-                    Ok(regex) => regex.replace_all(&info.name, ri.target.clone()).to_string(),
-                    Err(_) => info.name.clone()
-                }
-            } else {
-                info.name.replace(&*ri.content, &*ri.target)
-            };
-        }
-    }
 }
 
 struct RegexController;

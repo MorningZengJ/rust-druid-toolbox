@@ -4,6 +4,7 @@ use druid::{Data, Lens};
 pub struct FileInfo {
     pub name: String,
     pub path: String,
+    pub parent_path: String,
     pub is_dir: bool,
     pub extension: String,
     pub size: u64,
