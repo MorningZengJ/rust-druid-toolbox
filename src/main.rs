@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 mod model;
 mod enums;
 mod view;

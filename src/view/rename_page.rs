@@ -156,7 +156,7 @@ fn build_file_list() -> impl Widget<AppState> {
             )
             .controller(
                 Controllers::<(FileInfo, RenameState), _, fn(&mut UpdateCtx, &(FileInfo, RenameState), &(FileInfo, RenameState))> {
-                    mouse_dblclick: Some(|ctx: &mut EventCtx, (file_info, rs): &mut (FileInfo, RenameState), _env: &Env, _event: &Event| {
+                    mouse_dblclick: Some(|ctx: &mut EventCtx, (file_info, _rs): &mut (FileInfo, RenameState), _env: &Env, _event: &Event| {
                         if !file_info.is_dir {
                             return;
                         }

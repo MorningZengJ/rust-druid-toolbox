@@ -3,12 +3,12 @@ use druid::widget::{Svg, SvgData};
 pub enum MaterialIcon {
     ArrowCircleUp,
     BorderColor,
-    DeleteOutline,
+    // DeleteOutline,
     LastPage,
     PlaylistAdd,
     RemoveCircleOutline,
     Settings,
-    Tune,
+    // Tune,
 }
 
 impl MaterialIcon {
@@ -22,12 +22,12 @@ impl MaterialIcon {
         match self {
             MaterialIcon::ArrowCircleUp => include_str!("../../assets/svg/arrow_circle_up.svg"),
             MaterialIcon::BorderColor => include_str!("../../assets/svg/border_color.svg"),
-            MaterialIcon::DeleteOutline => include_str!("../../assets/svg/delete_outline.svg"),
+            // MaterialIcon::DeleteOutline => include_str!("../../assets/svg/delete_outline.svg"),
             MaterialIcon::LastPage => include_str!("../../assets/svg/last_page.svg"),
             MaterialIcon::PlaylistAdd => include_str!("../../assets/svg/playlist_add.svg"),
             MaterialIcon::RemoveCircleOutline => include_str!("../../assets/svg/remove_circle_outline.svg"),
             MaterialIcon::Settings => include_str!("../../assets/svg/settings.svg"),
-            MaterialIcon::Tune => include_str!("../../assets/svg/tune.svg"),
+            // MaterialIcon::Tune => include_str!("../../assets/svg/tune.svg"),
         }
     }
 }

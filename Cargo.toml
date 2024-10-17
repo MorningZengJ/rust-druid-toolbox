@@ -1,10 +1,17 @@
 [package]
 name = "druid-toolbox"
 version = "0.1.0"
+authors = ["MorningZeng<zengchennihon@gmail.com>"]
 edition = "2021"
+
+[package.metadata.bundle]
+identifier = "com.gayhub.morningzeng.toolbox"
+icon = ["icon.ico"]
+resource = ["app.rc", "icon.ico"]
 
 [dependencies]
 druid = { version = "0.8.3", features = ["svg", "im", "chrono", ] }
+embed-resource = "2.5.0"
 # regex暂不支持零宽断言等高级正则，引入fancy-regex
 regex = { version = "1.11.0", features = [] }
 fancy-regex = "0.13.0"
@@ -13,4 +20,8 @@ strum_macros = "0.26.3"
 im = "15.1.0"
 uuid = { version = "1.10.0", features = ["v4"] }
 getset = "0.1.3"
+#ffmpeg = "0.3.0"
 chrono = "0.4.38"
+
+[build-dependencies]
+embed-resource = "2.5.0"
