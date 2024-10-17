@@ -6,7 +6,6 @@ use crate::model::app_state::{AppState, RenameState};
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use crate::utils::common_utils::CommonUtils;
-use crate::utils::date_utils::DateUtils;
 use druid::lens::Map;
 use druid::text::EditableText;
 use druid::widget::{Checkbox, Container, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
@@ -137,7 +136,7 @@ fn build_left_file_list() -> impl Widget<AppState> {
         let type_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.extension))
             .with_line_break_mode(LineBreaking::WordWrap)
             .expand_width();
-        let modified_time_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", DateUtils::format_by_pattern(item.modified_time, "%Y-%m-%d %H:%M")))
+        let modified_time_label = Label::new(|item: &FileInfo, _env: &Env| item.modified_time_f())
             .with_line_break_mode(LineBreaking::WordWrap)
             .expand_width();
         let size_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.size))

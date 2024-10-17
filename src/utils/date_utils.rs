@@ -3,8 +3,13 @@ use chrono::{TimeZone, Utc};
 pub struct DateUtils;
 
 impl DateUtils {
+    pub const YYYY_MM_DD_HH_MM_SS: &'static str = "%Y-%m-%d %H:%M:%S";
+    pub const YYYY_MM_DD_HH_MM: &'static str = "%Y-%m-%d %H:%M";
+    pub const YYYY_MM_DD: &'static str = "%Y-%m-%d";
+
+
     pub fn format(timestamp: u64) -> String {
-        Self::format_by_pattern(timestamp, "%Y-%m-%d %H:%M:%S")
+        Self::format_by_pattern(timestamp, Self::YYYY_MM_DD_HH_MM_SS)
     }
 
     //noinspection SpellCheckingInspection
