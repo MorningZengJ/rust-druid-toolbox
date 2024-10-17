@@ -9,8 +9,8 @@ use crate::utils::common_utils::CommonUtils;
 use druid::lens::Map;
 use druid::widget::{Checkbox, Container, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, TextBox};
 use druid::{Color, Data, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
+use fancy_regex::Regex;
 use im::Vector;
-use regex::Regex;
 
 pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
@@ -108,6 +108,7 @@ fn build_filter() -> impl Widget<AppState> {
 
 fn build_file_list() -> impl Widget<AppState> {
     const SELECTED_ITEM: Selector<FileInfo> = Selector::new("toolbox-builtin. selected-item");
+    const GOTO_SUBFOLDER: Selector<FileInfo> = Selector::new("toolbox-builtin. goto-subfolder");
     Scroll::new(List::new(|| {
         let item_label = Label::new(|(item, _rename_state): &(FileInfo, RenameState), _env: &Env| format!("{}", item.name))
             .with_line_break_mode(LineBreaking::WordWrap)
@@ -120,11 +121,13 @@ fn build_file_list() -> impl Widget<AppState> {
                 if info.enable {
                     text = if info.is_regex {
                         match Regex::new(&*info.content) {
-                            Ok(regex) => regex.replace_all(&*item.name, info.target.clone()).to_string(),
-                            Err(_) => text
+                            Ok(regex) => regex.replace_all(&*text, info.target.clone()).to_string(),
+                            Err(_err) => {
+                                text
+                            }
                         }
                     } else {
-                        item.name.replace(&*info.content, &*info.target)
+                        text.replace(&*info.content, &*info.target)
                     };
                 }
             }
@@ -151,6 +154,17 @@ fn build_file_list() -> impl Widget<AppState> {
                     }
                 })
             )
+            .controller(
+                Controllers::<(FileInfo, RenameState), _, fn(&mut UpdateCtx, &(FileInfo, RenameState), &(FileInfo, RenameState))> {
+                    mouse_dblclick: Some(|ctx: &mut EventCtx, (file_info, rs): &mut (FileInfo, RenameState), _env: &Env, _event: &Event| {
+                        if !file_info.is_dir {
+                            return;
+                        }
+                        ctx.submit_notification(GOTO_SUBFOLDER.with(file_info.clone()));
+                    }),
+                    ..Default::default()
+                }
+            )
     }))
         .vertical()
         .lens(AppState::rename_state.then(Map::new(
@@ -167,6 +181,9 @@ fn build_file_list() -> impl Widget<AppState> {
                     if let Event::Notification(notify) = event {
                         if let Some(selected_item) = notify.get(SELECTED_ITEM) {
                             data.rename_state.selected_file = Some(selected_item.clone());
+                        }
+                        if let Some(file_info) = notify.get(GOTO_SUBFOLDER) {
+                            data.rename_state.dir_path = file_info.path.clone();
                         }
                     }
                 }),
@@ -272,10 +289,10 @@ fn build_buttons() -> impl Widget<AppState> {
                         } else {
                             info.name.replace(&*ri.content, &*ri.target)
                         };
-                        println!("path: {:?}, parent_path: {}", info.path, info.parent_path);
-                        std::fs::rename(&info.path, CommonUtils::join_path(&*info.parent_path, &*info.name)).expect("重命名失败");
                     }
                 }
+                let new_name = CommonUtils::join_path(&*info.parent_path, &*info.name);
+                std::fs::rename(&info.path, new_name).expect("重命名失败");
             }
         });
 

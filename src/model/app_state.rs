@@ -3,8 +3,8 @@ use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use crate::traits::directory_choose::DirectoryChoose;
 use druid::{Data, Lens};
+use fancy_regex::Regex;
 use im::{vector, Vector};
-use regex::Regex;
 
 #[derive(Clone, Data, Lens)]
 pub struct AppState {
@@ -46,7 +46,14 @@ impl RenameState {
             self.file_list.clone()
         } else {
             self.file_list.iter().filter(|info| {
-                if let Some(regex) = &reg_opt { regex.is_match(&*info.name) } else { info.name.contains(filter) }
+                if let Some(regex) = &reg_opt {
+                    if let Some(ma) = regex.is_match(&*info.name).ok() {
+                        return ma;
+                    }
+                    true
+                } else {
+                    info.name.contains(filter)
+                }
             }).cloned().collect()
         };
     }

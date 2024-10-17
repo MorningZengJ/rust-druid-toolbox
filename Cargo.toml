@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 druid = { version = "0.8.3", features = ["svg", "im", "chrono", ] }
-regex = "1.11.0"
+# regex暂不支持零宽断言等高级正则，引入fancy-regex
+regex = { version = "1.11.0", features = [] }
+fancy-regex = "0.13.0"
 strum = "0.26.3"
 strum_macros = "0.26.3"
 im = "15.1.0"
