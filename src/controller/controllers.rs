@@ -7,6 +7,7 @@ where
     U: Fn(&mut UpdateCtx, &T, &T) + 'static,
 {
     pub(crate) mouse_move: Option<E>,
+    pub(crate) mouse_down: Option<E>,
     pub(crate) mouse_dblclick: Option<E>,
     pub(crate) command: Option<E>,
     pub(crate) notification: Option<E>,
@@ -23,6 +24,7 @@ where
     fn default() -> Self {
         Self {
             mouse_move: None,
+            mouse_down: None,
             mouse_dblclick: None,
             command: None,
             notification: None,
@@ -40,6 +42,7 @@ where
     fn clone(&self) -> Self {
         Controllers {
             mouse_move: self.mouse_move.clone(),
+            mouse_down: self.mouse_down.clone(),
             mouse_dblclick: self.mouse_dblclick.clone(),
             command: self.command.clone(),
             notification: self.notification.clone(),
@@ -82,6 +85,9 @@ where
                     if mouse.button.is_left() && mouse.count == 2 {
                         mouse_dblclick(ctx, data, env, event);
                     }
+                }
+                if let Some(mouse_click) = &self.mouse_down {
+                    mouse_click(ctx, data, env, event);
                 }
             }
             Event::Command(_) => {

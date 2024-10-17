@@ -12,7 +12,7 @@ impl DirectoryChooseController {
 
     pub fn choose() -> Controllers<AppState, fn(&mut EventCtx, &mut AppState, &Env, &Event), fn(&mut UpdateCtx, &AppState, &AppState)> {
         Controllers {
-            mouse_dblclick: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event| {
+            mouse_dblclick: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env, _event| {
                 let mut options = FileDialogOptions::new()
                     .select_directories()
                     .title("选择文件夹");
@@ -21,7 +21,7 @@ impl DirectoryChooseController {
                 }
                 ctx.submit_command(SHOW_OPEN_PANEL.with(options.clone()));
             }),
-            command: Some(|ctx, data, _env, event| {
+            command: Some(|_ctx, data, _env, event| {
                 if let Event::Command(cmd) = event {
                     if let Some(file_info) = cmd.get(druid::commands::OPEN_FILE) {
                         if let Some(path) = file_info.path().to_str() {

@@ -7,8 +7,7 @@ use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use crate::utils::common_utils::CommonUtils;
 use druid::lens::Map;
-use druid::text::EditableText;
-use druid::widget::{Checkbox, Container, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, Split, TextBox};
+use druid::widget::{Checkbox, Container, Controller, Flex, Label, LineBreaking, List, Painter, Scroll, TextBox};
 use druid::{Color, Data, Env, Event, EventCtx, LensExt, RenderContext, Selector, UpdateCtx, Widget, WidgetExt};
 use im::Vector;
 use regex::Regex;
@@ -17,7 +16,7 @@ pub fn build_page() -> impl Widget<AppState> {
     Flex::column()
         .with_child(build_dir_path())
         .with_child(build_filter())
-        .with_flex_child(build_split_files(), 0.5)
+        .with_flex_child(build_file_list(), 0.5)
         .with_flex_child(build_replace_info_list(), 0.5)
         .with_child(build_buttons())
 }
@@ -56,7 +55,7 @@ fn build_dir_path() -> impl Widget<AppState> {
 fn build_filter() -> impl Widget<AppState> {
     const FILTER_CHANGE: Selector<String> = Selector::new("toolbox-builtin. filter-change");
     let controller = Controllers {
-        command: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
+        command: Some(|_ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
             if let Event::Command(cmd) = event {
                 if let Some(_) = cmd.get(FILTER_CHANGE) {
                     data.rename_state.get_filter_file_list();
@@ -107,67 +106,17 @@ fn build_filter() -> impl Widget<AppState> {
         .with_spacer(10.0)
 }
 
-fn build_split_files() -> impl Widget<AppState> {
-    Split::columns(build_left_file_list(), build_right_file_list())
-        .draggable(true)
-        .split_point(0.75)
-}
-
-fn build_left_file_list() -> impl Widget<AppState> {
-    let header = Flex::row()
-        .with_flex_child(
-            Label::new("名称").expand_width(), 0.5,
-        )
-        .with_flex_child(
-            Label::new("类型").expand_width(), 0.15,
-        )
-        .with_flex_child(
-            Label::new("修改时间").expand_width(), 0.2,
-        )
-        .with_flex_child(
-            Label::new("大小").expand_width(), 0.15,
-        )
-        .expand_width();
-
-    let scroll_list = Scroll::new(List::new(|| {
-        let name_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.name))
+fn build_file_list() -> impl Widget<AppState> {
+    const SELECTED_ITEM: Selector<FileInfo> = Selector::new("toolbox-builtin. selected-item");
+    Scroll::new(List::new(|| {
+        let item_label = Label::new(|(item, _rename_state): &(FileInfo, RenameState), _env: &Env| format!("{}", item.name))
             .with_line_break_mode(LineBreaking::WordWrap)
+            .padding(5.0)
             .expand_width();
-        let type_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.extension))
-            .with_line_break_mode(LineBreaking::WordWrap)
-            .expand_width();
-        let modified_time_label = Label::new(|item: &FileInfo, _env: &Env| item.modified_time_f())
-            .with_line_break_mode(LineBreaking::WordWrap)
-            .expand_width();
-        let size_label = Label::new(|item: &FileInfo, _env: &Env| format!("{}", item.size))
-            .with_line_break_mode(LineBreaking::WordWrap)
-            .expand_width();
-        Flex::row()
-            .with_flex_child(name_label, 0.5)
-            .with_flex_child(type_label, 0.15)
-            .with_flex_child(modified_time_label, 0.2)
-            .with_flex_child(size_label, 0.15)
-    }))
-        .vertical()
-        .lens(AppState::rename_state.then(RenameState::filter_file_list))
-        .expand();
-
-    Flex::column()
-        .with_child(header)
-        .with_flex_child(scroll_list, 1.0)
-}
-
-fn build_right_file_list() -> impl Widget<AppState> {
-    let header = Flex::row()
-        .with_flex_child(
-            Label::new("名称").expand_width(), 1.0,
-        )
-        .expand_width();
-    let scroll_list = Scroll::new(List::new(|| {
-        Label::new(|(item, replace_infos): &(FileInfo, Vector<ReplaceInfo>), _env: &Env| {
+        let preview_label = Label::new(|(item, rename_state): &(FileInfo, RenameState), _env: &Env| {
             let mut text = item.name.clone();
-            let mut infos = replace_infos.clone();
-            for info in infos.iter_mut() {
+            let infos = &rename_state.replace_infos;
+            for info in infos.iter() {
                 if info.enable {
                     text = if info.is_regex {
                         match Regex::new(&*info.content) {
@@ -183,20 +132,48 @@ fn build_right_file_list() -> impl Widget<AppState> {
         })
             .with_line_break_mode(LineBreaking::WordWrap)
             .padding(5.0)
+            .expand_width();
+        Flex::row()
+            .with_flex_child(item_label, 0.5)
+            .with_flex_child(preview_label, 0.5)
+            .on_click(move |ctx, (file_info, _rs): &mut (FileInfo, RenameState), _| {
+                ctx.submit_notification(SELECTED_ITEM.with(file_info.clone()))
+            })
+            .background(
+                Painter::new(|ctx, (file_info, rs): &(FileInfo, RenameState), _| {
+                    if let Some(selected_item) = &rs.selected_file {
+                        if file_info.same(selected_item) {
+                            let rect = ctx.size().to_rect();
+                            if let Some(color) = &Color::from_hex_str("00A7FF").ok() {
+                                ctx.fill(rect, color);
+                            }
+                        }
+                    }
+                })
+            )
     }))
         .vertical()
         .lens(AppState::rename_state.then(Map::new(
             |rename_state: &RenameState| {
                 rename_state.filter_file_list.iter().cloned()
-                    .map(|file_info| (file_info, rename_state.replace_infos.clone()))
+                    .map(|file_info| (file_info, rename_state.clone()))
                     .collect::<Vector<_>>()
             },
-            |_: &mut RenameState, _: Vector<(FileInfo, Vector<ReplaceInfo>)>| {},
+            |_: &mut RenameState, _: Vector<(FileInfo, RenameState)>| {},
         )))
-        .expand();
-    Flex::column()
-        .with_child(header)
-        .with_flex_child(scroll_list, 1.0)
+        .controller(
+            Controllers::<AppState, _, fn(&mut UpdateCtx, &AppState, &AppState)> {
+                notification: Some(|_ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
+                    if let Event::Notification(notify) = event {
+                        if let Some(selected_item) = notify.get(SELECTED_ITEM) {
+                            data.rename_state.selected_file = Some(selected_item.clone());
+                        }
+                    }
+                }),
+                ..Default::default()
+            }
+        )
+        .expand()
 }
 
 fn build_replace_info_list() -> impl Widget<AppState> {
@@ -247,7 +224,7 @@ fn build_replace_info_list() -> impl Widget<AppState> {
         .expand()
         .controller(
             Controllers::<AppState, _, fn(&mut UpdateCtx, &AppState, &AppState)> {
-                notification: Some(|ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
+                notification: Some(|_ctx: &mut EventCtx, data: &mut AppState, _env: &Env, event: &Event| {
                     if let Event::Notification(notify) = event {
                         if let Some(item) = notify.get(REMOVE_ITEM) {
                             data.rename_state.replace_infos.retain(|info| !info.same(item));
@@ -296,7 +273,7 @@ fn build_buttons() -> impl Widget<AppState> {
                             info.name.replace(&*ri.content, &*ri.target)
                         };
                         println!("path: {:?}, parent_path: {}", info.path, info.parent_path);
-                        // std::fs::rename(oldname,newname)
+                        std::fs::rename(&info.path, CommonUtils::join_path(&*info.parent_path, &*info.name)).expect("重命名失败");
                     }
                 }
             }

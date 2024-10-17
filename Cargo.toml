@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-druid = { version = "0.8.3", features = ["svg", "im", ] }
+druid = { version = "0.8.3", features = ["svg", "im", "chrono", ] }
 regex = "1.11.0"
 strum = "0.26.3"
 strum_macros = "0.26.3"

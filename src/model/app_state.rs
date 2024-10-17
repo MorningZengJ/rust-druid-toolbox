@@ -19,7 +19,8 @@ pub struct RenameState {
     pub(crate) filter: (String, bool),
     pub(crate) file_list: Vector<FileInfo>,
     pub(crate) filter_file_list: Vector<FileInfo>,
-    pub(crate) replace_infos: Vector<ReplaceInfo>
+    pub(crate) selected_file: Option<FileInfo>,
+    pub(crate) replace_infos: Vector<ReplaceInfo>,
 }
 additional_directory!(RenameState);
 
@@ -34,20 +35,19 @@ impl RenameState {
     }
 
     pub fn get_filter_file_list(&mut self) {
-        if let (filter, is_regex) = self.filter.clone() {
-            let mut reg_opt = None;
-            if !filter.is_empty() && is_regex {
-                if let Ok(regex) = Regex::new(&filter) {
-                    reg_opt = Some(regex);
-                }
+        let (filter, is_regex) = &self.filter;
+        let mut reg_opt = None;
+        if !filter.is_empty() && *is_regex {
+            if let Ok(regex) = Regex::new(&filter) {
+                reg_opt = Some(regex);
             }
-            self.filter_file_list = if filter.is_empty() {
-                self.file_list.clone()
-            } else {
-                self.file_list.iter().filter(|info| {
-                    if let Some(regex) = &reg_opt { regex.is_match(&*info.name) } else { info.name.contains(&filter) }
-                }).cloned().collect()
-            };
         }
+        self.filter_file_list = if filter.is_empty() {
+            self.file_list.clone()
+        } else {
+            self.file_list.iter().filter(|info| {
+                if let Some(regex) = &reg_opt { regex.is_match(&*info.name) } else { info.name.contains(filter) }
+            }).cloned().collect()
+        };
     }
 }

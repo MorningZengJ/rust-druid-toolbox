@@ -42,6 +42,7 @@ impl FileUtils {
                             size: entity.file_size(),
                             created_time: entity.timestamp(|metadata: &Metadata| { metadata.created() }),
                             modified_time: entity.timestamp(|metadata: &Metadata| { metadata.modified() }),
+                            ..Default::default()
                         }
                     })
                     .collect::<Vector<FileInfo>>()
