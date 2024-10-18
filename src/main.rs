@@ -18,7 +18,7 @@ fn main() {
     let flex = Flex::row().with_flex_child(build_tabs(), 1.0);
     let main_window = WindowDesc::new(flex)
         .window_size(Size::new(800.0, 600.0))
-        .title("Druid");
+        .title("Toolbox");
     let state = AppState {
         rename_state: RenameState::new()
     };
