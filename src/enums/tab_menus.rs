@@ -7,6 +7,7 @@ use strum_macros::EnumIter;
 #[derive(Clone, Data, PartialEq, Debug, EnumIter)]
 pub enum TabMenus {
     Rename,
+    Music,
     Settings,
 }
 
@@ -15,6 +16,9 @@ impl TabMenus {
         match self {
             TabMenus::Rename => Box::new(
                 crate::view::rename_page::build_page()
+            ),
+            TabMenus::Music => Box::new(
+                crate::view::music_page::build_page()
             ),
             TabMenus::Settings => Box::new(
                 crate::view::settings_page::build_page()
@@ -30,6 +34,7 @@ impl TabMenus {
     fn fields(&self) -> (&'static str, Svg) {
         match self {
             TabMenus::Rename => ("重命名", MaterialIcon::BorderColor.load()),
+            TabMenus::Music => ("音 乐", MaterialIcon::Genres.load()),
             TabMenus::Settings => ("设 置", MaterialIcon::Settings.load()),
         }
     }

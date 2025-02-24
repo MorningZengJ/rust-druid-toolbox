@@ -7,9 +7,10 @@ mod traits;
 mod delegate;
 mod rules;
 mod utils;
+mod widgets;
 
 use crate::enums::tab_menus::TabMenus;
-use crate::model::app_state::{AppState, RenameState};
+use crate::model::app_state::AppState;
 use druid::widget::{Axis, Flex, Tabs, TabsEdge, TabsTransition};
 use druid::{AppLauncher, Size, Widget, WidgetExt, WindowDesc};
 use strum::IntoEnumIterator;
@@ -19,9 +20,7 @@ fn main() {
     let main_window = WindowDesc::new(flex)
         .window_size(Size::new(800.0, 600.0))
         .title("Toolbox");
-    let state = AppState {
-        rename_state: RenameState::new()
-    };
+    let state = AppState::new();
     AppLauncher::with_window(main_window)
         .launch(state)
         .expect("launch failed");
