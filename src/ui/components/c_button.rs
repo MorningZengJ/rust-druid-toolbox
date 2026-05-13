@@ -39,28 +39,32 @@ impl ButtonStyle {
             (ButtonType::PrimaryNav, _) => Self::primary_nav_light(),
             (ButtonType::ContentBtn, Mode::Dark) => Self::content_btn_dark(),
             (ButtonType::ContentBtn, _) => Self::content_btn_light(),
+            (ButtonType::Primary, Mode::Dark) => Self::primary_dark(),
+            (ButtonType::Primary, _) => Self::primary_light(),
+            (ButtonType::Success, Mode::Dark) => Self::success_dark(),
+            (ButtonType::Success, _) => Self::success_light(),
         }
     }
 
     fn primary_nav_light() -> Self {
         Self {
-            selected_background: Some(color!(0xF97BB0).into()),
+            selected_background: Some(color!(0x3B82F6).into()),
             disabled_background: Some(color!(0x000000, 0.0).into()),
-            hovered_background: Some(color!(0xDBB8FF).into()),
-            selected_border: Some(border::rounded(3).width(1).color(color!(0xF97BB0))),
-            disabled_border: Some(border::rounded(3).width(1).color(color!(0x000000, 0.0))),
-            hovered_border: Some(border::rounded(3).width(1).color(color!(0xDBB8FF))),
+            hovered_background: Some(color!(0x60A5FA, 0.3).into()),
+            selected_border: Some(border::rounded(8).width(1).color(color!(0x3B82F6))),
+            disabled_border: Some(border::rounded(8)),
+            hovered_border: Some(border::rounded(8).width(1).color(color!(0x60A5FA, 0.5))),
             ..Default::default()
         }
     }
 
     fn primary_nav_dark() -> Self {
         Self {
-            selected_background: Some(color!(0x828282, 0.6).into()),
+            selected_background: Some(color!(0x3B82F6, 0.8).into()),
             disabled_background: Some(color!(0x000000, 0.0).into()),
-            hovered_background: Some(color!(0x828282, 0.4).into()),
-            selected_border: Some(border::rounded(30).width(1).color(color!(0x828282, 0.6))),
-            hovered_border: Some(border::rounded(30).width(1).color(color!(0x828282, 0.4))),
+            hovered_background: Some(color!(0x60A5FA, 0.3).into()),
+            selected_border: Some(border::rounded(8).width(1).color(color!(0x3B82F6, 0.8))),
+            hovered_border: Some(border::rounded(8).width(1).color(color!(0x60A5FA, 0.3))),
             ..Default::default()
         }
     }
@@ -68,19 +72,60 @@ impl ButtonStyle {
     fn content_btn_light() -> Self {
         Self {
             disabled_background: Some(color!(0x000000, 0.0).into()),
-            hovered_background: Some(color!(0x828282, 0.4).into()),
-            hovered_border: Some(border::rounded(30).width(1).color(color!(0x828282, 0.4))),
+            hovered_background: Some(color!(0x828282, 0.2).into()),
+            border: Some(border::rounded(6)),
+            hovered_border: Some(border::rounded(6).width(1).color(color!(0x828282, 0.3))),
             ..Default::default()
         }
     }
 
     fn content_btn_dark() -> Self {
         Self {
-            background: Some(iced::Color::from_rgb8(0x22, 0x22, 0x22).into()),
+            background: Some(iced::Color::from_rgb8(0x2D, 0x2D, 0x30).into()),
             disabled_background: Some(color!(0x000000, 0.0).into()),
-            hovered_background: Some(color!(0x828282, 0.4).into()),
-            border: Some(border::rounded(30)),
-            hovered_border: Some(border::rounded(30).width(1).color(color!(0x828282, 0.4))),
+            hovered_background: Some(iced::Color::from_rgb8(0x3E, 0x3E, 0x42).into()),
+            border: Some(border::rounded(6)),
+            hovered_border: Some(border::rounded(6).width(1).color(iced::Color::from_rgb8(0x50, 0x50, 0x54))),
+            ..Default::default()
+        }
+    }
+
+    fn primary_light() -> Self {
+        Self {
+            background: Some(color!(0x3B82F6).into()),
+            hovered_background: Some(color!(0x2563EB).into()),
+            disabled_background: Some(color!(0x93C5FD).into()),
+            border: Some(border::rounded(6)),
+            ..Default::default()
+        }
+    }
+
+    fn primary_dark() -> Self {
+        Self {
+            background: Some(color!(0x3B82F6).into()),
+            hovered_background: Some(color!(0x2563EB).into()),
+            disabled_background: Some(color!(0x1D4ED8, 0.5).into()),
+            border: Some(border::rounded(6)),
+            ..Default::default()
+        }
+    }
+
+    fn success_light() -> Self {
+        Self {
+            background: Some(color!(0x10B981).into()),
+            hovered_background: Some(color!(0x059669).into()),
+            disabled_background: Some(color!(0x6EE7B7).into()),
+            border: Some(border::rounded(6)),
+            ..Default::default()
+        }
+    }
+
+    fn success_dark() -> Self {
+        Self {
+            background: Some(color!(0x10B981).into()),
+            hovered_background: Some(color!(0x059669).into()),
+            disabled_background: Some(color!(0x065F46, 0.5).into()),
+            border: Some(border::rounded(6)),
             ..Default::default()
         }
     }
@@ -90,6 +135,8 @@ impl ButtonStyle {
 pub enum ButtonType {
     PrimaryNav,
     ContentBtn,
+    Primary,
+    Success,
 }
 
 impl<Message> MButton<Message> {
@@ -98,8 +145,8 @@ impl<Message> MButton<Message> {
             variant,
             selected,
             on_press,
-            text_size: 12.0,
-            svg_size: 20.0,
+            text_size: 13.0,
+            svg_size: 22.0,
             vertical: false,
         }
     }
@@ -141,18 +188,26 @@ impl<Message> MButton<Message> {
 
         let btn_content: Element<'a, Message> = if self.vertical {
             column![svg_, text_content]
-                .spacing(5)
-                .padding(5)
+                .spacing(6)
+                .padding([8, 12])
                 .align_x(Alignment::Center)
                 .into()
         } else {
             row![svg_, text_content]
-                .spacing(5)
-                .padding(5)
+                .spacing(6)
+                .padding([8, 12])
                 .align_y(Alignment::Center)
                 .into()
         };
         self.btn(btn_content)
+    }
+
+    pub fn text_btn<'a>(&self, text_: impl text::IntoFragment<'a>) -> Button<'a, Message>
+    where
+        Message: Clone + 'static,
+    {
+        self.btn(text(text_).size(self.text_size))
+            .padding([8, 16])
     }
 
     fn btn<'a>(&self, content: impl Into<Element<'a, Message>>) -> Button<'a, Message>

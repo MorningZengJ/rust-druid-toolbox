@@ -47,20 +47,18 @@ impl PageComponent<Message> for Home {
         let content = match self.active_page {
             root_tab::Page::Rename => self.rename.view().map(Message::Rename),
             root_tab::Page::Settings => {
-                // Settings is handled via navigation, not as a sub-page
                 iced::widget::text("").into()
             }
         };
 
         let content = container(content)
-            .padding(10)
+            .padding(16)
             .width(Length::Fill)
             .height(Length::Fill)
             .style(|theme| {
                 let c_theme = get_theme(theme);
                 container::Style::default()
                     .background(c_theme.main_bg())
-                    .border(c_theme.nav_main_splitter_border())
             });
 
         row![nav_element, content]

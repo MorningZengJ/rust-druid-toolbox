@@ -139,50 +139,156 @@ impl PageWithNav for Rename {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let dir_path_row = row![
-            text("文件路径：").width(Length::Fixed(80.0)),
-            text_input("文件路径", &self.state.dir_path)
-                .on_input(Message::DirPathChanged)
-                .width(Length::Fill),
-            button(text("...").size(14))
-                .on_press(Message::ChooseDirectory)
-                .padding([4, 8]),
-            button(text("↑").size(14))
-                .on_press(Message::ParentDirectory)
-                .padding([4, 8]),
-        ]
-        .spacing(5)
-        .padding([5, 10]);
+        // Directory path section
+        let dir_path_section = container(
+            column![
+                text("文件路径").size(14),
+                row![
+                    text_input("选择文件夹路径...", &self.state.dir_path)
+                        .on_input(Message::DirPathChanged)
+                        .width(Length::Fill),
+                    button(text("浏览...").size(13))
+                        .on_press(Message::ChooseDirectory)
+                        .padding([8, 16]),
+                    button(text("↑ 上级").size(13))
+                        .on_press(Message::ParentDirectory)
+                        .padding([8, 12]),
+                ]
+                .spacing(8),
+            ]
+            .spacing(6),
+        )
+        .padding(iced::Padding {
+            top: 0.0,
+            right: 0.0,
+            bottom: 16.0,
+            left: 0.0,
+        });
 
-        let filter_row = row![
-            text("过　滤：").width(Length::Fixed(80.0)),
-            text_input("关键字或正则表达式", &self.state.filter.0)
-                .on_input(Message::FilterChanged)
-                .width(Length::Fill),
-            checkbox(self.state.filter.1).on_toggle(Message::FilterRegexToggled),
-        ]
-        .spacing(5)
-        .padding([5, 10]);
+        // Filter section
+        let filter_section = container(
+            column![
+                text("过滤条件").size(14),
+                row![
+                    text_input("输入关键字或正则表达式...", &self.state.filter.0)
+                        .on_input(Message::FilterChanged)
+                        .width(Length::Fill),
+                    row![
+                        checkbox(self.state.filter.1).on_toggle(Message::FilterRegexToggled),
+                        text("正则").size(13),
+                    ]
+                    .spacing(4)
+                    .align_y(iced::Alignment::Center),
+                ]
+                .spacing(8),
+            ]
+            .spacing(6),
+        )
+        .padding(iced::Padding {
+            top: 0.0,
+            right: 0.0,
+            bottom: 16.0,
+            left: 0.0,
+        });
 
-        let file_list = self.build_file_list();
+        // File list section
+        let file_count = self.state.filter_file_list.len();
+        let file_list_section = container(
+            column![
+                row![
+                    text("文件列表").size(14),
+                    iced::widget::Space::new().width(Length::Fill),
+                    text(format!("{} 个文件", file_count)).size(12),
+                ],
+                self.build_file_list(),
+            ]
+            .spacing(8),
+        )
+        .height(Length::FillPortion(1))
+        .padding(iced::Padding {
+            top: 0.0,
+            right: 0.0,
+            bottom: 8.0,
+            left: 0.0,
+        });
 
-        let replace_list = self.build_replace_list();
-
-        let buttons = row![
-            button(text("+ 添加规则").size(12))
-                .on_press(Message::AddReplaceItem)
-                .padding([6, 12]),
-            button(text("执行重命名").size(12))
-                .on_press(Message::ExecuteRename)
-                .padding([6, 12]),
-        ]
-        .spacing(20)
-        .padding(10);
-
-        column![dir_path_row, filter_row, file_list, replace_list, buttons]
+        // Divider
+        let divider = container(text("").size(1))
+            .height(Length::Fixed(1.0))
             .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+            .style(|_theme| container::Style {
+                background: Some(iced::Color::from_rgb8(0x3E, 0x3E, 0x42).into()),
+                ..Default::default()
+            });
+
+        // Replace rules section
+        let rule_count = self.state.replace_infos.len();
+        let replace_section = container(
+            column![
+                row![
+                    text("替换规则").size(14),
+                    iced::widget::Space::new().width(Length::Fill),
+                    text(format!("{} 条规则", rule_count)).size(12),
+                ],
+                self.build_replace_list(),
+            ]
+            .spacing(8),
+        )
+        .height(Length::FillPortion(1))
+        .padding(iced::Padding {
+            top: 8.0,
+            right: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+        });
+
+        // Action buttons
+        let buttons = container(
+            row![
+                button(
+                    row![
+                        text("+").size(16),
+                        text(" 添加规则").size(13),
+                    ]
+                    .spacing(4)
+                    .align_y(iced::Alignment::Center),
+                )
+                .on_press(Message::AddReplaceItem)
+                .padding([8, 20]),
+                iced::widget::Space::new().width(Length::Fill),
+                button(
+                    row![
+                        text("▶").size(14),
+                        text(" 执行重命名").size(13),
+                    ]
+                    .spacing(4)
+                    .align_y(iced::Alignment::Center),
+                )
+                .on_press(Message::ExecuteRename)
+                .padding([8, 20]),
+            ]
+            .spacing(12)
+            .align_y(iced::Alignment::Center),
+        )
+        .padding(iced::Padding {
+            top: 16.0,
+            right: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+        });
+
+        column![
+            dir_path_section,
+            filter_section,
+            file_list_section,
+            divider,
+            replace_section,
+            buttons,
+        ]
+        .spacing(4)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
     }
 }
 
@@ -193,6 +299,29 @@ impl Rename {
     }
 
     fn build_file_list(&self) -> Element<'_, Message> {
+        let header = container(
+            row![
+                container(text("文件名").size(12))
+                    .width(Length::FillPortion(3))
+                    .padding(6),
+                container(text("预览").size(12))
+                    .width(Length::FillPortion(3))
+                    .padding(6),
+                container(text("类型").size(12))
+                    .width(Length::FillPortion(1))
+                    .padding(6),
+                container(text("大小").size(12))
+                    .width(Length::FillPortion(1))
+                    .padding(6),
+            ]
+            .width(Length::Fill),
+        )
+        .style(|_theme| container::Style {
+            background: Some(iced::Color::from_rgb8(0x2A, 0x2A, 0x2E).into()),
+            ..Default::default()
+        })
+        .width(Length::Fill);
+
         let items: Vec<Element<'_, Message>> = self
             .state
             .filter_file_list
@@ -207,20 +336,31 @@ impl Rename {
                     .unwrap_or(false);
 
                 let preview_name = self.preview_name(&file.name);
+                let file_type = if file.is_dir {
+                    "📁"
+                } else {
+                    "📄"
+                };
 
                 let row = row![
                     container(text(&file.name).size(13))
-                        .width(Length::FillPortion(1))
-                        .padding(3),
+                        .width(Length::FillPortion(3))
+                        .padding(6),
                     container(text(preview_name).size(13))
+                        .width(Length::FillPortion(3))
+                        .padding(6),
+                    container(text(file_type).size(13))
                         .width(Length::FillPortion(1))
-                        .padding(3),
+                        .padding(6),
+                    container(text(&file.size).size(12))
+                        .width(Length::FillPortion(1))
+                        .padding(6),
                 ]
                 .width(Length::Fill);
 
                 let style = if is_selected {
                     container::Style {
-                        background: Some(iced::Color::from_rgb8(0x00, 0xA7, 0xFF).into()),
+                        background: Some(iced::Color::from_rgb8(0x00, 0x6B, 0xB0).into()),
                         ..Default::default()
                     }
                 } else {
@@ -234,58 +374,97 @@ impl Rename {
             })
             .collect();
 
-        let header = row![
-            container(text("原文件名").size(13).width(Length::Fill))
-                .width(Length::FillPortion(1))
-                .padding(3),
-            container(text("预览").size(13).width(Length::Fill))
-                .width(Length::FillPortion(1))
-                .padding(3),
-        ]
-        .width(Length::Fill);
-
         let list = column(std::iter::once(header.into()).chain(items)).width(Length::Fill);
 
         scrollable(list)
-            .height(Length::FillPortion(1))
+            .height(Length::Fill)
             .width(Length::Fill)
             .into()
     }
 
     fn build_replace_list(&self) -> Element<'_, Message> {
+        let header = container(
+            row![
+                container(text("").size(12)).width(Length::Fixed(40.0)),
+                container(text("查找内容").size(12))
+                    .width(Length::FillPortion(1))
+                    .padding(6),
+                container(text("").size(12)).width(Length::Fixed(30.0)),
+                container(text("替换为").size(12))
+                    .width(Length::FillPortion(1))
+                    .padding(6),
+                container(text("启用").size(12)).width(Length::Fixed(50.0)),
+                container(text("正则").size(12)).width(Length::Fixed(50.0)),
+            ]
+            .width(Length::Fill),
+        )
+        .style(|_theme| container::Style {
+            background: Some(iced::Color::from_rgb8(0x2A, 0x2A, 0x2E).into()),
+            ..Default::default()
+        })
+        .width(Length::Fill);
+
         let items: Vec<Element<'_, Message>> = self
             .state
             .replace_infos
             .iter()
             .enumerate()
             .map(|(i, info)| {
-                let content_input = text_input("替换内容", &info.content)
+                let content_input = text_input("输入查找内容...", &info.content)
                     .on_input(move |s| Message::ReplaceContentChanged(i, s))
                     .width(Length::FillPortion(1));
 
-                let target_input = text_input("目标内容", &info.target)
+                let target_input = text_input("输入替换内容...", &info.target)
                     .on_input(move |s| Message::ReplaceTargetChanged(i, s))
                     .width(Length::FillPortion(1));
 
-                row![
-                    button(text("×").size(14))
-                        .on_press(Message::RemoveReplaceItem(i))
-                        .padding([4, 8]),
+                let row = row![
+                    container(
+                        button(text("×").size(16))
+                            .on_press(Message::RemoveReplaceItem(i))
+                            .padding([4, 8]),
+                    )
+                    .width(Length::Fixed(40.0))
+                    .center_x(Length::Fill),
                     content_input,
-                    text(" → ").size(14),
+                    container(text("→").size(16))
+                        .width(Length::Fixed(30.0))
+                        .center_x(Length::Fill),
                     target_input,
-                    checkbox(info.enable).on_toggle(move |e| Message::ReplaceEnableToggled(i, e)),
-                    checkbox(info.is_regex).on_toggle(move |e| Message::ReplaceRegexToggled(i, e)),
+                    container(
+                        checkbox(info.enable).on_toggle(move |e| Message::ReplaceEnableToggled(i, e)),
+                    )
+                    .width(Length::Fixed(50.0))
+                    .center_x(Length::Fill),
+                    container(
+                        checkbox(info.is_regex).on_toggle(move |e| Message::ReplaceRegexToggled(i, e)),
+                    )
+                    .width(Length::Fixed(50.0))
+                    .center_x(Length::Fill),
                 ]
-                .spacing(5)
-                .padding([3, 5])
+                .spacing(4)
+                .padding([6, 4])
                 .width(Length::Fill)
-                .into()
+                .align_y(iced::Alignment::Center);
+
+                container(row)
+                    .width(Length::Fill)
+                    .style(|_theme| container::Style {
+                        border: iced::Border {
+                            width: 1.0,
+                            color: iced::Color::from_rgb8(0x3A, 0x3A, 0x3E),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .into()
             })
             .collect();
 
-        scrollable(column(items))
-            .height(Length::FillPortion(1))
+        let list = column(std::iter::once(header.into()).chain(items)).width(Length::Fill);
+
+        scrollable(list)
+            .height(Length::Fill)
             .width(Length::Fill)
             .into()
     }
