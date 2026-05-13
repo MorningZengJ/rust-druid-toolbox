@@ -1,6 +1,4 @@
-use druid::{Data, Lens};
-
-#[derive(Clone, Data, Lens, Default)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct FileInfo {
     pub name: String,
     pub path: String,

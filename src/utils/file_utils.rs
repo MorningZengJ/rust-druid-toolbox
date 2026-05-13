@@ -1,6 +1,5 @@
 use crate::model::file_info::FileInfo;
 use crate::utils::common_utils::CommonUtils;
-use im::{vector, Vector};
 use std::fs::{DirEntry, FileType, Metadata};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -25,31 +24,28 @@ impl FileUtils {
         }
     }
 
-    pub fn list_files<P: AsRef<Path>>(path: P) -> Vector<FileInfo> {
+    pub fn list_files<P: AsRef<Path>>(path: P) -> Vec<FileInfo> {
         match fs::read_dir(path) {
-            Ok(iters) => {
-                iters.filter_map(|entry| entry.ok())
-                    .map(|entry| {
-                        let path = entry.path().to_str().unwrap_or_default().to_string();
-                        let entity = Self::new(entry);
+            Ok(iters) => iters
+                .filter_map(|entry| entry.ok())
+                .map(|entry| {
+                    let path = entry.path().to_str().unwrap_or_default().to_string();
+                    let entity = Self::new(entry);
 
-                        FileInfo {
-                            name: entity.name(),
-                            path: path.clone(),
-                            parent_path: CommonUtils::parent_path(&path),
-                            is_dir: entity.file_type.is_dir(),
-                            extension: entity.extension(),
-                            size: entity.file_size(),
-                            created_time: entity.timestamp(|metadata: &Metadata| { metadata.created() }),
-                            modified_time: entity.timestamp(|metadata: &Metadata| { metadata.modified() }),
-                            ..Default::default()
-                        }
-                    })
-                    .collect::<Vector<FileInfo>>()
-            }
-            Err(_) => {
-                vector![]
-            }
+                    FileInfo {
+                        name: entity.name(),
+                        path: path.clone(),
+                        parent_path: CommonUtils::parent_path(&path),
+                        is_dir: entity.file_type.is_dir(),
+                        extension: entity.extension(),
+                        size: entity.file_size(),
+                        created_time: entity.timestamp(|metadata: &Metadata| metadata.created()),
+                        modified_time: entity.timestamp(|metadata: &Metadata| metadata.modified()),
+                        ..Default::default()
+                    }
+                })
+                .collect::<Vec<FileInfo>>(),
+            Err(_) => vec![],
         }
     }
 
@@ -90,10 +86,11 @@ impl FileUtils {
 
     fn timestamp(&self, callback: fn(meta: &Metadata) -> io::Result<SystemTime>) -> u64 {
         if let Some(metadata) = &self.metadata {
-            return callback(metadata).unwrap_or(SystemTime::UNIX_EPOCH)
+            return callback(metadata)
+                .unwrap_or(SystemTime::UNIX_EPOCH)
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
-                .as_secs()
+                .as_secs();
         }
         0
     }

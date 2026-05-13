@@ -1,53 +1,59 @@
-use crate::additional_directory;
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
-use crate::traits::directory_choose::DirectoryChoose;
-use druid::{Data, Lens};
+use crate::utils::common_utils::CommonUtils;
 use fancy_regex::Regex;
-use im::{vector, Vector};
 
-#[derive(Clone, Data, Lens, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RenameState {
-    pub(crate) dir_path: String,
-    pub(crate) filter: (String, bool),
-    pub(crate) file_list: Vector<FileInfo>,
-    pub(crate) filter_file_list: Vector<FileInfo>,
-    pub(crate) selected_file: Option<FileInfo>,
-    pub(crate) replace_infos: Vector<ReplaceInfo>,
+    pub dir_path: String,
+    pub filter: (String, bool),
+    pub file_list: Vec<FileInfo>,
+    pub filter_file_list: Vec<FileInfo>,
+    pub selected_file: Option<FileInfo>,
+    pub replace_infos: Vec<ReplaceInfo>,
 }
-additional_directory!(RenameState);
 
 impl RenameState {
     pub fn new() -> Self {
         Self {
-            replace_infos: vector![
-                ReplaceInfo::new()
-            ],
+            replace_infos: vec![ReplaceInfo::new()],
             ..Default::default()
         }
+    }
+
+    pub fn set_dir_path(&mut self, path: &str) {
+        self.dir_path = path.to_string();
     }
 
     pub fn get_filter_file_list(&mut self) {
         let (filter, is_regex) = &self.filter;
         let mut reg_opt = None;
         if !filter.is_empty() && *is_regex {
-            if let Ok(regex) = Regex::new(&filter) {
+            if let Ok(regex) = Regex::new(filter) {
                 reg_opt = Some(regex);
             }
         }
         self.filter_file_list = if filter.is_empty() {
             self.file_list.clone()
         } else {
-            self.file_list.iter().filter(|info| {
-                if let Some(regex) = &reg_opt {
-                    if let Some(ma) = regex.is_match(&*info.name).ok() {
-                        return ma;
+            self.file_list
+                .iter()
+                .filter(|info| {
+                    if let Some(regex) = &reg_opt {
+                        if let Ok(ma) = regex.is_match(&info.name) {
+                            return ma;
+                        }
+                        true
+                    } else {
+                        info.name.contains(filter)
                     }
-                    true
-                } else {
-                    info.name.contains(filter)
-                }
-            }).cloned().collect()
+                })
+                .cloned()
+                .collect()
         };
+    }
+
+    pub fn parent_path(&mut self) {
+        self.dir_path = CommonUtils::parent_path(&self.dir_path);
     }
 }

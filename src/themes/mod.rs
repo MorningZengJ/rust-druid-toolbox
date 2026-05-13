@@ -1,0 +1,21 @@
+mod background;
+mod border;
+mod text;
+
+use iced::theme::{Base, Mode};
+
+pub enum Theme {
+    Light { theme: iced::Theme },
+    Dark { theme: iced::Theme },
+}
+
+pub fn get_theme(theme: &iced::Theme) -> Theme {
+    match theme.mode() {
+        Mode::Light => Theme::Light {
+            theme: theme.clone(),
+        },
+        _ => Theme::Dark {
+            theme: theme.clone(),
+        },
+    }
+}
