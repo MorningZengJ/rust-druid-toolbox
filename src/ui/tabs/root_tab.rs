@@ -14,6 +14,7 @@ pub enum Message {
 pub enum Page {
     #[default]
     Rename,
+    AsciiArt,
     Settings,
 }
 
@@ -34,6 +35,18 @@ pub fn view(active: Page) -> Element<'static, Message> {
             },
         )
         .svg_text_btn("assets/svg/border_color.svg", "重命名")
+        .width(Length::Fill),
+        iced::widget::Space::new().height(Length::Fixed(8.0)),
+        MButton::new_vertical(
+            ButtonType::PrimaryNav,
+            Page::AsciiArt == active,
+            if Page::AsciiArt != active {
+                Some(Message::Tab(Page::AsciiArt))
+            } else {
+                None
+            },
+        )
+        .svg_text_btn("assets/svg/image.svg", "字符画")
         .width(Length::Fill),
         iced::widget::Space::new().height(Length::Fixed(8.0)),
         MButton::new_vertical(

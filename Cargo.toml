@@ -21,6 +21,12 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 regex = "1"
 fancy-regex = "0.13"
 
+# Image processing
+image = "0.25"
+
+# Clipboard
+arboard = "3"
+
 # Utils
 uuid = { version = "1", features = ["v4"] }
 anyhow = "1"

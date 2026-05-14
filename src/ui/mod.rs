@@ -1,4 +1,5 @@
 mod app;
+pub(crate) mod ascii_art;
 mod home;
 pub(crate) mod navigation;
 mod rename;

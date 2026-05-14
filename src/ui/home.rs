@@ -1,4 +1,5 @@
 use crate::themes::get_theme;
+use crate::ui::ascii_art;
 use crate::ui::navigation::{route_page, NavigationAction, PageComponent};
 use crate::ui::tabs::root_tab;
 use crate::ui::{rename, PageWithNav};
@@ -11,6 +12,7 @@ pub enum Message {
     Navigate(NavigationAction<route_page::RoutePage>),
 
     Rename(rename::Message),
+    AsciiArt(ascii_art::Message),
 }
 
 #[derive(Debug, Default)]
@@ -18,6 +20,7 @@ pub struct Home {
     active_page: root_tab::Page,
 
     rename: rename::Rename,
+    ascii_art: ascii_art::AsciiArt,
 }
 
 impl PageComponent<Message> for Home {
@@ -37,6 +40,7 @@ impl PageComponent<Message> for Home {
                 }
             },
             Message::Rename(msg) => self.rename.update(msg).map(Message::Rename),
+            Message::AsciiArt(msg) => self.ascii_art.update(msg).map(Message::AsciiArt),
             Message::Navigate(_) => Task::none(),
         }
     }
@@ -46,6 +50,7 @@ impl PageComponent<Message> for Home {
 
         let content = match self.active_page {
             root_tab::Page::Rename => self.rename.view().map(Message::Rename),
+            root_tab::Page::AsciiArt => self.ascii_art.view().map(Message::AsciiArt),
             root_tab::Page::Settings => {
                 iced::widget::text("").into()
             }
