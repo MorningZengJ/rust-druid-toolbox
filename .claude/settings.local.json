@@ -6,7 +6,14 @@
       "Bash(cargo doc *)",
       "Bash(cargo test *)",
       "Bash(taskkill /f /im druid-toolbox.exe)",
-      "Bash(taskkill /F /IM druid-toolbox.exe)"
+      "Bash(taskkill /F /IM druid-toolbox.exe)",
+      "Bash(kill %1)",
+      "Bash(wait %1)",
+      "Bash(RUST_BACKTRACE=full \"C:/Users/zengc/Workspace/RustroverProjects/druid-toolbox/target/debug/druid-toolbox.exe\")",
+      "Bash(RUST_BACKTRACE=1 \"C:/Users/zengc/Workspace/RustroverProjects/druid-toolbox/target/debug/druid-toolbox.exe\")",
+      "Bash(taskkill /IM druid-toolbox.exe /F)",
+      "Bash(tasklist)",
+      "Bash(taskkill /PID 10032 /F)"
     ]
   }
 }

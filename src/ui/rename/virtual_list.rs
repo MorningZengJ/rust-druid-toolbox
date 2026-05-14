@@ -102,16 +102,18 @@ where
             Size::new(max.width, self.row_height),
         );
 
+        let offset_y = self.state.offset_y(self.row_height);
+
         let mut children = Vec::new();
         for (i, row) in self.rows.iter_mut().enumerate() {
             let row_tree = &mut tree.children[i];
             let node = row.as_widget_mut().layout(row_tree, renderer, &row_limits);
-            let y_offset = (self.first_visible + i) as f32 * self.row_height;
-            children.push(node.move_to(Point::new(0.0, y_offset)));
+            // Position rows relative to the visible area, starting from offset_y
+            let y = offset_y + i as f32 * self.row_height;
+            children.push(node.move_to(Point::new(0.0, y)));
         }
 
-        let total_height = self.total_rows as f32 * self.row_height;
-        layout::Node::with_children(Size::new(max.width, total_height.max(max.height)), children)
+        layout::Node::with_children(max, children)
     }
 
     fn update(
@@ -174,15 +176,9 @@ where
             if let (Some(row_element), Some(row_tree)) =
                 (self.rows.get(i), tree.children.get(i))
             {
-                let child_bounds = child_layout.bounds();
-                // Only draw if visible in viewport
-                if child_bounds.y + child_bounds.height > viewport.y
-                    && child_bounds.y < viewport.y + viewport.height
-                {
-                    row_element
-                        .as_widget()
-                        .draw(row_tree, renderer, theme, style, child_layout, cursor, viewport);
-                }
+                row_element
+                    .as_widget()
+                    .draw(row_tree, renderer, theme, style, child_layout, cursor, viewport);
             }
         }
     }
@@ -232,6 +228,10 @@ where
             }
         }
         mouse::Interaction::default()
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(&self.rows);
     }
 
     fn overlay<'b>(
