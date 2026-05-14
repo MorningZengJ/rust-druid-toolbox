@@ -104,24 +104,48 @@ impl AsciiArtEngine {
         charset[index.min(charset.len() - 1)]
     }
 
-    /// Generate monochrome ASCII art
-    fn generate_monochrome(img: &DynamicImage, charset: &[char], invert: bool) -> Result<AsciiArtOutput, String> {
-        let rgba = img.to_rgba8();
+    /// Iterate over pixels and apply formatter to each pixel's character and color
+    fn iterate_pixels<F>(
+        rgba: &image::RgbaImage,
+        charset: &[char],
+        invert: bool,
+        mut formatter: F,
+    ) -> (Vec<String>, Vec<String>)
+    where
+        F: FnMut(u8, u8, u8, char) -> String,
+    {
         let (width, height) = rgba.dimensions();
-        let mut lines = Vec::new();
+        let mut plain_lines = Vec::new();
+        let mut formatted_lines = Vec::new();
 
         for y in 0..height {
-            let mut line = String::new();
+            let mut plain_line = String::new();
+            let mut formatted_line = String::new();
+
             for x in 0..width {
                 let pixel = rgba.get_pixel(x, y);
                 let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
                 let ch = Self::brightness_to_char(brightness, charset, invert);
-                line.push(ch);
+
+                plain_line.push(ch);
+                formatted_line.push_str(&formatter(pixel[0], pixel[1], pixel[2], ch));
             }
-            lines.push(line);
+
+            plain_lines.push(plain_line);
+            formatted_lines.push(formatted_line);
         }
 
-        let text = lines.join("\n");
+        (plain_lines, formatted_lines)
+    }
+
+    /// Generate monochrome ASCII art
+    fn generate_monochrome(img: &DynamicImage, charset: &[char], invert: bool) -> Result<AsciiArtOutput, String> {
+        let rgba = img.to_rgba8();
+        let (plain_lines, _) = Self::iterate_pixels(&rgba, charset, invert, |_, _, _, ch| {
+            ch.to_string()
+        });
+
+        let text = plain_lines.join("\n");
         Ok(AsciiArtOutput {
             plain_text: text.clone(),
             html_text: Self::text_to_html(&text),
@@ -132,29 +156,10 @@ impl AsciiArtEngine {
     /// Generate ANSI 256 color ASCII art
     fn generate_ansi256(img: &DynamicImage, charset: &[char], invert: bool, bg: &Background) -> Result<AsciiArtOutput, String> {
         let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut ansi_lines = Vec::new();
-
-        for y in 0..height {
-            let mut plain_line = String::new();
-            let mut ansi_line = String::new();
-
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-
-                plain_line.push(ch);
-
-                // Convert RGB to ANSI 256 color
-                let ansi_color = Self::rgb_to_ansi256(pixel[0], pixel[1], pixel[2]);
-                ansi_line.push_str(&format!("\x1b[38;5;{}m{}", ansi_color, ch));
-            }
-
-            plain_lines.push(plain_line);
-            ansi_lines.push(ansi_line + "\x1b[0m");
-        }
+        let (plain_lines, ansi_lines) = Self::iterate_pixels(&rgba, charset, invert, |r, g, b, ch| {
+            let ansi_color = Self::rgb_to_ansi256(r, g, b);
+            format!("\x1b[38;5;{}m{}\x1b[0m", ansi_color, ch)
+        });
 
         Ok(AsciiArtOutput {
             plain_text: plain_lines.join("\n"),
@@ -166,29 +171,9 @@ impl AsciiArtEngine {
     /// Generate true color (24-bit) ANSI ASCII art
     fn generate_truecolor(img: &DynamicImage, charset: &[char], invert: bool, bg: &Background) -> Result<AsciiArtOutput, String> {
         let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut ansi_lines = Vec::new();
-
-        for y in 0..height {
-            let mut plain_line = String::new();
-            let mut ansi_line = String::new();
-
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-
-                plain_line.push(ch);
-                ansi_line.push_str(&format!(
-                    "\x1b[38;2;{};{};{}m{}",
-                    pixel[0], pixel[1], pixel[2], ch
-                ));
-            }
-
-            plain_lines.push(plain_line);
-            ansi_lines.push(ansi_line + "\x1b[0m");
-        }
+        let (plain_lines, ansi_lines) = Self::iterate_pixels(&rgba, charset, invert, |r, g, b, ch| {
+            format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, ch)
+        });
 
         Ok(AsciiArtOutput {
             plain_text: plain_lines.join("\n"),
@@ -200,31 +185,10 @@ impl AsciiArtEngine {
     /// Generate HTML colored ASCII art
     fn generate_html(img: &DynamicImage, charset: &[char], invert: bool, bg: &Background) -> Result<AsciiArtOutput, String> {
         let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut html_lines = Vec::new();
-
-        for y in 0..height {
-            let mut plain_line = String::new();
-            let mut html_line = String::new();
-
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-
-                plain_line.push(ch);
-
-                let escaped = Self::escape_html_char(ch);
-                html_line.push_str(&format!(
-                    "<span style=\"color:#{:02X}{:02X}{:02X}\">{}</span>",
-                    pixel[0], pixel[1], pixel[2], escaped
-                ));
-            }
-
-            plain_lines.push(plain_line);
-            html_lines.push(html_line);
-        }
+        let (plain_lines, html_lines) = Self::iterate_pixels(&rgba, charset, invert, |r, g, b, ch| {
+            let escaped = Self::escape_html_char(ch);
+            format!("<span style=\"color:#{:02X}{:02X}{:02X}\">{}</span>", r, g, b, escaped)
+        });
 
         let bg_color = match bg {
             Background::Black => "#000000",
@@ -232,13 +196,7 @@ impl AsciiArtEngine {
             Background::Transparent => "transparent",
         };
 
-        let html = format!(
-            "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n\
-             <style>body{{background:{};font-family:monospace;font-size:8px;line-height:1;}}</style>\n\
-             </head>\n<body>\n<pre>\n{}\n</pre>\n</body>\n</html>",
-            bg_color,
-            html_lines.join("\n")
-        );
+        let html = Self::wrap_html_document(bg_color, &html_lines.join("\n"));
 
         Ok(AsciiArtOutput {
             plain_text: plain_lines.join("\n"),
@@ -278,13 +236,7 @@ impl AsciiArtEngine {
             Background::Transparent => "transparent",
         };
 
-        Ok(format!(
-            "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n\
-             <style>body{{background:{};font-family:monospace;font-size:8px;line-height:1;}}</style>\n\
-             </head>\n<body>\n<pre>\n{}\n</pre>\n</body>\n</html>",
-            bg_color,
-            html_lines.join("\n")
-        ))
+        Ok(Self::wrap_html_document(bg_color, &html_lines.join("\n")))
     }
 
     /// Convert RGB to ANSI 256 color code
@@ -308,6 +260,16 @@ impl AsciiArtEngine {
         }
     }
 
+    /// Wrap content in an HTML document with specified background color
+    fn wrap_html_document(bg: &str, body: &str) -> String {
+        format!(
+            "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n\
+             <style>body{{background:{};font-family:monospace;font-size:8px;line-height:1;}}</style>\n\
+             </head>\n<body>\n<pre>\n{}\n</pre>\n</body>\n</html>",
+            bg, body
+        )
+    }
+
     /// Convert plain text to basic HTML
     fn text_to_html(text: &str) -> String {
         let escaped = text
@@ -315,12 +277,7 @@ impl AsciiArtEngine {
             .replace('<', "&lt;")
             .replace('>', "&gt;")
             .replace(' ', "&nbsp;");
-        format!(
-            "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n\
-             <style>body{{background:#000;color:#fff;font-family:monospace;font-size:8px;line-height:1;}}</style>\n\
-             </head>\n<body>\n<pre>\n{}\n</pre>\n</body>\n</html>",
-            escaped
-        )
+        Self::wrap_html_document("#000;color:#fff", &escaped)
     }
 }
 

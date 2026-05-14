@@ -22,7 +22,8 @@
       "Bash(findstr -i druid)",
       "Bash(taskkill *)",
       "Bash(cmd.exe *)",
-      "Bash(del *)"
+      "Bash(del *)",
+      "Bash(powershell.exe *)"
     ]
   }
 }

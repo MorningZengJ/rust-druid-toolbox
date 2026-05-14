@@ -8,11 +8,8 @@ pub use stack_navigator::*;
 #[derive(Debug, Clone)]
 pub enum NavigationAction<RoutePage> {
     Push(RoutePage),
-    #[allow(dead_code)]
     Replace(RoutePage),
-    #[allow(dead_code)]
     Pop,
-    #[allow(dead_code)]
     PopToRoot,
 }
 

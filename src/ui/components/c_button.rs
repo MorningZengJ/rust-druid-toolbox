@@ -1,4 +1,3 @@
-use crate::ternary_operator;
 use iced::theme::{Base, Mode};
 use iced::widget::button::Status;
 use iced::widget::{button, column, container, row, svg, text, Button};
@@ -224,34 +223,34 @@ impl<Message> MButton<Message> {
             let btn_style = ButtonStyle::get(variant, theme.mode());
             let def_style = button::Style::default();
             button::Style {
-                background: ternary_operator!(
-                    selected,
-                    btn_style.selected_background,
+                background: if selected {
+                    btn_style.selected_background
+                } else {
                     match status {
                         Status::Active | Status::Pressed => btn_style.background,
                         Status::Disabled => btn_style.disabled_background,
                         Status::Hovered => btn_style.hovered_background,
                     }
-                ),
-                text_color: ternary_operator!(
-                    selected,
-                    btn_style.selected_text_color,
+                },
+                text_color: (if selected {
+                    btn_style.selected_text_color
+                } else {
                     match status {
                         Status::Active | Status::Pressed => btn_style.text_color,
                         Status::Disabled => btn_style.disabled_text_color,
                         Status::Hovered => btn_style.hovered_text_color,
                     }
-                )
+                })
                 .unwrap_or(palette.text),
-                border: ternary_operator!(
-                    selected,
-                    btn_style.selected_border,
+                border: (if selected {
+                    btn_style.selected_border
+                } else {
                     match status {
                         Status::Active | Status::Pressed => btn_style.border,
                         Status::Disabled => btn_style.disabled_border,
                         Status::Hovered => btn_style.hovered_border,
                     }
-                )
+                })
                 .unwrap_or(def_style.border),
                 shadow: Default::default(),
                 ..Default::default()

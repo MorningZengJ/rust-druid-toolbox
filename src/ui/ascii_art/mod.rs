@@ -1,6 +1,7 @@
 mod preview;
 
 use crate::model::ascii_art_state::{AsciiArtState, Background, CharsetPreset, ColorMode};
+use crate::themes::get_theme;
 use crate::ui::PageWithNav;
 use crate::utils::ascii_art_engine::{AsciiArtEngine, AsciiArtOutput};
 use iced::widget::{
@@ -10,6 +11,19 @@ use iced::widget::{
 use iced::{mouse, task, Element, Length, Point, Rectangle, Task};
 use image::DynamicImage;
 use preview::{AsciiArtPreview, ColoredChar, PreviewState};
+
+// Constants
+const MIN_WIDTH: u32 = 20;
+const MAX_WIDTH: u32 = 1000;
+const MIN_CONTRAST: f64 = 0.1;
+const MAX_CONTRAST: f64 = 3.0;
+const MIN_BRIGHTNESS: f64 = -1.0;
+const MAX_BRIGHTNESS: f64 = 1.0;
+const MIN_SATURATION: f64 = 0.0;
+const MAX_SATURATION: f64 = 2.0;
+const MIN_ASPECT_RATIO: f64 = 0.1;
+const MAX_ASPECT_RATIO: f64 = 2.0;
+const DEBOUNCE_MS: u64 = 500;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -55,6 +69,7 @@ pub enum Message {
     DebounceConvert,
     ConvertComplete(AsciiArtOutput),
     ShowError(String),
+    ShowNotification(String),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -149,7 +164,7 @@ impl PageWithNav for AsciiArt {
                 return self.convert();
             }
             Message::WidthChanged(width) => {
-                self.state.width = width.clamp(20, 1000);
+                self.state.width = width.clamp(MIN_WIDTH, MAX_WIDTH);
                 return self.schedule_debounce();
             }
             Message::CharsetChanged(charset) => {
@@ -163,15 +178,15 @@ impl PageWithNav for AsciiArt {
                 }
             }
             Message::ContrastChanged(contrast) => {
-                self.state.contrast = contrast.clamp(0.1, 3.0);
+                self.state.contrast = contrast.clamp(MIN_CONTRAST, MAX_CONTRAST);
                 return self.schedule_debounce();
             }
             Message::BrightnessChanged(brightness) => {
-                self.state.brightness = brightness.clamp(-1.0, 1.0);
+                self.state.brightness = brightness.clamp(MIN_BRIGHTNESS, MAX_BRIGHTNESS);
                 return self.schedule_debounce();
             }
             Message::SaturationChanged(saturation) => {
-                self.state.saturation = saturation.clamp(0.0, 2.0);
+                self.state.saturation = saturation.clamp(MIN_SATURATION, MAX_SATURATION);
                 return self.schedule_debounce();
             }
             Message::InvertToggled(invert) => {
@@ -187,7 +202,7 @@ impl PageWithNav for AsciiArt {
                 return self.schedule_debounce();
             }
             Message::AspectRatioChanged(ratio) => {
-                self.state.char_aspect_ratio = ratio.clamp(0.1, 2.0);
+                self.state.char_aspect_ratio = ratio.clamp(MIN_ASPECT_RATIO, MAX_ASPECT_RATIO);
                 return self.schedule_debounce();
             }
             Message::ResetParams => {
@@ -277,61 +292,28 @@ impl PageWithNav for AsciiArt {
             }
             Message::CopyText => {
                 if !self.state.ascii_text.is_empty() {
-                    let text = self.state.ascii_text.clone();
-                    return Task::perform(
-                        async move {
-                            match arboard::Clipboard::new() {
-                                Ok(mut clipboard) => {
-                                    clipboard.set_text(text).ok();
-                                    Ok(())
-                                }
-                                Err(e) => Err(e.to_string()),
-                            }
-                        },
-                        |result| match result {
-                            Ok(()) => Message::ShowError("已复制到剪贴板".to_string()),
-                            Err(e) => Message::ShowError(e),
-                        },
+                    return Self::clipboard_copy_task(
+                        self.state.ascii_text.clone(),
+                        false,
+                        "已复制到剪贴板",
                     );
                 }
             }
             Message::CopyHtml => {
                 if !self.state.colored_html.is_empty() {
-                    let html = self.state.colored_html.clone();
-                    return Task::perform(
-                        async move {
-                            match arboard::Clipboard::new() {
-                                Ok(mut clipboard) => {
-                                    clipboard.set_html(html, None).ok();
-                                    Ok(())
-                                }
-                                Err(e) => Err(e.to_string()),
-                            }
-                        },
-                        |result| match result {
-                            Ok(()) => Message::ShowError("已复制HTML到剪贴板".to_string()),
-                            Err(e) => Message::ShowError(e),
-                        },
+                    return Self::clipboard_copy_task(
+                        self.state.colored_html.clone(),
+                        true,
+                        "已复制HTML到剪贴板",
                     );
                 }
             }
             Message::CopyAnsi => {
                 if !self.state.ansi_text.is_empty() {
-                    let text = self.state.ansi_text.clone();
-                    return Task::perform(
-                        async move {
-                            match arboard::Clipboard::new() {
-                                Ok(mut clipboard) => {
-                                    clipboard.set_text(text).ok();
-                                    Ok(())
-                                }
-                                Err(e) => Err(e.to_string()),
-                            }
-                        },
-                        |result| match result {
-                            Ok(()) => Message::ShowError("已复制ANSI到剪贴板".to_string()),
-                            Err(e) => Message::ShowError(e),
-                        },
+                    return Self::clipboard_copy_task(
+                        self.state.ansi_text.clone(),
+                        false,
+                        "已复制ANSI到剪贴板",
                     );
                 }
             }
@@ -348,6 +330,11 @@ impl PageWithNav for AsciiArt {
                 return Task::done(Message::CenterPreview);
             }
             Message::ShowError(msg) => {
+                self.state.error_message = Some(msg);
+            }
+            Message::ShowNotification(msg) => {
+                // For now, show notifications as success messages
+                // In the future, this could be a toast notification
                 self.state.error_message = Some(msg);
             }
         }
@@ -397,14 +384,9 @@ impl PageWithNav for AsciiArt {
             )
             .padding(12)
             .width(Length::FillPortion(1))
-            .style(|_theme| container::Style {
-                background: Some(iced::Color::from_rgb8(0x2D, 0x2D, 0x30).into()),
-                border: iced::Border {
-                    radius: 8.0.into(),
-                    width: 1.0,
-                    color: iced::Color::from_rgb8(0x3E, 0x3E, 0x42),
-                },
-                ..Default::default()
+            .style(|theme| {
+                let c_theme = get_theme(theme);
+                c_theme.card_container_style()
             });
 
             // Right: ASCII art preview with color support
@@ -471,14 +453,17 @@ impl PageWithNav for AsciiArt {
             .padding(12)
             .width(Length::FillPortion(2))
             .height(Length::Fill)
-            .style(|_theme| container::Style {
-                background: Some(iced::Color::from_rgb8(0x1E, 0x1E, 0x1E).into()),
-                border: iced::Border {
-                    radius: 8.0.into(),
-                    width: 1.0,
-                    color: iced::Color::from_rgb8(0x3E, 0x3E, 0x42),
-                },
-                ..Default::default()
+            .style(|theme| {
+                let c_theme = get_theme(theme);
+                container::Style {
+                    background: Some(c_theme.nav_bg().into()),
+                    border: iced::Border {
+                        radius: 8.0.into(),
+                        width: 1.0,
+                        color: c_theme.border_color(),
+                    },
+                    ..Default::default()
+                }
             });
 
             row![image_info, preview].spacing(12).height(Length::Fill)
@@ -487,8 +472,9 @@ impl PageWithNav for AsciiArt {
                 container(
                     text("请选择图片或从剪贴板粘贴")
                         .size(16)
-                        .style(|_theme| iced::widget::text::Style {
-                            color: Some(iced::Color::from_rgb8(0x9C, 0xA3, 0xAF)),
+                        .style(|theme| {
+                            let c_theme = get_theme(theme);
+                            c_theme.secondary_text_style()
                         })
                 )
                 .center_x(Length::Fill)
@@ -504,8 +490,9 @@ impl PageWithNav for AsciiArt {
             container(
                 text(err.as_str())
                     .size(12)
-                    .style(|_theme| iced::widget::text::Style {
-                        color: Some(iced::Color::from_rgb8(0xEF, 0x44, 0x44)),
+                    .style(|theme| {
+                        let c_theme = get_theme(theme);
+                        c_theme.error_text_style()
                     }),
             )
             .padding([4, 12])
@@ -523,16 +510,39 @@ impl PageWithNav for AsciiArt {
 }
 
 impl AsciiArt {
+    fn clipboard_copy_task(content: String, is_html: bool, success_msg: &str) -> Task<Message> {
+        let msg = success_msg.to_string();
+        Task::perform(
+            async move {
+                match arboard::Clipboard::new() {
+                    Ok(mut clipboard) => {
+                        if is_html {
+                            clipboard.set_html(content, None).ok();
+                        } else {
+                            clipboard.set_text(content).ok();
+                        }
+                        Ok(())
+                    }
+                    Err(e) => Err(e.to_string()),
+                }
+            },
+            move |result| match result {
+                Ok(()) => Message::ShowNotification(msg),
+                Err(e) => Message::ShowError(e),
+            },
+        )
+    }
+
     fn schedule_debounce(&mut self) -> Task<Message> {
         // Cancel previous debounce task if any
         if let Some(handle) = self.debounce_handle.take() {
             handle.abort();
         }
 
-        // Create new debounce task with 500ms delay
+        // Create new debounce task with delay
         let (task, handle) = Task::perform(
             async {
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(DEBOUNCE_MS)).await;
             },
             |_| Message::DebounceConvert,
         )
@@ -771,7 +781,7 @@ impl AsciiArt {
         // Width slider
         let width_control = row![
             text("输出宽度").size(12).width(Length::Fixed(70.0)),
-            slider(20..=1000, self.state.width, |v| {
+            slider(MIN_WIDTH..=MAX_WIDTH, self.state.width, |v| {
                 Message::WidthChanged(v as u32)
             })
             .width(Length::Fill),
@@ -783,7 +793,7 @@ impl AsciiArt {
         // Contrast slider
         let contrast_control = row![
             text("对比度").size(12).width(Length::Fixed(70.0)),
-            slider(0.1..=3.0, self.state.contrast, Message::ContrastChanged)
+            slider(MIN_CONTRAST..=MAX_CONTRAST, self.state.contrast, Message::ContrastChanged)
                 .step(0.1)
                 .width(Length::Fill),
             text(format!("{:.1}", self.state.contrast))
@@ -796,7 +806,7 @@ impl AsciiArt {
         // Brightness slider
         let brightness_control = row![
             text("亮度").size(12).width(Length::Fixed(70.0)),
-            slider(-1.0..=1.0, self.state.brightness, Message::BrightnessChanged)
+            slider(MIN_BRIGHTNESS..=MAX_BRIGHTNESS, self.state.brightness, Message::BrightnessChanged)
                 .step(0.1)
                 .width(Length::Fill),
             text(format!("{:.1}", self.state.brightness))
@@ -809,7 +819,7 @@ impl AsciiArt {
         // Saturation slider
         let saturation_control = row![
             text("饱和度").size(12).width(Length::Fixed(70.0)),
-            slider(0.0..=2.0, self.state.saturation, Message::SaturationChanged)
+            slider(MIN_SATURATION..=MAX_SATURATION, self.state.saturation, Message::SaturationChanged)
                 .step(0.1)
                 .width(Length::Fill),
             text(format!("{:.1}", self.state.saturation))
@@ -822,7 +832,7 @@ impl AsciiArt {
         // Aspect ratio slider
         let aspect_control = row![
             text("宽高比").size(12).width(Length::Fixed(70.0)),
-            slider(0.1..=2.0, self.state.char_aspect_ratio, Message::AspectRatioChanged)
+            slider(MIN_ASPECT_RATIO..=MAX_ASPECT_RATIO, self.state.char_aspect_ratio, Message::AspectRatioChanged)
                 .step(0.1)
                 .width(Length::Fill),
             text(format!("{:.1}", self.state.char_aspect_ratio))
@@ -917,14 +927,9 @@ impl AsciiArt {
             .spacing(12),
         )
         .padding(12)
-        .style(|_theme| container::Style {
-            background: Some(iced::Color::from_rgb8(0x2D, 0x2D, 0x30).into()),
-            border: iced::Border {
-                radius: 8.0.into(),
-                width: 1.0,
-                color: iced::Color::from_rgb8(0x3E, 0x3E, 0x42),
-            },
-            ..Default::default()
+        .style(|theme| {
+            let c_theme = get_theme(theme);
+            c_theme.card_container_style()
         })
         .into()
     }

@@ -2,8 +2,8 @@ use crate::model::file_info::FileInfo;
 use crate::model::rename_state::ConflictInfo;
 use crate::model::replace_info::ReplaceInfo;
 use crate::themes::get_theme;
-use crate::ui::rename::logic;
 use crate::ui::rename::spacing;
+use crate::utils::rename_logic;
 use iced::widget::{button, column, container, mouse_area, row, scrollable, text};
 use iced::{Alignment, Element, Length};
 
@@ -26,25 +26,19 @@ pub fn view<'a>(
         row![
             container(text("文件名").size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                text::Style {
-                    color: Some(c_theme.secondary_text_color()),
-                }
+                c_theme.secondary_text_style()
             }))
             .width(Length::FillPortion(3))
             .padding([spacing::SM as u16, spacing::MD as u16]),
             container(text("重命名为").size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                text::Style {
-                    color: Some(c_theme.secondary_text_color()),
-                }
+                c_theme.secondary_text_style()
             }))
             .width(Length::FillPortion(3))
             .padding([spacing::SM as u16, spacing::MD as u16]),
             container(text("类型").size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                text::Style {
-                    color: Some(c_theme.secondary_text_color()),
-                }
+                c_theme.secondary_text_style()
             }))
             .width(Length::FillPortion(1))
             .padding([spacing::SM as u16, spacing::MD as u16]),
@@ -67,7 +61,7 @@ pub fn view<'a>(
         .map(|(i, file)| {
             let is_selected = selected_file.as_ref().map(|s| s == file).unwrap_or(false);
             let is_conflict = conflicts.iter().any(|c| c.source_indices.contains(&i));
-            let preview_name = logic::apply_replace_rules(&file.name, replace_infos);
+            let preview_name = rename_logic::apply_replace_rules(&file.name, replace_infos);
             let name_changed = preview_name != file.name;
             let file_type = if file.is_dir { "📁" } else { "📄" };
 
@@ -77,9 +71,7 @@ pub fn view<'a>(
                     .wrapping(iced::widget::text::Wrapping::None)
                     .style(|theme| {
                         let c_theme = get_theme(theme);
-                        text::Style {
-                            color: Some(c_theme.main_text_color()),
-                        }
+                        c_theme.main_text_style()
                     })
             )
             .width(Length::FillPortion(3))
@@ -100,9 +92,7 @@ pub fn view<'a>(
                         .wrapping(iced::widget::text::Wrapping::None)
                         .style(|theme| {
                             let c_theme = get_theme(theme);
-                            text::Style {
-                                color: Some(c_theme.muted_text_color()),
-                            }
+                            c_theme.muted_text_style()
                         }),
                 )
                 .width(Length::FillPortion(3))

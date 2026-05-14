@@ -1,6 +1,6 @@
 use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
-use crate::ui::rename::logic;
+use crate::utils::rename_logic;
 use crate::utils::common_utils::CommonUtils;
 use fancy_regex::Regex;
 use std::collections::HashMap;
@@ -140,11 +140,6 @@ impl RenameState {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn set_dir_path(&mut self, path: &str) {
-        self.dir_path = path.to_string();
-    }
-
     pub fn update_filter_file_list(&mut self) {
         self.filter_file_list = self.get_filtered_files();
         self.sort_file_list();
@@ -255,7 +250,7 @@ impl RenameState {
         let mut map: HashMap<String, Vec<usize>> = HashMap::new();
 
         for (i, file) in self.filter_file_list.iter().enumerate() {
-            let new_name = logic::apply_replace_rules(&file.name, &self.replace_infos);
+            let new_name = rename_logic::apply_replace_rules(&file.name, &self.replace_infos);
             if new_name != file.name {
                 map.entry(new_name).or_default().push(i);
             }
@@ -269,13 +264,6 @@ impl RenameState {
                 source_indices,
             })
             .collect();
-    }
-
-    #[allow(dead_code)]
-    pub fn is_conflict_row(&self, index: usize) -> bool {
-        self.conflicts
-            .iter()
-            .any(|c| c.source_indices.contains(&index))
     }
 
     // Rule collapse
@@ -299,11 +287,6 @@ impl RenameState {
 
     pub fn visible_file_count(&self) -> usize {
         self.filter_file_list.len().min(self.display_limit)
-    }
-
-    #[allow(dead_code)]
-    pub fn has_more_files(&self) -> bool {
-        self.filter_file_list.len() > self.display_limit
     }
 
     pub fn load_more(&mut self) {

@@ -1,5 +1,6 @@
 mod background;
 mod border;
+mod styles;
 mod text;
 
 use iced::theme::{Base, Mode};

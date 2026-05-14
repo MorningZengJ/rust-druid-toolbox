@@ -2,6 +2,12 @@ use crate::ui::navigation::{route_page, NavigationAction, StackNavigator};
 use crate::ui::{home, settings};
 use iced::{window, Element, Size, Task};
 
+const NAV_WIDTH: f32 = 90.0;
+const DEFAULT_WIDTH: f32 = 800.0;
+const DEFAULT_HEIGHT: f32 = 600.0;
+const MIN_WIDTH: f32 = 600.0;
+const MIN_HEIGHT: f32 = 400.0;
+
 #[allow(dead_code)]
 pub enum Message {
     NavigationAction(NavigationAction<route_page::RoutePage>),
@@ -16,7 +22,7 @@ struct App {
 
 impl App {
     fn boot() -> (Self, Task<Message>) {
-        let size = Size::new(800.0, 600.0);
+        let size = Size::new(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         let (nav, nav_task) = StackNavigator::new(route_page::RoutePage::Home, size);
 
         let app = Self { nav };
@@ -31,7 +37,7 @@ impl App {
                 .map(Message::NavigationContent),
             Message::NavigationContent(msg) => self.handle_nav_message(msg),
             Message::WindowResized(size) => {
-                let right_width = (size.width - 100.0).max(0.0);
+                let right_width = (size.width - NAV_WIDTH).max(0.0);
                 self.nav
                     .resize(Size::new(right_width, size.height));
                 Task::none()
@@ -68,8 +74,8 @@ impl App {
 
 pub fn run() -> iced::Result {
     let win_settings = window::Settings {
-        size: Size::new(800.0, 600.0),
-        min_size: Some(Size::new(600.0, 400.0)),
+        size: Size::new(DEFAULT_WIDTH, DEFAULT_HEIGHT),
+        min_size: Some(Size::new(MIN_WIDTH, MIN_HEIGHT)),
         ..window::Settings::default()
     };
 

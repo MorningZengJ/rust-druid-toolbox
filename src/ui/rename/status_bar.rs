@@ -18,17 +18,13 @@ pub fn view<'a>(
         row![
             text("⚠").size(14).style(|theme| {
                 let c_theme = get_theme(theme);
-                iced::widget::text::Style {
-                    color: Some(c_theme.warning_color()),
-                }
+                c_theme.warning_text_style()
             }),
             text(format!("{} 个文件名冲突", conflicts.len()))
                 .size(12)
                 .style(|theme| {
                     let c_theme = get_theme(theme);
-                    iced::widget::text::Style {
-                        color: Some(c_theme.warning_color()),
-                    }
+                    c_theme.warning_text_style()
                 }),
         ]
         .spacing(spacing::XS)
@@ -54,9 +50,7 @@ pub fn view<'a>(
                 }),
                 text(result.summary()).size(12).style(|theme| {
                     let c_theme = get_theme(theme);
-                    iced::widget::text::Style {
-                        color: Some(c_theme.main_text_color()),
-                    }
+                    c_theme.main_text_style()
                 }),
                 button(text("×").size(14))
                     .on_press(Message::ClearStatus)

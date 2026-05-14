@@ -1,5 +1,3 @@
-extern crate embed_resource;
-
 use std::path::Path;
 
 fn main() {

@@ -1,5 +1,4 @@
 mod file_list;
-pub(crate) mod logic;
 mod replace_rules;
 mod spacing;
 mod status_bar;
@@ -14,6 +13,7 @@ use crate::ui::rename::file_list::FileListMessage;
 use crate::ui::PageWithNav;
 use crate::utils::common_utils::CommonUtils;
 use crate::utils::file_utils::FileUtils;
+use crate::utils::rename_logic;
 use iced::widget::{
     button, checkbox, column, container, pane_grid, pick_list, row, stack, svg, text, text_input,
     Space,
@@ -37,10 +37,6 @@ pub enum Message {
 
     // File list
     FileListLoaded(Vec<FileInfo>),
-    #[allow(dead_code)]
-    FileSelected(FileInfo),
-    #[allow(dead_code)]
-    FileDoubleClicked(FileInfo),
     FileListMessage(FileListMessage),
 
     // Replace rules
@@ -161,19 +157,6 @@ impl PageWithNav for Rename {
                 self.state.detect_conflicts();
                 self.state.display_limit = 500;
             }
-            Message::FileSelected(file) => {
-                self.state.selected_file = Some(file);
-            }
-            Message::FileDoubleClicked(file) => {
-                if file.is_dir {
-                    self.state.dir_path = file.path;
-                    return self.load_files();
-                } else {
-                    let _ = std::process::Command::new("cmd")
-                        .args(["/C", "start", "", &file.path])
-                        .spawn();
-                }
-            }
             Message::FileListMessage(fl_msg) => match fl_msg {
                 FileListMessage::FileSelected(file) => {
                     self.state.selected_file = Some(file);
@@ -198,7 +181,7 @@ impl PageWithNav for Rename {
                 self.state.push_rule_history();
                 if let Some(info) = self.state.replace_infos.get_mut(index) {
                     info.content = content;
-                    info.is_error = info.is_regex && !logic::validate_regex(&info.content);
+                    info.is_error = info.is_regex && !rename_logic::validate_regex(&info.content);
                 }
                 self.state.detect_conflicts();
             }
@@ -220,7 +203,7 @@ impl PageWithNav for Rename {
                 self.state.push_rule_history();
                 if let Some(info) = self.state.replace_infos.get_mut(index) {
                     info.is_regex = is_regex;
-                    info.is_error = is_regex && !logic::validate_regex(&info.content);
+                    info.is_error = is_regex && !rename_logic::validate_regex(&info.content);
                 }
                 self.state.detect_conflicts();
             }
@@ -339,7 +322,7 @@ impl Rename {
         };
 
         for info in &self.state.filter_file_list {
-            let new_name = logic::apply_replace_rules(&info.name, &self.state.replace_infos);
+            let new_name = rename_logic::apply_replace_rules(&info.name, &self.state.replace_infos);
             let new_path = CommonUtils::join_path(&info.parent_path, &new_name);
 
             match std::fs::rename(&info.path, &new_path) {
@@ -433,9 +416,7 @@ impl Rename {
                 .size(13)
                 .style(|theme| {
                     let c_theme = get_theme(theme);
-                    text::Style {
-                        color: Some(c_theme.secondary_text_color()),
-                    }
+                    c_theme.secondary_text_style()
                 }),
         );
         panel_content = panel_content.push(rule_cards);
@@ -473,16 +454,12 @@ impl Rename {
             return row![
                 text(count_text).size(12).style(|theme| {
                     let c_theme = get_theme(theme);
-                    text::Style {
-                        color: Some(c_theme.secondary_text_color()),
-                    }
+                    c_theme.secondary_text_style()
                 }),
                 Space::new().width(Length::Fill),
                 text(summary).size(12).style(|theme| {
                     let c_theme = get_theme(theme);
-                    text::Style {
-                        color: Some(c_theme.muted_text_color()),
-                    }
+                    c_theme.muted_text_style()
                 }),
                 button(text("展开").size(12))
                     .on_press(Message::ToggleFilterCollapsed)
@@ -538,24 +515,7 @@ impl Rename {
             .padding([spacing::XS as u16, spacing::SM as u16])
             .style(move |theme, _status| {
                 let c_theme = get_theme(theme);
-                button::Style {
-                    background: Some(if is_all_active {
-                        c_theme.accent_color().into()
-                    } else {
-                        c_theme.toolbar_bg().into()
-                    }),
-                    text_color: if is_all_active {
-                        iced::Color::WHITE
-                    } else {
-                        c_theme.main_text_color()
-                    },
-                    border: iced::Border {
-                        radius: 4.0.into(),
-                        width: 1.0,
-                        color: c_theme.border_color(),
-                    },
-                    ..Default::default()
-                }
+                c_theme.quick_filter_btn_style(is_all_active)
             });
         quick_filter_row = quick_filter_row.push(all_btn);
 
@@ -565,24 +525,7 @@ impl Rename {
             .padding([spacing::XS as u16, spacing::SM as u16])
             .style(move |theme, _status| {
                 let c_theme = get_theme(theme);
-                button::Style {
-                    background: Some(if is_folder_active {
-                        c_theme.accent_color().into()
-                    } else {
-                        c_theme.toolbar_bg().into()
-                    }),
-                    text_color: if is_folder_active {
-                        iced::Color::WHITE
-                    } else {
-                        c_theme.main_text_color()
-                    },
-                    border: iced::Border {
-                        radius: 4.0.into(),
-                        width: 1.0,
-                        color: c_theme.border_color(),
-                    },
-                    ..Default::default()
-                }
+                c_theme.quick_filter_btn_style(is_folder_active)
             });
         quick_filter_row = quick_filter_row.push(folder_btn);
 
@@ -592,24 +535,7 @@ impl Rename {
             .padding([spacing::XS as u16, spacing::SM as u16])
             .style(move |theme, _status| {
                 let c_theme = get_theme(theme);
-                button::Style {
-                    background: Some(if is_file_active {
-                        c_theme.accent_color().into()
-                    } else {
-                        c_theme.toolbar_bg().into()
-                    }),
-                    text_color: if is_file_active {
-                        iced::Color::WHITE
-                    } else {
-                        c_theme.main_text_color()
-                    },
-                    border: iced::Border {
-                        radius: 4.0.into(),
-                        width: 1.0,
-                        color: c_theme.border_color(),
-                    },
-                    ..Default::default()
-                }
+                c_theme.quick_filter_btn_style(is_file_active)
             });
         quick_filter_row = quick_filter_row.push(file_btn);
 
@@ -624,24 +550,7 @@ impl Rename {
                 .padding([spacing::XS as u16, spacing::SM as u16])
                 .style(move |theme, _status| {
                     let c_theme = get_theme(theme);
-                    button::Style {
-                        background: Some(if is_active {
-                            c_theme.accent_color().into()
-                        } else {
-                            c_theme.toolbar_bg().into()
-                        }),
-                        text_color: if is_active {
-                            iced::Color::WHITE
-                        } else {
-                            c_theme.main_text_color()
-                        },
-                        border: iced::Border {
-                            radius: 4.0.into(),
-                            width: 1.0,
-                            color: c_theme.border_color(),
-                        },
-                        ..Default::default()
-                    }
+                    c_theme.quick_filter_btn_style(is_active)
                 });
             quick_filter_row = quick_filter_row.push(ext_btn);
         }
@@ -757,16 +666,12 @@ impl Rename {
                         .size(13)
                         .style(|theme| {
                             let c_theme = get_theme(theme);
-                            text::Style {
-                                color: Some(c_theme.secondary_text_color()),
-                            }
+                            c_theme.secondary_text_style()
                         }),
                     Space::new().width(Length::Fill),
                     text(file_count_text).size(12).style(|theme| {
                         let c_theme = get_theme(theme);
-                        text::Style {
-                            color: Some(c_theme.muted_text_color()),
-                        }
+                        c_theme.muted_text_style()
                     }),
                 ]
                 .align_y(iced::Alignment::Center)
@@ -797,9 +702,7 @@ impl Rename {
                 column![
                     text("确认重命名").size(16).style(|theme| {
                         let c_theme = get_theme(theme);
-                        text::Style {
-                            color: Some(c_theme.main_text_color()),
-                        }
+                        c_theme.main_text_style()
                     }),
                     text(format!(
                         "即将对 {} 个文件应用 {} 条替换规则",
@@ -808,9 +711,7 @@ impl Rename {
                     .size(13)
                     .style(|theme| {
                         let c_theme = get_theme(theme);
-                        text::Style {
-                            color: Some(c_theme.secondary_text_color()),
-                        }
+                        c_theme.secondary_text_style()
                     }),
                     row![
                         MButton::new(
