@@ -1,4 +1,5 @@
 #[derive(Clone, Debug, Default)]
+#[allow(dead_code)]
 pub struct RenameResult {
     pub total: usize,
     pub success: usize,
@@ -6,6 +7,7 @@ pub struct RenameResult {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct RenameError {
     pub file_name: String,
     pub error: String,

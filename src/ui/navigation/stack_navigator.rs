@@ -37,6 +37,7 @@ where
         self.active_component.update(message)
     }
 
+    #[allow(dead_code)]
     pub fn subscription(&self) -> iced::Subscription<Message> {
         self.active_component.subscription()
     }
@@ -94,6 +95,7 @@ where
         }
     }
 
+    #[allow(dead_code)]
     pub fn allow_pop(&self) -> bool {
         !self.history.is_empty()
     }

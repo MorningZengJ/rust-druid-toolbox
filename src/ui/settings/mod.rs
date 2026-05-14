@@ -3,6 +3,7 @@ use iced::widget::{column, container, text};
 use iced::{Element, Length, Task};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Message {
     Navigate(NavigationAction<route_page::RoutePage>),
 }

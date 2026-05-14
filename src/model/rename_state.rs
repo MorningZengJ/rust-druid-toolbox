@@ -35,6 +35,7 @@ impl FilterItem {
 }
 
 #[derive(Clone, Debug, Default)]
+#[allow(dead_code)]
 pub struct ConflictInfo {
     pub target_name: String,
     pub source_indices: Vec<usize>,
@@ -76,6 +77,7 @@ impl RenameState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_dir_path(&mut self, path: &str) {
         self.dir_path = path.to_string();
     }
@@ -165,6 +167,7 @@ impl RenameState {
             .collect();
     }
 
+    #[allow(dead_code)]
     pub fn is_conflict_row(&self, index: usize) -> bool {
         self.conflicts
             .iter()
@@ -194,6 +197,7 @@ impl RenameState {
         self.filter_file_list.len().min(self.display_limit)
     }
 
+    #[allow(dead_code)]
     pub fn has_more_files(&self) -> bool {
         self.filter_file_list.len() > self.display_limit
     }

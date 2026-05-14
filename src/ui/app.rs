@@ -2,6 +2,7 @@ use crate::ui::navigation::{route_page, NavigationAction, StackNavigator};
 use crate::ui::{home, settings};
 use iced::{window, Element, Size, Task};
 
+#[allow(dead_code)]
 pub enum Message {
     NavigationAction(NavigationAction<route_page::RoutePage>),
     NavigationContent(route_page::Message),

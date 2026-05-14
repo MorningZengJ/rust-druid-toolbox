@@ -5,6 +5,7 @@ pub use c_button::{ButtonType, MButton};
 use iced::widget::{row, text};
 use iced::{Alignment, Element, Length};
 
+#[allow(dead_code)]
 pub fn comeback_view<'a, Message>(
     title: impl text::IntoFragment<'a>,
     message: Message,

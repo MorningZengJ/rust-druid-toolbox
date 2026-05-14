@@ -44,9 +44,11 @@ impl VirtualState {
 /// A virtual scrolling list widget that only renders visible rows.
 pub struct VirtualList<'a, Message, Theme, Renderer> {
     state: &'a VirtualState,
+    #[allow(dead_code)]
     total_rows: usize,
     row_height: f32,
     rows: Vec<Element<'a, Message, Theme, Renderer>>,
+    #[allow(dead_code)]
     first_visible: usize,
     on_scroll: Option<Box<dyn Fn(f32) -> Message + 'a>>,
 }

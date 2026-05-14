@@ -16,6 +16,7 @@ pub fn run() -> iced::Result {
 pub trait PageWithNav {
     type Message;
 
+    #[allow(dead_code)]
     fn reload(&self) -> Task<Self::Message> {
         Task::none()
     }

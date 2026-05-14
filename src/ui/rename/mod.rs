@@ -38,7 +38,9 @@ pub enum Message {
 
     // File list
     FileListLoaded(Vec<FileInfo>),
+    #[allow(dead_code)]
     FileSelected(FileInfo),
+    #[allow(dead_code)]
     FileDoubleClicked(FileInfo),
     FileListMessage(FileListMessage),
 

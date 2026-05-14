@@ -135,6 +135,7 @@ impl ButtonStyle {
 pub enum ButtonType {
     PrimaryNav,
     ContentBtn,
+    #[allow(dead_code)]
     Primary,
     Success,
 }
@@ -162,6 +163,7 @@ impl<Message> MButton<Message> {
         self
     }
 
+    #[allow(dead_code)]
     pub fn svg_btn<'a>(&self, path: &str) -> Button<'a, Message>
     where
         Message: Clone + 'static,

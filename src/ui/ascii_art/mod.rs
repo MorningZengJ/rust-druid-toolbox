@@ -43,7 +43,9 @@ pub enum Message {
     CenterPreview,
 
     // Output
+    #[allow(dead_code)]
     ExportText,
+    #[allow(dead_code)]
     ExportHtml,
     CopyText,
     CopyHtml,

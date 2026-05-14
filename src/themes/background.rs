@@ -22,6 +22,7 @@ impl Theme {
         }
     }
 
+    #[allow(dead_code)]
     pub fn header_bg(&self) -> iced::Color {
         match self {
             Theme::Light { .. } => iced::Color::from_rgb8(0xF3, 0xF4, 0xF6),
@@ -50,6 +51,7 @@ impl Theme {
         }
     }
 
+    #[allow(dead_code)]
     pub fn status_success_bg(&self) -> iced::Color {
         match self {
             Theme::Light { .. } => iced::Color::from_rgb8(0xD1, 0xFA, 0xE5),
@@ -57,6 +59,7 @@ impl Theme {
         }
     }
 
+    #[allow(dead_code)]
     pub fn status_error_bg(&self) -> iced::Color {
         match self {
             Theme::Light { .. } => iced::Color::from_rgb8(0xFE, 0xE2, 0xE2),
@@ -87,6 +90,7 @@ impl Theme {
         }
     }
 
+    #[allow(dead_code)]
     pub fn diff_removed_bg(&self) -> iced::Color {
         match self {
             Theme::Light { .. } => iced::Color::from_rgb8(0xFE, 0xE2, 0xE2),
@@ -122,6 +126,7 @@ impl Theme {
         }
     }
 
+    #[allow(dead_code)]
     pub fn splitter_bg(&self) -> iced::Color {
         match self {
             Theme::Light { .. } => iced::Color::from_rgb8(0xE5, 0xE7, 0xEB),

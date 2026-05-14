@@ -11,6 +11,7 @@ pub enum Message {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RoutePage {
     Home,
+    #[allow(dead_code)]
     Settings,
 }
 

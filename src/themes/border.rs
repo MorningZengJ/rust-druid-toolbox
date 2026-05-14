@@ -1,5 +1,6 @@
 use crate::themes::Theme;
 
+#[allow(dead_code)]
 impl Theme {
     pub fn nav_main_splitter_border(&self) -> iced::Border {
         iced::Border {

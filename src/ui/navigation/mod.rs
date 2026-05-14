@@ -8,12 +8,16 @@ pub use stack_navigator::*;
 #[derive(Debug, Clone)]
 pub enum NavigationAction<RoutePage> {
     Push(RoutePage),
+    #[allow(dead_code)]
     Replace(RoutePage),
+    #[allow(dead_code)]
     Pop,
+    #[allow(dead_code)]
     PopToRoot,
 }
 
 impl<RoutePage> NavigationAction<RoutePage> {
+    #[allow(dead_code)]
     pub fn task<Message>(self, f: impl Fn(Self) -> Message + Send + Sync + 'static) -> Task<Message>
     where
         Message: 'static + Send,
@@ -33,6 +37,7 @@ pub trait PageComponent<Message> {
 
     fn resize(&mut self, _size: Size) {}
 
+    #[allow(dead_code)]
     fn subscription(&self) -> Subscription<Message> {
         Subscription::none()
     }

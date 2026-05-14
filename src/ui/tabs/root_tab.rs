@@ -5,6 +5,7 @@ use iced::widget::{column, container, text};
 use iced::{Alignment, Element, Length};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Message {
     Tab(Page),
     Navigate(RoutePage),

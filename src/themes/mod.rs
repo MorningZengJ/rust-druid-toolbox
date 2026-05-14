@@ -4,6 +4,7 @@ mod text;
 
 use iced::theme::{Base, Mode};
 
+#[allow(dead_code)]
 pub enum Theme {
     Light { theme: iced::Theme },
     Dark { theme: iced::Theme },
