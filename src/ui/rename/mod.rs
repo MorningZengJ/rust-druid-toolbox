@@ -79,6 +79,10 @@ impl PageWithNav for Rename {
                 if file.is_dir {
                     self.state.dir_path = file.path;
                     return self.load_files();
+                } else {
+                    let _ = std::process::Command::new("cmd")
+                        .args(["/C", "start", "", &file.path])
+                        .spawn();
                 }
             }
             Message::ReplaceContentChanged(index, content) => {
@@ -154,6 +158,8 @@ impl PageWithNav for Rename {
                     &self.state.filter_file_list,
                     &self.state.selected_file,
                     &self.state.replace_infos,
+                    Message::FileSelected,
+                    Message::FileDoubleClicked,
                 ),
             ]
             .spacing(8),

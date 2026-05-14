@@ -2,13 +2,15 @@ use crate::model::file_info::FileInfo;
 use crate::model::replace_info::ReplaceInfo;
 use crate::themes::get_theme;
 use crate::ui::rename::logic;
-use iced::widget::{column, container, row, scrollable, text};
+use iced::widget::{column, container, mouse_area, row, scrollable, text};
 use iced::{Element, Length};
 
 pub fn view<'a, Message>(
     filter_file_list: &'a [FileInfo],
     selected_file: &Option<FileInfo>,
     replace_infos: &[ReplaceInfo],
+    on_select: impl Fn(FileInfo) -> Message + 'a,
+    on_double_click: impl Fn(FileInfo) -> Message + 'a,
 ) -> Element<'a, Message>
 where
     Message: Clone + 'a,
@@ -62,20 +64,26 @@ where
             ]
             .width(Length::Fill);
 
-            container(row)
-                .width(Length::Fill)
-                .style(move |theme| {
-                    let c_theme = get_theme(theme);
-                    if is_selected {
-                        container::Style {
-                            background: Some(c_theme.selected_row_bg().into()),
-                            ..Default::default()
+            let file_clone = file.clone();
+            let file_clone2 = file.clone();
+            mouse_area(
+                container(row)
+                    .width(Length::Fill)
+                    .style(move |theme| {
+                        let c_theme = get_theme(theme);
+                        if is_selected {
+                            container::Style {
+                                background: Some(c_theme.selected_row_bg().into()),
+                                ..Default::default()
+                            }
+                        } else {
+                            container::Style::default()
                         }
-                    } else {
-                        container::Style::default()
-                    }
-                })
-                .into()
+                    }),
+            )
+            .on_press(on_select(file_clone))
+            .on_double_click(on_double_click(file_clone2))
+            .into()
         })
         .collect();
 
