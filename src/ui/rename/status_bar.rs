@@ -5,21 +5,26 @@ use iced::{Element, Length};
 
 pub fn view<'a, Message: 'a>(status: &'a Option<RenameResult>) -> Option<Element<'a, Message>> {
     status.as_ref().map(|result| {
-        let (icon, icon_color) = if result.is_success() {
-            ("✓", [0x10, 0xB9, 0x81])
-        } else {
-            ("✗", [0xEF, 0x44, 0x44])
-        };
+        let is_success = result.is_success();
+        let icon = if is_success { "✓" } else { "✗" };
 
         let content = row![
-            text(icon).size(14).style(move |_| text::Style {
-                color: Some(iced::Color::from_rgb8(
-                    icon_color[0],
-                    icon_color[1],
-                    icon_color[2],
-                )),
+            text(icon).size(14).style(move |theme| {
+                let c_theme = get_theme(theme);
+                text::Style {
+                    color: Some(if is_success {
+                        c_theme.success_color()
+                    } else {
+                        c_theme.error_color()
+                    }),
+                }
             }),
-            text(result.summary()).size(13),
+            text(result.summary()).size(13).style(|theme| {
+                let c_theme = get_theme(theme);
+                text::Style {
+                    color: Some(c_theme.main_text_color()),
+                }
+            }),
         ]
         .spacing(8)
         .align_y(iced::Alignment::Center);
@@ -27,9 +32,9 @@ pub fn view<'a, Message: 'a>(status: &'a Option<RenameResult>) -> Option<Element
         container(content)
             .padding([8, 12])
             .width(Length::Fill)
-            .style(|theme| {
+            .style(move |theme| {
                 let c_theme = get_theme(theme);
-                let bg = if result.is_success() {
+                let bg = if is_success {
                     c_theme.status_success_bg()
                 } else {
                     c_theme.status_error_bg()
@@ -37,7 +42,7 @@ pub fn view<'a, Message: 'a>(status: &'a Option<RenameResult>) -> Option<Element
                 container::Style {
                     background: Some(bg.into()),
                     border: iced::Border {
-                        radius: 6.0.into(),
+                        radius: 8.0.into(),
                         ..Default::default()
                     },
                     ..Default::default()

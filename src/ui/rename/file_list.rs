@@ -36,6 +36,15 @@ where
         let c_theme = get_theme(theme);
         container::Style {
             background: Some(c_theme.table_header_bg().into()),
+            border: iced::Border {
+                radius: iced::border::Radius {
+                    top_left: 6.0,
+                    top_right: 6.0,
+                    bottom_right: 0.0,
+                    bottom_left: 0.0,
+                },
+                ..Default::default()
+            },
             ..Default::default()
         }
     })
@@ -47,14 +56,24 @@ where
             let is_selected = selected_file.as_ref().map(|s| s == file).unwrap_or(false);
             let preview_name = logic::apply_replace_rules(&file.name, replace_infos);
             let file_type = if file.is_dir { "📁" } else { "📄" };
+            let name_changed = preview_name != file.name;
 
             let row = row![
                 container(text(&file.name).size(13))
                     .width(Length::FillPortion(3))
                     .padding(6),
-                container(text(preview_name).size(13))
-                    .width(Length::FillPortion(3))
-                    .padding(6),
+                container(text(preview_name).size(13).style(move |theme| {
+                    let c_theme = get_theme(theme);
+                    text::Style {
+                        color: Some(if name_changed {
+                            c_theme.success_color()
+                        } else {
+                            c_theme.main_text_color()
+                        }),
+                    }
+                }))
+                .width(Length::FillPortion(3))
+                .padding(6),
                 container(text(file_type).size(13))
                     .width(Length::FillPortion(1))
                     .padding(6),

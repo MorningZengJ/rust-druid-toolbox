@@ -4,16 +4,40 @@ use crate::model::replace_info::ReplaceInfo;
 use crate::utils::common_utils::CommonUtils;
 use fancy_regex::Regex;
 
-#[derive(Clone, Default, Debug)]
-pub struct FilterConfig {
+#[derive(Clone, Debug)]
+pub struct FilterItem {
     pub keyword: String,
     pub is_regex: bool,
+}
+
+impl Default for FilterItem {
+    fn default() -> Self {
+        Self {
+            keyword: String::new(),
+            is_regex: false,
+        }
+    }
+}
+
+impl FilterItem {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn summary(&self) -> String {
+        if self.keyword.is_empty() {
+            return "空条件".to_string();
+        }
+        let prefix = if self.is_regex { "正则: " } else { "" };
+        format!("{}{}", prefix, self.keyword)
+    }
 }
 
 #[derive(Clone, Default, Debug)]
 pub struct RenameState {
     pub dir_path: String,
-    pub filter: FilterConfig,
+    pub filter_items: Vec<FilterItem>,
+    pub filter_collapsed: bool,
     pub file_list: Vec<FileInfo>,
     pub filter_file_list: Vec<FileInfo>,
     pub selected_file: Option<FileInfo>,
@@ -25,6 +49,7 @@ pub struct RenameState {
 impl RenameState {
     pub fn new() -> Self {
         Self {
+            filter_items: vec![FilterItem::new()],
             replace_infos: vec![ReplaceInfo::new()],
             ..Default::default()
         }
@@ -39,28 +64,45 @@ impl RenameState {
     }
 
     fn get_filtered_files(&self) -> Vec<FileInfo> {
-        let FilterConfig { keyword, is_regex } = &self.filter;
-        if keyword.is_empty() {
+        if self.filter_items.is_empty() || self.filter_items.iter().all(|f| f.keyword.is_empty()) {
             return self.file_list.clone();
         }
-
-        let reg_opt = if *is_regex {
-            Regex::new(keyword).ok()
-        } else {
-            None
-        };
 
         self.file_list
             .iter()
             .filter(|info| {
-                if let Some(regex) = &reg_opt {
-                    regex.is_match(&info.name).unwrap_or(true)
-                } else {
-                    info.name.contains(keyword)
-                }
+                self.filter_items.iter().all(|filter| {
+                    if filter.keyword.is_empty() {
+                        return true;
+                    }
+                    let reg_opt = if filter.is_regex {
+                        Regex::new(&filter.keyword).ok()
+                    } else {
+                        None
+                    };
+                    if let Some(regex) = &reg_opt {
+                        regex.is_match(&info.name).unwrap_or(true)
+                    } else {
+                        info.name.contains(&filter.keyword)
+                    }
+                })
             })
             .cloned()
             .collect()
+    }
+
+    pub fn filter_summary(&self) -> String {
+        let active_filters: Vec<&FilterItem> = self.filter_items
+            .iter()
+            .filter(|f| !f.keyword.is_empty())
+            .collect();
+        if active_filters.is_empty() {
+            return "无过滤条件".to_string();
+        }
+        active_filters.iter()
+            .map(|f| f.summary())
+            .collect::<Vec<_>>()
+            .join(" + ")
     }
 
     pub fn parent_path(&self) -> String {

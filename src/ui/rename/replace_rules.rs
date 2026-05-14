@@ -24,6 +24,15 @@ pub fn view<'a>(replace_infos: &'a [ReplaceInfo]) -> Element<'a, Message> {
         let c_theme = get_theme(theme);
         container::Style {
             background: Some(c_theme.table_header_bg().into()),
+            border: iced::Border {
+                radius: iced::border::Radius {
+                    top_left: 6.0,
+                    top_right: 6.0,
+                    bottom_right: 0.0,
+                    bottom_left: 0.0,
+                },
+                ..Default::default()
+            },
             ..Default::default()
         }
     })
@@ -70,12 +79,21 @@ pub fn view<'a>(replace_infos: &'a [ReplaceInfo]) -> Element<'a, Message> {
             .width(Length::Fill)
             .align_y(iced::Alignment::Center);
 
+            let is_error = info.is_error;
             container(row)
                 .width(Length::Fill)
-                .style(|theme| {
+                .style(move |theme| {
                     let c_theme = get_theme(theme);
                     container::Style {
-                        border: c_theme.table_row_border(),
+                        border: if is_error {
+                            iced::Border {
+                                radius: 0.0.into(),
+                                width: 1.0,
+                                color: c_theme.error_color(),
+                            }
+                        } else {
+                            c_theme.table_row_border()
+                        },
                         ..Default::default()
                     }
                 })

@@ -5,7 +5,8 @@
       "Bash(cargo run *)",
       "Bash(cargo doc *)",
       "Bash(cargo test *)",
-      "Bash(taskkill /f /im druid-toolbox.exe)"
+      "Bash(taskkill /f /im druid-toolbox.exe)",
+      "Bash(taskkill /F /IM druid-toolbox.exe)"
     ]
   }
 }
