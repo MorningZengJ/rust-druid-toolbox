@@ -175,16 +175,20 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        let children: Vec<_> = layout.children().collect();
-        for (i, child_layout) in children.into_iter().enumerate() {
-            if let (Some(row_element), Some(row_tree)) =
-                (self.rows.get(i), tree.children.get(i))
-            {
-                row_element
-                    .as_widget()
-                    .draw(row_tree, renderer, theme, style, child_layout, cursor, viewport);
+        let bounds = layout.bounds();
+        // Clip drawing to the virtual list bounds to prevent overflow
+        renderer.with_layer(bounds, |renderer| {
+            let children: Vec<_> = layout.children().collect();
+            for (i, child_layout) in children.into_iter().enumerate() {
+                if let (Some(row_element), Some(row_tree)) =
+                    (self.rows.get(i), tree.children.get(i))
+                {
+                    row_element
+                        .as_widget()
+                        .draw(row_tree, renderer, theme, style, child_layout, cursor, viewport);
+                }
             }
-        }
+        });
     }
 
     fn operate(

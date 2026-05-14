@@ -90,6 +90,7 @@ pub fn view<'a>(
     container(content)
         .padding([spacing::SM as u16, spacing::LG as u16])
         .width(Length::Fill)
+        .height(Length::Fixed(spacing::BOTTOM_BAR_H))
         .style(|theme| {
             let c_theme = get_theme(theme);
             container::Style {

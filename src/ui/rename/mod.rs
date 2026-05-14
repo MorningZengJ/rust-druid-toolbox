@@ -400,6 +400,7 @@ impl Rename {
         container(content)
             .padding([spacing::SM as u16, spacing::MD as u16])
             .width(Length::Fill)
+            .height(Length::Fixed(spacing::TOOLBAR_H))
             .style(|theme| {
                 let c_theme = get_theme(theme);
                 container::Style {
