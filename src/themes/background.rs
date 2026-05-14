@@ -79,4 +79,57 @@ impl Theme {
     pub fn error_color(&self) -> iced::Color {
         iced::Color::from_rgb8(0xEF, 0x44, 0x44)
     }
+
+    pub fn diff_added_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xD1, 0xFA, 0xE5),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x0A, 0x3D, 0x2A),
+        }
+    }
+
+    pub fn diff_removed_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xFE, 0xE2, 0xE2),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x4C, 0x1D, 0x1D),
+        }
+    }
+
+    pub fn conflict_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xFE, 0xF3, 0xC7),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x45, 0x1A, 0x03),
+        }
+    }
+
+    pub fn toolbar_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xF9, 0xFA, 0xFB),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x2D, 0x2D, 0x30),
+        }
+    }
+
+    pub fn bottom_bar_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xF3, 0xF4, 0xF6),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x1E, 0x1E, 0x1E),
+        }
+    }
+
+    pub fn panel_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xFF, 0xFF, 0xFF),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x25, 0x25, 0x26),
+        }
+    }
+
+    pub fn splitter_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xE5, 0xE7, 0xEB),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x3E, 0x3E, 0x42),
+        }
+    }
+
+    pub fn splitter_hover_bg(&self) -> iced::Color {
+        iced::Color::from_rgb8(0x00, 0x7A, 0xCC)
+    }
 }

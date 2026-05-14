@@ -2,7 +2,7 @@ mod app;
 pub(crate) mod ascii_art;
 mod home;
 pub(crate) mod navigation;
-mod rename;
+pub(crate) mod rename;
 mod settings;
 mod tabs;
 pub(crate) mod components;

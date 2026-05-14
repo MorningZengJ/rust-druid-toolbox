@@ -1,7 +1,10 @@
 mod file_list;
 pub(crate) mod logic;
 mod replace_rules;
+mod spacing;
+mod splitter;
 mod status_bar;
+pub(crate) mod virtual_list;
 
 use crate::model::file_info::FileInfo;
 use crate::model::rename_result::{RenameError, RenameResult};
@@ -10,25 +13,36 @@ use crate::model::replace_info::ReplaceInfo;
 use crate::model::rule_template::RuleTemplate;
 use crate::themes::get_theme;
 use crate::ui::components::{ButtonType, MButton};
+use crate::ui::rename::file_list::FileListMessage;
+use crate::ui::rename::splitter::SplitterState;
+use crate::ui::rename::virtual_list::VirtualState;
 use crate::ui::PageWithNav;
 use crate::utils::common_utils::CommonUtils;
 use crate::utils::file_utils::FileUtils;
-use iced::widget::{button, checkbox, column, container, pick_list, row, text, text_input};
+use iced::widget::{button, checkbox, column, container, pick_list, row, svg, text, text_input, Space};
 use iced::{Element, Length, Task};
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    // Directory
     DirPathChanged(String),
     ChooseDirectory,
     ParentDirectory,
+
+    // Filters
     FilterChanged(usize, String),
     FilterRegexToggled(usize, bool),
     AddFilterItem,
     RemoveFilterItem(usize),
     ToggleFilterCollapsed,
+
+    // File list
     FileListLoaded(Vec<FileInfo>),
     FileSelected(FileInfo),
     FileDoubleClicked(FileInfo),
+    FileListMessage(FileListMessage),
+
+    // Replace rules
     ReplaceContentChanged(usize, String),
     ReplaceTargetChanged(usize, String),
     ReplaceEnableToggled(usize, bool),
@@ -37,15 +51,39 @@ pub enum Message {
     AddReplaceItem,
     ApplyRuleTemplate(RuleTemplate),
     ClearAllRules,
+    ToggleRuleCollapse(usize),
+
+    // Undo
+    UndoRuleChange,
+
+    // Layout
+    SplitterPressed,
+    SplitterDragged(f32),
+    SplitterReleased,
+    SplitterHovered(bool),
+
+    // Confirm/Status
     ShowConfirmDialog,
     ConfirmRename,
     CancelRename,
     ClearStatus,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Rename {
     state: RenameState,
+    virtual_state: VirtualState,
+    splitter_state: SplitterState,
+}
+
+impl Default for Rename {
+    fn default() -> Self {
+        Self {
+            state: RenameState::new(),
+            virtual_state: VirtualState::new(),
+            splitter_state: SplitterState::new(),
+        }
+    }
 }
 
 impl PageWithNav for Rename {
@@ -53,6 +91,7 @@ impl PageWithNav for Rename {
 
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
+            // Directory
             Message::DirPathChanged(path) => {
                 self.state.dir_path = path;
                 return self.load_files();
@@ -67,16 +106,20 @@ impl PageWithNav for Rename {
                 self.state.dir_path = self.state.parent_path();
                 return self.load_files();
             }
+
+            // Filters
             Message::FilterChanged(index, keyword) => {
                 if let Some(filter) = self.state.filter_items.get_mut(index) {
                     filter.keyword = keyword;
                     self.state.update_filter_file_list();
+                    self.state.detect_conflicts();
                 }
             }
             Message::FilterRegexToggled(index, is_regex) => {
                 if let Some(filter) = self.state.filter_items.get_mut(index) {
                     filter.is_regex = is_regex;
                     self.state.update_filter_file_list();
+                    self.state.detect_conflicts();
                 }
             }
             Message::AddFilterItem => {
@@ -97,14 +140,19 @@ impl PageWithNav for Rename {
                         self.state.filter_items.push(FilterItem::new());
                     }
                     self.state.update_filter_file_list();
+                    self.state.detect_conflicts();
                 }
             }
             Message::ToggleFilterCollapsed => {
                 self.state.filter_collapsed = !self.state.filter_collapsed;
             }
+
+            // File list
             Message::FileListLoaded(files) => {
                 self.state.file_list = files;
                 self.state.update_filter_file_list();
+                self.state.detect_conflicts();
+                self.state.display_limit = 500;
             }
             Message::FileSelected(file) => {
                 self.state.selected_file = Some(file);
@@ -119,32 +167,72 @@ impl PageWithNav for Rename {
                         .spawn();
                 }
             }
+            Message::FileListMessage(fl_msg) => match fl_msg {
+                FileListMessage::FileSelected(file) => {
+                    self.state.selected_file = Some(file);
+                }
+                FileListMessage::FileDoubleClicked(file) => {
+                    if file.is_dir {
+                        self.state.dir_path = file.path;
+                        return self.load_files();
+                    } else {
+                        let _ = std::process::Command::new("cmd")
+                            .args(["/C", "start", "", &file.path])
+                            .spawn();
+                    }
+                }
+                FileListMessage::VirtualScroll(delta_y) => {
+                    let total = self.state.visible_file_count();
+                    self.virtual_state.handle_scroll(
+                        delta_y,
+                        total,
+                        spacing::ROW_H,
+                        600.0,
+                    );
+                }
+                FileListMessage::LoadMore => {
+                    self.state.load_more();
+                }
+            },
+
+            // Replace rules (with undo history)
             Message::ReplaceContentChanged(index, content) => {
+                self.state.push_rule_history();
                 if let Some(info) = self.state.replace_infos.get_mut(index) {
                     info.content = content;
                     info.is_error = info.is_regex && !logic::validate_regex(&info.content);
                 }
+                self.state.detect_conflicts();
             }
             Message::ReplaceTargetChanged(index, target) => {
+                self.state.push_rule_history();
                 if let Some(info) = self.state.replace_infos.get_mut(index) {
                     info.target = target;
                 }
+                self.state.detect_conflicts();
             }
             Message::ReplaceEnableToggled(index, enable) => {
+                self.state.push_rule_history();
                 if let Some(info) = self.state.replace_infos.get_mut(index) {
                     info.enable = enable;
                 }
+                self.state.detect_conflicts();
             }
             Message::ReplaceRegexToggled(index, is_regex) => {
+                self.state.push_rule_history();
                 if let Some(info) = self.state.replace_infos.get_mut(index) {
                     info.is_regex = is_regex;
                     info.is_error = is_regex && !logic::validate_regex(&info.content);
                 }
+                self.state.detect_conflicts();
             }
             Message::RemoveReplaceItem(index) => {
+                self.state.push_rule_history();
                 if index < self.state.replace_infos.len() {
                     self.state.replace_infos.remove(index);
+                    self.state.sync_rules_collapsed();
                 }
+                self.state.detect_conflicts();
             }
             Message::AddReplaceItem => {
                 let allow = self
@@ -154,15 +242,54 @@ impl PageWithNav for Rename {
                     .map(|last| !(last.content.is_empty() && last.target.is_empty()))
                     .unwrap_or(true);
                 if allow {
+                    self.state.push_rule_history();
                     self.state.replace_infos.push(ReplaceInfo::new());
+                    self.state.sync_rules_collapsed();
                 }
             }
             Message::ClearAllRules => {
+                self.state.push_rule_history();
                 self.state.replace_infos.clear();
+                self.state.sync_rules_collapsed();
+                self.state.detect_conflicts();
             }
             Message::ApplyRuleTemplate(template) => {
+                self.state.push_rule_history();
                 self.state.replace_infos.push(template.to_replace_info());
+                self.state.sync_rules_collapsed();
+                self.state.detect_conflicts();
             }
+            Message::ToggleRuleCollapse(index) => {
+                self.state.toggle_rule_collapse(index);
+            }
+
+            // Undo
+            Message::UndoRuleChange => {
+                if let Some(previous) = self.state.pop_rule_history() {
+                    self.state.replace_infos = previous;
+                    self.state.sync_rules_collapsed();
+                    self.state.detect_conflicts();
+                }
+            }
+
+            // Splitter
+            Message::SplitterPressed => {
+                self.splitter_state.start_drag(self.state.left_panel_width);
+            }
+            Message::SplitterDragged(mouse_x) => {
+                if self.splitter_state.is_dragging {
+                    let new_width = self.splitter_state.handle_drag(mouse_x);
+                    self.state.left_panel_width = new_width;
+                }
+            }
+            Message::SplitterReleased => {
+                self.splitter_state.end_drag();
+            }
+            Message::SplitterHovered(hovered) => {
+                self.splitter_state.is_hovered = hovered;
+            }
+
+            // Confirm/Status
             Message::ShowConfirmDialog => {
                 self.state.show_confirm = true;
             }
@@ -183,115 +310,34 @@ impl PageWithNav for Rename {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let dir_path_section = self.build_dir_path_section();
-        let filter_section = self.build_filter_section();
+        let toolbar = self.build_toolbar();
+        let left_panel = self.build_left_panel();
+        let splitter = self.build_splitter();
+        let right_panel = self.build_right_panel();
+        let bottom_bar = self.build_bottom_bar();
 
-        let file_count = self.state.filter_file_list.len();
-        let file_list_content = file_list::view(
-            &self.state.filter_file_list,
-            &self.state.selected_file,
-            &self.state.replace_infos,
-            Message::FileSelected,
-            Message::FileDoubleClicked,
-        );
-        let file_list_section = Self::card(
-            "文件列表",
-            text(format!("{} 个文件", file_count)).size(12).style(|theme| {
-                let c_theme = get_theme(theme);
-                text::Style { color: Some(c_theme.secondary_text_color()) }
-            }).into(),
-            file_list_content,
-        );
-
-        let rule_count = self.state.replace_infos.len();
-        let replace_content = replace_rules::view(&self.state.replace_infos);
-        let templates = RuleTemplate::all();
-        let replace_header = row![
-            text(format!("{} 条规则", rule_count)).size(12).style(|theme| {
-                let c_theme = get_theme(theme);
-                text::Style { color: Some(c_theme.secondary_text_color()) }
-            }),
-            iced::widget::Space::new().width(Length::Fill),
-            pick_list(
-                templates,
-                None::<RuleTemplate>,
-                Message::ApplyRuleTemplate,
-            )
-            .placeholder("模板...")
-            .width(Length::Fixed(120.0)),
-            MButton::new(ButtonType::ContentBtn, false, Some(Message::ClearAllRules))
-                .svg_size(16.0)
-                .svg_text_btn("assets/svg/delete_outline.svg", "清除"),
-            MButton::new(ButtonType::ContentBtn, false, Some(Message::AddReplaceItem))
-                .svg_size(16.0)
-                .svg_text_btn("assets/svg/playlist_add.svg", "添加规则"),
+        let content = column![
+            toolbar,
+            row![left_panel, splitter, right_panel]
+                .width(Length::Fill)
+                .height(Length::Fill),
+            bottom_bar,
         ]
-        .spacing(8)
-        .align_y(iced::Alignment::Center);
-        let replace_section = Self::card(
-            "替换规则",
-            replace_header.into(),
-            replace_content,
-        );
-
-        let buttons = self.build_action_buttons();
-
-        let mut content = column![].spacing(12).width(Length::Fill).height(Length::Fill);
-
-        if let Some(status_element) = status_bar::view(&self.state.status) {
-            content = content.push(status_element);
-        }
-
-        content = content
-            .push(dir_path_section)
-            .push(filter_section)
-            .push(file_list_section)
-            .push(replace_section)
-            .push(buttons);
+        .width(Length::Fill)
+        .height(Length::Fill);
 
         if self.state.show_confirm {
             let overlay = self.build_confirm_dialog();
-            content = content.push(overlay);
+            // Stack overlay on top of content using a wrapper column
+            // The overlay has Fill dimensions and centers itself, covering the content
+            column![content].push(overlay).into()
+        } else {
+            content.into()
         }
-
-        content.into()
     }
 }
 
 impl Rename {
-    fn card<'a, Message: Clone + 'a>(
-        title: &'a str,
-        header_extra: Element<'a, Message>,
-        content: Element<'a, Message>,
-    ) -> Element<'a, Message> {
-        container(
-            column![
-                row![
-                    text(title).size(14).style(|theme| {
-                        let c_theme = get_theme(theme);
-                        text::Style { color: Some(c_theme.main_text_color()) }
-                    }),
-                    iced::widget::Space::new().width(Length::Fill),
-                    header_extra,
-                ]
-                .align_y(iced::Alignment::Center),
-                content,
-            ]
-            .spacing(10),
-        )
-        .padding(16)
-        .width(Length::Fill)
-        .style(|theme| {
-            let c_theme = get_theme(theme);
-            container::Style {
-                background: Some(c_theme.card_bg().into()),
-                border: c_theme.card_border(),
-                ..Default::default()
-            }
-        })
-        .into()
-    }
-
     fn load_files(&self) -> Task<Message> {
         let path = self.state.dir_path.clone();
         Task::perform(async move { FileUtils::list_files(&path) }, Message::FileListLoaded)
@@ -319,8 +365,26 @@ impl Rename {
         result
     }
 
-    fn build_dir_path_section(&self) -> Element<'_, Message> {
+    // --- Toolbar ---
+
+    fn build_toolbar(&self) -> Element<'_, Message> {
+        let has_history = !self.state.rule_history.is_empty();
+
+        let undo_btn = MButton::new(
+            ButtonType::ContentBtn,
+            false,
+            if has_history {
+                Some(Message::UndoRuleChange)
+            } else {
+                None
+            },
+        )
+        .svg_text_btn("assets/svg/arrow_circle_up.svg", "撤销");
+
         let content = row![
+            svg(svg::Handle::from_path("assets/svg/folder.svg"))
+                .width(Length::Fixed(18.0))
+                .height(Length::Fixed(18.0)),
             text_input("选择文件夹路径...", &self.state.dir_path)
                 .on_input(Message::DirPathChanged)
                 .width(Length::Fill),
@@ -328,10 +392,81 @@ impl Rename {
                 .text_btn("浏览..."),
             MButton::new(ButtonType::ContentBtn, false, Some(Message::ParentDirectory))
                 .text_btn("↑ 上级"),
+            Space::new().width(Length::Fill),
+            undo_btn,
         ]
-        .spacing(8);
+        .spacing(spacing::SM)
+        .align_y(iced::Alignment::Center);
 
-        Self::card("文件路径", text("").into(), content.into())
+        container(content)
+            .padding([spacing::SM as u16, spacing::MD as u16])
+            .width(Length::Fill)
+            .style(|theme| {
+                let c_theme = get_theme(theme);
+                container::Style {
+                    background: Some(c_theme.toolbar_bg().into()),
+                    ..Default::default()
+                }
+            })
+            .into()
+    }
+
+    // --- Left Panel ---
+
+    fn build_left_panel(&self) -> Element<'_, Message> {
+        let filter_section = self.build_filter_section();
+        let rule_cards = replace_rules::view(
+            &self.state.replace_infos,
+            &self.state.rules_collapsed,
+        );
+
+        let templates = RuleTemplate::all();
+        let rule_actions = row![
+            pick_list(templates, None::<RuleTemplate>, Message::ApplyRuleTemplate)
+                .placeholder("模板...")
+                .width(Length::Fixed(100.0)),
+            Space::new().width(Length::Fill),
+            MButton::new(ButtonType::ContentBtn, false, Some(Message::ClearAllRules))
+                .svg_size(16.0)
+                .svg_text_btn("assets/svg/delete_outline.svg", "清除"),
+            MButton::new(ButtonType::ContentBtn, false, Some(Message::AddReplaceItem))
+                .svg_size(16.0)
+                .svg_text_btn("assets/svg/playlist_add.svg", "添加"),
+        ]
+        .spacing(spacing::SM)
+        .align_y(iced::Alignment::Center);
+
+        let mut panel_content = column![].spacing(spacing::MD).width(Length::Fill);
+        panel_content = panel_content.push(filter_section);
+        panel_content = panel_content.push(
+            text("替换规则")
+                .size(13)
+                .style(|theme| {
+                    let c_theme = get_theme(theme);
+                    text::Style {
+                        color: Some(c_theme.secondary_text_color()),
+                    }
+                }),
+        );
+        panel_content = panel_content.push(rule_cards);
+        panel_content = panel_content.push(rule_actions);
+
+        container(
+            iced::widget::scrollable(panel_content)
+                .width(Length::Fill)
+                .height(Length::Fill),
+        )
+        .padding(spacing::MD)
+        .width(Length::Fixed(self.state.left_panel_width))
+        .height(Length::Fill)
+        .style(|theme| {
+            let c_theme = get_theme(theme);
+            container::Style {
+                background: Some(c_theme.panel_bg().into()),
+                ..Default::default()
+            }
+        })
+        .into()
     }
 
     fn build_filter_section(&self) -> Element<'_, Message> {
@@ -344,104 +479,170 @@ impl Rename {
         };
 
         if self.state.filter_collapsed {
-            // 折叠状态：显示简单预览
             let summary = self.state.filter_summary();
-            let header = row![
+            return row![
                 text(count_text).size(12).style(|theme| {
                     let c_theme = get_theme(theme);
-                    text::Style { color: Some(c_theme.secondary_text_color()) }
+                    text::Style {
+                        color: Some(c_theme.secondary_text_color()),
+                    }
                 }),
-                iced::widget::Space::new().width(Length::Fill),
+                Space::new().width(Length::Fill),
                 text(summary).size(12).style(|theme| {
                     let c_theme = get_theme(theme);
-                    text::Style { color: Some(c_theme.muted_text_color()) }
+                    text::Style {
+                        color: Some(c_theme.muted_text_color()),
+                    }
                 }),
-                MButton::new(ButtonType::ContentBtn, false, Some(Message::ToggleFilterCollapsed))
-                    .svg_size(16.0)
-                    .text_btn("展开"),
+                button(text("展开").size(12))
+                    .on_press(Message::ToggleFilterCollapsed)
+                    .padding([spacing::XS as u16, spacing::SM as u16]),
             ]
-            .spacing(8)
-            .align_y(iced::Alignment::Center);
-
-            return Self::card("过滤条件", header.into(), text("").into());
+            .spacing(spacing::SM)
+            .align_y(iced::Alignment::Center)
+            .into();
         }
 
-        // 展开状态：显示完整过滤条件列表
-        let filter_items: Vec<Element<'_, Message>> = self.state.filter_items
+        let filter_items: Vec<Element<'_, Message>> = self
+            .state
+            .filter_items
             .iter()
             .enumerate()
             .map(|(i, filter)| {
-                let content_input = text_input("输入关键字或正则表达式...", &filter.keyword)
+                let content_input = text_input("输入关键字或正则...", &filter.keyword)
                     .on_input(move |s| Message::FilterChanged(i, s))
                     .width(Length::Fill);
 
                 let regex_toggle = row![
                     checkbox(filter.is_regex)
                         .on_toggle(move |v| Message::FilterRegexToggled(i, v)),
-                    text("正则").size(13),
+                    text("正则").size(12),
                 ]
-                .spacing(4)
+                .spacing(spacing::XS)
                 .align_y(iced::Alignment::Center);
 
                 let remove_btn: Element<'_, Message> = if self.state.filter_items.len() > 1 {
-                    button(text("×").size(16))
+                    button(text("×").size(14))
                         .on_press(Message::RemoveFilterItem(i))
-                        .padding([4, 8])
+                        .padding([spacing::XS as u16, spacing::SM as u16])
                         .into()
                 } else {
                     text("").into()
                 };
 
-                row![
-                    remove_btn,
-                    content_input,
-                    regex_toggle,
-                ]
-                .spacing(8)
-                .align_y(iced::Alignment::Center)
-                .into()
+                row![remove_btn, content_input, regex_toggle]
+                    .spacing(spacing::SM)
+                    .align_y(iced::Alignment::Center)
+                    .into()
             })
             .collect();
 
-        let filter_list = column(filter_items).spacing(8);
+        let filter_list = column(filter_items).spacing(spacing::SM);
 
         let header = row![
             text(count_text).size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                text::Style { color: Some(c_theme.secondary_text_color()) }
+                text::Style {
+                    color: Some(c_theme.secondary_text_color()),
+                }
             }),
-            iced::widget::Space::new().width(Length::Fill),
-            MButton::new(ButtonType::ContentBtn, false, Some(Message::AddFilterItem))
-                .svg_size(16.0)
-                .text_btn("+ 添加条件"),
-            MButton::new(ButtonType::ContentBtn, false, Some(Message::ToggleFilterCollapsed))
-                .svg_size(16.0)
-                .text_btn("折叠"),
+            Space::new().width(Length::Fill),
+            button(text("+ 添加条件").size(12))
+                .on_press(Message::AddFilterItem)
+                .padding([spacing::XS as u16, spacing::SM as u16]),
+            button(text("折叠").size(12))
+                .on_press(Message::ToggleFilterCollapsed)
+                .padding([spacing::XS as u16, spacing::SM as u16]),
         ]
-        .spacing(8)
+        .spacing(spacing::SM)
         .align_y(iced::Alignment::Center);
 
-        Self::card("过滤条件", header.into(), filter_list.into())
-    }
-
-    fn build_action_buttons(&self) -> Element<'_, Message> {
-        container(
-            row![
-                iced::widget::Space::new().width(Length::Fill),
-                MButton::new(ButtonType::Success, false, Some(Message::ShowConfirmDialog))
-                    .svg_text_btn("assets/svg/playlist_add_check.svg", "执行重命名"),
-            ]
-            .spacing(12)
-            .align_y(iced::Alignment::Center),
-        )
-        .padding(iced::Padding {
-            top: 4.0,
-            right: 0.0,
-            bottom: 0.0,
-            left: 0.0,
-        })
+        column![
+            text("过滤条件")
+                .size(13)
+                .style(|theme| {
+                    let c_theme = get_theme(theme);
+                    text::Style {
+                        color: Some(c_theme.secondary_text_color()),
+                    }
+                }),
+            header,
+            filter_list,
+        ]
+        .spacing(spacing::SM)
+        .width(Length::Fill)
         .into()
     }
+
+    // --- Splitter ---
+
+    fn build_splitter(&self) -> Element<'_, Message> {
+        splitter::view(
+            &self.splitter_state,
+            Message::SplitterPressed,
+            Message::SplitterDragged,
+            Message::SplitterReleased,
+            Message::SplitterHovered,
+        )
+    }
+
+    // --- Right Panel ---
+
+    fn build_right_panel(&self) -> Element<'_, Message> {
+        let file_count_text = format!(
+            "{} / {} 个文件",
+            self.state.visible_file_count(),
+            self.state.filter_file_list.len()
+        );
+
+        let file_list_content = file_list::view(
+            &self.state.filter_file_list,
+            &self.state.selected_file,
+            &self.state.replace_infos,
+            &self.state.conflicts,
+            &self.virtual_state,
+            self.state.display_limit,
+        );
+
+        let mapped = file_list_content.map(Message::FileListMessage);
+
+        column![
+            container(
+                row![
+                    text("文件预览")
+                        .size(13)
+                        .style(|theme| {
+                            let c_theme = get_theme(theme);
+                            text::Style {
+                                color: Some(c_theme.secondary_text_color()),
+                            }
+                        }),
+                    Space::new().width(Length::Fill),
+                    text(file_count_text).size(12).style(|theme| {
+                        let c_theme = get_theme(theme);
+                        text::Style {
+                            color: Some(c_theme.muted_text_color()),
+                        }
+                    }),
+                ]
+                .align_y(iced::Alignment::Center)
+            )
+            .padding([spacing::SM as u16, spacing::MD as u16]),
+            mapped,
+        ]
+        .spacing(spacing::XS)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
+    }
+
+    // --- Bottom Bar ---
+
+    fn build_bottom_bar(&self) -> Element<'_, Message> {
+        status_bar::view(&self.state.conflicts, &self.state.status)
+    }
+
+    // --- Confirm Dialog ---
 
     fn build_confirm_dialog(&self) -> Element<'_, Message> {
         let file_count = self.state.filter_file_list.len();
@@ -452,7 +653,9 @@ impl Rename {
                 column![
                     text("确认重命名").size(16).style(|theme| {
                         let c_theme = get_theme(theme);
-                        text::Style { color: Some(c_theme.main_text_color()) }
+                        text::Style {
+                            color: Some(c_theme.main_text_color()),
+                        }
                     }),
                     text(format!(
                         "即将对 {} 个文件应用 {} 条替换规则",
@@ -461,20 +664,30 @@ impl Rename {
                     .size(13)
                     .style(|theme| {
                         let c_theme = get_theme(theme);
-                        text::Style { color: Some(c_theme.secondary_text_color()) }
+                        text::Style {
+                            color: Some(c_theme.secondary_text_color()),
+                        }
                     }),
                     row![
-                        MButton::new(ButtonType::ContentBtn, false, Some(Message::CancelRename))
-                            .text_btn("取消"),
-                        iced::widget::Space::new().width(Length::Fill),
-                        MButton::new(ButtonType::Success, false, Some(Message::ConfirmRename))
-                            .text_btn("确认执行"),
+                        MButton::new(
+                            ButtonType::ContentBtn,
+                            false,
+                            Some(Message::CancelRename)
+                        )
+                        .text_btn("取消"),
+                        Space::new().width(Length::Fill),
+                        MButton::new(
+                            ButtonType::Success,
+                            false,
+                            Some(Message::ConfirmRename)
+                        )
+                        .text_btn("确认执行"),
                     ]
-                    .spacing(12)
+                    .spacing(spacing::MD)
                     .align_y(iced::Alignment::Center),
                 ]
-                .spacing(16)
-                .padding(20),
+                .spacing(spacing::LG)
+                .padding(spacing::XL),
             )
             .style(|theme| {
                 let c_theme = get_theme(theme);

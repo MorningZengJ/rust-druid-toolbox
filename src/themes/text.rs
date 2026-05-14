@@ -21,4 +21,12 @@ impl Theme {
             Theme::Dark { .. } => iced::Color::from_rgb8(0x6B, 0x72, 0x80),
         }
     }
+
+    pub fn diff_added_text_color(&self) -> iced::Color {
+        iced::Color::from_rgb8(0x10, 0xB9, 0x81)
+    }
+
+    pub fn diff_removed_text_color(&self) -> iced::Color {
+        iced::Color::from_rgb8(0xEF, 0x44, 0x44)
+    }
 }
