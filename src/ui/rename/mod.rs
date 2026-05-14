@@ -15,7 +15,8 @@ use crate::ui::PageWithNav;
 use crate::utils::common_utils::CommonUtils;
 use crate::utils::file_utils::FileUtils;
 use iced::widget::{
-    button, checkbox, column, container, pane_grid, pick_list, row, svg, text, text_input, Space,
+    button, checkbox, column, container, pane_grid, pick_list, row, stack, svg, text, text_input,
+    Space,
 };
 use iced::{Element, Length, Task};
 
@@ -303,9 +304,7 @@ impl PageWithNav for Rename {
 
         if self.state.show_confirm {
             let overlay = self.build_confirm_dialog();
-            // Stack overlay on top of content using a wrapper column
-            // The overlay has Fill dimensions and centers itself, covering the content
-            column![content].push(overlay).into()
+            stack![content, overlay].into()
         } else {
             content.into()
         }
