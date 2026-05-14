@@ -2,7 +2,6 @@ use crate::model::file_info::FileInfo;
 use crate::model::rename_state::ConflictInfo;
 use crate::model::replace_info::ReplaceInfo;
 use crate::themes::get_theme;
-use crate::ui::components::{truncated_text_muted_with_tooltip, truncated_text_with_tooltip};
 use crate::ui::rename::logic;
 use crate::ui::rename::spacing;
 use crate::ui::rename::virtual_list::{VirtualList, VirtualState};
@@ -83,9 +82,17 @@ pub fn view<'a>(
             let name_changed = preview_name != file.name;
             let file_type = if file.is_dir { "📁" } else { "📄" };
 
-            // Name column with truncation and tooltip
+            // Name column with truncation (tooltip provided by outer row tooltip)
             let name_col = container(
-                truncated_text_with_tooltip(&file.name, 13.0)
+                text(&file.name)
+                    .size(13)
+                    .wrapping(iced::widget::text::Wrapping::None)
+                    .style(|theme| {
+                        let c_theme = get_theme(theme);
+                        text::Style {
+                            color: Some(c_theme.main_text_color()),
+                        }
+                    })
             )
             .width(Length::FillPortion(3))
             .padding([spacing::XS as u16, spacing::MD as u16]);
@@ -99,7 +106,15 @@ pub fn view<'a>(
                     .into()
             } else {
                 container(
-                    truncated_text_muted_with_tooltip(&preview_name, 13.0)
+                    text(preview_name.clone())
+                        .size(13)
+                        .wrapping(iced::widget::text::Wrapping::None)
+                        .style(|theme| {
+                            let c_theme = get_theme(theme);
+                            text::Style {
+                                color: Some(c_theme.muted_text_color()),
+                            }
+                        }),
                 )
                 .width(Length::FillPortion(3))
                 .padding([spacing::XS as u16, spacing::MD as u16])

@@ -15,7 +15,14 @@
       "Bash(tasklist)",
       "Bash(taskkill /PID 10032 /F)",
       "Bash(xargs grep -l \"pub fn tooltip\")",
-      "Bash(xargs grep -l \"pub trait Widget\")"
+      "Bash(xargs grep -l \"pub trait Widget\")",
+      "Bash(cargo check *)",
+      "Bash(xargs grep -l \"tooltip\")",
+      "Bash(wait)",
+      "Bash(findstr -i druid)",
+      "Bash(taskkill *)",
+      "Bash(cmd.exe *)",
+      "Bash(del *)"
     ]
   }
 }

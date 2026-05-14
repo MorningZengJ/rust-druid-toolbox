@@ -158,6 +158,7 @@ impl PageWithNav for Rename {
                 self.state.update_filter_file_list();
                 self.state.detect_conflicts();
                 self.state.display_limit = 500;
+                self.virtual_state.scroll_offset = 0.0;
             }
             Message::FileSelected(file) => {
                 self.state.selected_file = Some(file);

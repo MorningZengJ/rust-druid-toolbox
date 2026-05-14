@@ -108,7 +108,9 @@ where
 
         let mut children = Vec::new();
         for (i, row) in self.rows.iter_mut().enumerate() {
-            let row_tree = &mut tree.children[i];
+            let Some(row_tree) = tree.children.get_mut(i) else {
+                continue;
+            };
             let node = row.as_widget_mut().layout(row_tree, renderer, &row_limits);
             // Position rows relative to the visible area, starting from offset_y
             let y = offset_y + i as f32 * self.row_height;
