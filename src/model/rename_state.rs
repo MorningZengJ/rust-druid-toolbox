@@ -84,6 +84,16 @@ impl RenameState {
 
     pub fn update_filter_file_list(&mut self) {
         self.filter_file_list = self.get_filtered_files();
+        self.sort_file_list();
+    }
+
+    fn sort_file_list(&mut self) {
+        self.filter_file_list.sort_by(|a, b| {
+            // 1. 文件夹优先
+            b.is_dir.cmp(&a.is_dir)
+                // 2. 名称排序（不区分大小写）
+                .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+        });
     }
 
     fn get_filtered_files(&self) -> Vec<FileInfo> {
