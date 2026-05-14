@@ -5,7 +5,7 @@ mod spacing;
 mod status_bar;
 use crate::model::file_info::FileInfo;
 use crate::model::rename_result::{RenameError, RenameResult};
-use crate::model::rename_state::{FilterItem, RenameState};
+use crate::model::rename_state::{FilterItem, QuickFilter, RenameState};
 use crate::model::replace_info::ReplaceInfo;
 use crate::model::rule_template::RuleTemplate;
 use crate::themes::get_theme;
@@ -33,6 +33,7 @@ pub enum Message {
     AddFilterItem,
     RemoveFilterItem(usize),
     ToggleFilterCollapsed,
+    QuickFilterChanged(QuickFilter),
 
     // File list
     FileListLoaded(Vec<FileInfo>),
@@ -146,6 +147,11 @@ impl PageWithNav for Rename {
             }
             Message::ToggleFilterCollapsed => {
                 self.state.filter_collapsed = !self.state.filter_collapsed;
+            }
+            Message::QuickFilterChanged(filter) => {
+                self.state.toggle_quick_filter(filter);
+                self.state.update_filter_file_list();
+                self.state.detect_conflicts();
             }
 
             // File list
@@ -523,6 +529,131 @@ impl Rename {
 
         let filter_list = column(filter_items).spacing(spacing::SM);
 
+        // Quick filter buttons
+        let mut quick_filter_row = row![].spacing(spacing::XS).align_y(iced::Alignment::Center);
+
+        let is_all_active = self.state.quick_filters.contains(&QuickFilter::All);
+        let all_btn = button(text("全部").size(11))
+            .on_press(Message::QuickFilterChanged(QuickFilter::All))
+            .padding([spacing::XS as u16, spacing::SM as u16])
+            .style(move |theme, _status| {
+                let c_theme = get_theme(theme);
+                button::Style {
+                    background: Some(if is_all_active {
+                        c_theme.accent_color().into()
+                    } else {
+                        c_theme.toolbar_bg().into()
+                    }),
+                    text_color: if is_all_active {
+                        iced::Color::WHITE
+                    } else {
+                        c_theme.main_text_color()
+                    },
+                    border: iced::Border {
+                        radius: 4.0.into(),
+                        width: 1.0,
+                        color: c_theme.border_color(),
+                    },
+                    ..Default::default()
+                }
+            });
+        quick_filter_row = quick_filter_row.push(all_btn);
+
+        let is_folder_active = self.state.quick_filters.contains(&QuickFilter::Folder);
+        let folder_btn = button(text("文件夹").size(11))
+            .on_press(Message::QuickFilterChanged(QuickFilter::Folder))
+            .padding([spacing::XS as u16, spacing::SM as u16])
+            .style(move |theme, _status| {
+                let c_theme = get_theme(theme);
+                button::Style {
+                    background: Some(if is_folder_active {
+                        c_theme.accent_color().into()
+                    } else {
+                        c_theme.toolbar_bg().into()
+                    }),
+                    text_color: if is_folder_active {
+                        iced::Color::WHITE
+                    } else {
+                        c_theme.main_text_color()
+                    },
+                    border: iced::Border {
+                        radius: 4.0.into(),
+                        width: 1.0,
+                        color: c_theme.border_color(),
+                    },
+                    ..Default::default()
+                }
+            });
+        quick_filter_row = quick_filter_row.push(folder_btn);
+
+        let is_file_active = self.state.quick_filters.contains(&QuickFilter::File);
+        let file_btn = button(text("文件").size(11))
+            .on_press(Message::QuickFilterChanged(QuickFilter::File))
+            .padding([spacing::XS as u16, spacing::SM as u16])
+            .style(move |theme, _status| {
+                let c_theme = get_theme(theme);
+                button::Style {
+                    background: Some(if is_file_active {
+                        c_theme.accent_color().into()
+                    } else {
+                        c_theme.toolbar_bg().into()
+                    }),
+                    text_color: if is_file_active {
+                        iced::Color::WHITE
+                    } else {
+                        c_theme.main_text_color()
+                    },
+                    border: iced::Border {
+                        radius: 4.0.into(),
+                        width: 1.0,
+                        color: c_theme.border_color(),
+                    },
+                    ..Default::default()
+                }
+            });
+        quick_filter_row = quick_filter_row.push(file_btn);
+
+        // Extension filter buttons
+        let extensions = self.state.available_extensions();
+        for ext in extensions {
+            let ext_clone = ext.clone();
+            let ext_display = ext.clone();
+            let is_active = self.state.quick_filters.contains(&QuickFilter::Extension(ext));
+            let ext_btn = button(text(ext_display).size(11))
+                .on_press(Message::QuickFilterChanged(QuickFilter::Extension(ext_clone)))
+                .padding([spacing::XS as u16, spacing::SM as u16])
+                .style(move |theme, _status| {
+                    let c_theme = get_theme(theme);
+                    button::Style {
+                        background: Some(if is_active {
+                            c_theme.accent_color().into()
+                        } else {
+                            c_theme.toolbar_bg().into()
+                        }),
+                        text_color: if is_active {
+                            iced::Color::WHITE
+                        } else {
+                            c_theme.main_text_color()
+                        },
+                        border: iced::Border {
+                            radius: 4.0.into(),
+                            width: 1.0,
+                            color: c_theme.border_color(),
+                        },
+                        ..Default::default()
+                    }
+                });
+            quick_filter_row = quick_filter_row.push(ext_btn);
+        }
+
+        let quick_filters = iced::widget::scrollable(quick_filter_row)
+            .direction(iced::widget::scrollable::Direction::Horizontal(
+                iced::widget::scrollable::Scrollbar::new()
+                    .width(4)
+                    .scroller_width(4),
+            ))
+            .width(Length::Fill);
+
         let header = row![
             text(count_text).size(12).style(|theme| {
                 let c_theme = get_theme(theme);
@@ -551,6 +682,7 @@ impl Rename {
                     }
                 }),
             header,
+            quick_filters,
             filter_list,
         ]
         .spacing(spacing::SM)
