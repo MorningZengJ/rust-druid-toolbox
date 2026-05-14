@@ -206,7 +206,7 @@ impl PageWithNav for AsciiArt {
                 return self.schedule_debounce();
             }
             Message::ResetParams => {
-                self.state.width = 80;
+                self.state.width = 500;
                 self.state.charset = CharsetPreset::Standard;
                 self.state.custom_charset = String::new();
                 self.state.contrast = 1.0;
@@ -782,7 +782,7 @@ impl AsciiArt {
         let width_control = row![
             text("输出宽度").size(12).width(Length::Fixed(70.0)),
             slider(MIN_WIDTH..=MAX_WIDTH, self.state.width, |v| {
-                Message::WidthChanged(v as u32)
+                Message::WidthChanged(v)
             })
             .width(Length::Fill),
             text(format!("{}", self.state.width)).size(12).width(Length::Fixed(40.0)),

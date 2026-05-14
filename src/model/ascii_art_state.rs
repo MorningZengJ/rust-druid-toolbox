@@ -36,7 +36,7 @@ impl Default for AsciiArtState {
             original_image: None,
             image_width: 0,
             image_height: 0,
-            width: 80,
+            width: 500,
             charset: CharsetPreset::Standard,
             custom_charset: String::new(),
             contrast: 1.0,
