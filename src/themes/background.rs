@@ -36,6 +36,34 @@ impl Theme {
         }
     }
 
+    pub fn table_header_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xF3, 0xF4, 0xF6),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x2A, 0x2A, 0x2E),
+        }
+    }
+
+    pub fn selected_row_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xDB, 0xEA, 0xFE),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x00, 0x6B, 0xB0),
+        }
+    }
+
+    pub fn status_success_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xD1, 0xFA, 0xE5),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x06, 0x4E, 0x3B),
+        }
+    }
+
+    pub fn status_error_bg(&self) -> iced::Color {
+        match self {
+            Theme::Light { .. } => iced::Color::from_rgb8(0xFE, 0xE2, 0xE2),
+            Theme::Dark { .. } => iced::Color::from_rgb8(0x7F, 0x1D, 0x1D),
+        }
+    }
+
     pub fn accent_color(&self) -> iced::Color {
         iced::Color::from_rgb8(0x3B, 0x82, 0xF6)
     }

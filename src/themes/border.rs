@@ -38,4 +38,12 @@ impl Theme {
             color: self.accent_color(),
         }
     }
+
+    pub fn table_row_border(&self) -> iced::Border {
+        iced::Border {
+            width: 1.0,
+            color: self.border_color(),
+            ..Default::default()
+        }
+    }
 }
