@@ -83,13 +83,15 @@ pub fn view<'a>(
                     })
             )
             .width(Length::FillPortion(3))
-            .padding([spacing::XS as u16, spacing::MD as u16]);
+            .padding([spacing::XS as u16, spacing::MD as u16])
+            .clip(true);
 
             let preview_col: Element<'a, FileListMessage> = if name_changed {
                 let diff = diff_segments(file.name.clone(), preview_name.clone());
                 container(diff)
                     .width(Length::FillPortion(3))
                     .padding([spacing::XS as u16, spacing::MD as u16])
+                    .clip(true)
                     .into()
             } else {
                 container(
@@ -105,6 +107,7 @@ pub fn view<'a>(
                 )
                 .width(Length::FillPortion(3))
                 .padding([spacing::XS as u16, spacing::MD as u16])
+                .clip(true)
                 .into()
             };
 
