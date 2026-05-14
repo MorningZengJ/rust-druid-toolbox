@@ -31,7 +31,7 @@ pub fn view<'a>(
         row![
             container(text("文件名").size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                iced::widget::text::Style {
+                text::Style {
                     color: Some(c_theme.secondary_text_color()),
                 }
             }))
@@ -39,7 +39,7 @@ pub fn view<'a>(
             .padding([spacing::SM as u16, spacing::MD as u16]),
             container(text("重命名为").size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                iced::widget::text::Style {
+                text::Style {
                     color: Some(c_theme.secondary_text_color()),
                 }
             }))
@@ -47,7 +47,7 @@ pub fn view<'a>(
             .padding([spacing::SM as u16, spacing::MD as u16]),
             container(text("类型").size(12).style(|theme| {
                 let c_theme = get_theme(theme);
-                iced::widget::text::Style {
+                text::Style {
                     color: Some(c_theme.secondary_text_color()),
                 }
             }))
@@ -84,7 +84,7 @@ pub fn view<'a>(
 
             let name_col = container(text(&file.name).size(13).style(|theme| {
                 let c_theme = get_theme(theme);
-                iced::widget::text::Style {
+                text::Style {
                     color: Some(c_theme.main_text_color()),
                 }
             }))
@@ -104,7 +104,7 @@ pub fn view<'a>(
                         .size(13)
                         .style(|theme| {
                             let c_theme = get_theme(theme);
-                            iced::widget::text::Style {
+                            text::Style {
                                 color: Some(c_theme.muted_text_color()),
                             }
                         }),
@@ -239,7 +239,7 @@ where
                     .size(13)
                     .style(|theme| {
                         let c_theme = get_theme(theme);
-                        iced::widget::text::Style {
+                        text::Style {
                             color: Some(c_theme.diff_added_text_color()),
                         }
                     }),
