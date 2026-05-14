@@ -3,8 +3,6 @@ pub(crate) mod logic;
 mod replace_rules;
 mod spacing;
 mod status_bar;
-pub(crate) mod virtual_list;
-
 use crate::model::file_info::FileInfo;
 use crate::model::rename_result::{RenameError, RenameResult};
 use crate::model::rename_state::{FilterItem, RenameState};
@@ -13,7 +11,6 @@ use crate::model::rule_template::RuleTemplate;
 use crate::themes::get_theme;
 use crate::ui::components::{ButtonType, MButton};
 use crate::ui::rename::file_list::FileListMessage;
-use crate::ui::rename::virtual_list::VirtualState;
 use crate::ui::PageWithNav;
 use crate::utils::common_utils::CommonUtils;
 use crate::utils::file_utils::FileUtils;
@@ -71,7 +68,6 @@ pub enum Message {
 #[derive(Debug, Clone)]
 pub struct Rename {
     state: RenameState,
-    virtual_state: VirtualState,
     panes: pane_grid::State<RenamePane>,
 }
 
@@ -79,7 +75,6 @@ impl Default for Rename {
     fn default() -> Self {
         Self {
             state: RenameState::new(),
-            virtual_state: VirtualState::new(),
             panes: Self::build_panes(),
         }
     }
@@ -158,7 +153,6 @@ impl PageWithNav for Rename {
                 self.state.update_filter_file_list();
                 self.state.detect_conflicts();
                 self.state.display_limit = 500;
-                self.virtual_state.scroll_offset = 0.0;
             }
             Message::FileSelected(file) => {
                 self.state.selected_file = Some(file);
@@ -186,15 +180,6 @@ impl PageWithNav for Rename {
                             .args(["/C", "start", "", &file.path])
                             .spawn();
                     }
-                }
-                FileListMessage::VirtualScroll(delta_y) => {
-                    let total = self.state.visible_file_count();
-                    self.virtual_state.handle_scroll(
-                        delta_y,
-                        total,
-                        spacing::ROW_H,
-                        600.0,
-                    );
                 }
                 FileListMessage::LoadMore => {
                     self.state.load_more();
@@ -629,7 +614,6 @@ impl Rename {
             &self.state.selected_file,
             &self.state.replace_infos,
             &self.state.conflicts,
-            &self.virtual_state,
             self.state.display_limit,
         );
 

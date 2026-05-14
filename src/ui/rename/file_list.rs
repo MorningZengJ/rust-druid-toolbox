@@ -4,15 +4,13 @@ use crate::model::replace_info::ReplaceInfo;
 use crate::themes::get_theme;
 use crate::ui::rename::logic;
 use crate::ui::rename::spacing;
-use crate::ui::rename::virtual_list::{VirtualList, VirtualState};
-use iced::widget::{button, column, container, mouse_area, row, text};
+use iced::widget::{button, column, container, mouse_area, row, scrollable, text};
 use iced::{Alignment, Element, Length};
 
 #[derive(Debug, Clone)]
 pub enum FileListMessage {
     FileSelected(FileInfo),
     FileDoubleClicked(FileInfo),
-    VirtualScroll(f32),
     LoadMore,
 }
 
@@ -21,11 +19,8 @@ pub fn view<'a>(
     selected_file: &Option<FileInfo>,
     replace_infos: &[ReplaceInfo],
     conflicts: &[ConflictInfo],
-    virtual_state: &'a VirtualState,
     display_limit: usize,
 ) -> Element<'a, FileListMessage> {
-    let total = filter_file_list.len().min(display_limit);
-
     // Header
     let header = container(
         row![
@@ -64,17 +59,11 @@ pub fn view<'a>(
         }
     });
 
-    // Compute visible range
-    let viewport_height = 600.0; // approximate, will be refined by layout
-    let (start, end) = virtual_state.visible_range(spacing::ROW_H, viewport_height, total);
-
-    // Build visible rows
-    let visible_files: Vec<Element<'a, FileListMessage>> = filter_file_list
+    // Build all rows
+    let rows: Vec<Element<'a, FileListMessage>> = filter_file_list
         .iter()
         .take(display_limit)
         .enumerate()
-        .skip(start)
-        .take(end - start)
         .map(|(i, file)| {
             let is_selected = selected_file.as_ref().map(|s| s == file).unwrap_or(false);
             let is_conflict = conflicts.iter().any(|c| c.source_indices.contains(&i));
@@ -82,7 +71,6 @@ pub fn view<'a>(
             let name_changed = preview_name != file.name;
             let file_type = if file.is_dir { "📁" } else { "📄" };
 
-            // Name column with truncation (tooltip provided by outer row tooltip)
             let name_col = container(
                 text(&file.name)
                     .size(13)
@@ -97,7 +85,6 @@ pub fn view<'a>(
             .width(Length::FillPortion(3))
             .padding([spacing::XS as u16, spacing::MD as u16]);
 
-            // Diff-highlighted preview column
             let preview_col: Element<'a, FileListMessage> = if name_changed {
                 let diff = diff_segments(file.name.clone(), preview_name.clone());
                 container(diff)
@@ -156,18 +143,14 @@ pub fn view<'a>(
         })
         .collect();
 
-    // Use VirtualList for the scrollable content
-    let virtual_list = VirtualList::new(
-        virtual_state,
-        total,
-        spacing::ROW_H,
-        visible_files,
-        start,
-    )
-    .on_scroll(FileListMessage::VirtualScroll);
+    let list_column = column(rows).width(Length::Fill);
 
     let mut content = column![header].width(Length::Fill);
-    content = content.push(virtual_list);
+    content = content.push(
+        scrollable(list_column)
+            .width(Length::Fill)
+            .height(Length::Fill),
+    );
 
     // "Load more" button if needed
     if filter_file_list.len() > display_limit {
