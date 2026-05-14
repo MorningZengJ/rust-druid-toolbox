@@ -13,7 +13,9 @@
       "Bash(RUST_BACKTRACE=1 \"C:/Users/zengc/Workspace/RustroverProjects/druid-toolbox/target/debug/druid-toolbox.exe\")",
       "Bash(taskkill /IM druid-toolbox.exe /F)",
       "Bash(tasklist)",
-      "Bash(taskkill /PID 10032 /F)"
+      "Bash(taskkill /PID 10032 /F)",
+      "Bash(xargs grep -l \"pub fn tooltip\")",
+      "Bash(xargs grep -l \"pub trait Widget\")"
     ]
   }
 }

@@ -1,6 +1,8 @@
 mod c_button;
+mod truncated_text;
 
 pub use c_button::{ButtonType, MButton};
+pub use truncated_text::{truncated_text_muted_with_tooltip, truncated_text_with_tooltip};
 
 use iced::widget::{row, text};
 use iced::{Alignment, Element, Length};
