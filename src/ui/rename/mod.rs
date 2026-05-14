@@ -2,7 +2,6 @@ mod file_list;
 pub(crate) mod logic;
 mod replace_rules;
 mod spacing;
-mod splitter;
 mod status_bar;
 pub(crate) mod virtual_list;
 
@@ -14,12 +13,13 @@ use crate::model::rule_template::RuleTemplate;
 use crate::themes::get_theme;
 use crate::ui::components::{ButtonType, MButton};
 use crate::ui::rename::file_list::FileListMessage;
-use crate::ui::rename::splitter::SplitterState;
 use crate::ui::rename::virtual_list::VirtualState;
 use crate::ui::PageWithNav;
 use crate::utils::common_utils::CommonUtils;
 use crate::utils::file_utils::FileUtils;
-use iced::widget::{button, checkbox, column, container, pick_list, row, svg, text, text_input, Space};
+use iced::widget::{
+    button, checkbox, column, container, pane_grid, pick_list, row, svg, text, text_input, Space,
+};
 use iced::{Element, Length, Task};
 
 #[derive(Debug, Clone)]
@@ -57,10 +57,7 @@ pub enum Message {
     UndoRuleChange,
 
     // Layout
-    SplitterPressed,
-    SplitterDragged(f32),
-    SplitterReleased,
-    SplitterHovered(bool),
+    PaneResized(pane_grid::ResizeEvent),
 
     // Confirm/Status
     ShowConfirmDialog,
@@ -73,7 +70,7 @@ pub enum Message {
 pub struct Rename {
     state: RenameState,
     virtual_state: VirtualState,
-    splitter_state: SplitterState,
+    panes: pane_grid::State<RenamePane>,
 }
 
 impl Default for Rename {
@@ -81,9 +78,15 @@ impl Default for Rename {
         Self {
             state: RenameState::new(),
             virtual_state: VirtualState::new(),
-            splitter_state: SplitterState::new(),
+            panes: Self::build_panes(),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+enum RenamePane {
+    Rules,
+    Preview,
 }
 
 impl PageWithNav for Rename {
@@ -272,21 +275,9 @@ impl PageWithNav for Rename {
                 }
             }
 
-            // Splitter
-            Message::SplitterPressed => {
-                self.splitter_state.start_drag(self.state.left_panel_width);
-            }
-            Message::SplitterDragged(mouse_x) => {
-                if self.splitter_state.is_dragging {
-                    let new_width = self.splitter_state.handle_drag(mouse_x);
-                    self.state.left_panel_width = new_width;
-                }
-            }
-            Message::SplitterReleased => {
-                self.splitter_state.end_drag();
-            }
-            Message::SplitterHovered(hovered) => {
-                self.splitter_state.is_hovered = hovered;
+            // Layout
+            Message::PaneResized(event) => {
+                self.panes.resize(event.split, event.ratio);
             }
 
             // Confirm/Status
@@ -311,16 +302,12 @@ impl PageWithNav for Rename {
 
     fn view(&self) -> Element<'_, Message> {
         let toolbar = self.build_toolbar();
-        let left_panel = self.build_left_panel();
-        let splitter = self.build_splitter();
-        let right_panel = self.build_right_panel();
+        let panes = self.build_pane_grid();
         let bottom_bar = self.build_bottom_bar();
 
         let content = column![
             toolbar,
-            row![left_panel, splitter, right_panel]
-                .width(Length::Fill)
-                .height(Length::Fill),
+            panes,
             bottom_bar,
         ]
         .width(Length::Fill)
@@ -338,6 +325,15 @@ impl PageWithNav for Rename {
 }
 
 impl Rename {
+    fn build_panes() -> pane_grid::State<RenamePane> {
+        pane_grid::State::with_configuration(pane_grid::Configuration::Split {
+            axis: pane_grid::Axis::Vertical,
+            ratio: spacing::LEFT_PANEL_RATIO,
+            a: Box::new(pane_grid::Configuration::Pane(RenamePane::Rules)),
+            b: Box::new(pane_grid::Configuration::Pane(RenamePane::Preview)),
+        })
+    }
+
     fn load_files(&self) -> Task<Message> {
         let path = self.state.dir_path.clone();
         Task::perform(async move { FileUtils::list_files(&path) }, Message::FileListLoaded)
@@ -457,7 +453,7 @@ impl Rename {
                 .height(Length::Fill),
         )
         .padding(spacing::MD)
-        .width(Length::Fixed(self.state.left_panel_width))
+        .width(Length::Fill)
         .height(Length::Fill)
         .style(|theme| {
             let c_theme = get_theme(theme);
@@ -574,16 +570,45 @@ impl Rename {
         .into()
     }
 
-    // --- Splitter ---
+    // --- Panes ---
 
-    fn build_splitter(&self) -> Element<'_, Message> {
-        splitter::view(
-            &self.splitter_state,
-            Message::SplitterPressed,
-            Message::SplitterDragged,
-            Message::SplitterReleased,
-            Message::SplitterHovered,
-        )
+    fn build_pane_grid(&self) -> Element<'_, Message> {
+        pane_grid(&self.panes, |_pane, pane, _is_maximized| {
+            pane_grid::Content::new(match pane {
+                RenamePane::Rules => self.build_left_panel(),
+                RenamePane::Preview => self.build_right_panel(),
+            })
+        })
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .spacing(1.0)
+        .min_size(spacing::LEFT_PANEL_MIN)
+        .on_resize(spacing::PANE_RESIZE_LEEWAY, Message::PaneResized)
+        .style(|theme| {
+            let c_theme = get_theme(theme);
+            pane_grid::Style {
+                hovered_region: pane_grid::Highlight {
+                    background: iced::Background::Color(iced::Color {
+                        a: 0.08,
+                        ..c_theme.accent_color()
+                    }),
+                    border: iced::Border {
+                        width: 1.0,
+                        color: c_theme.border_color(),
+                        radius: 0.0.into(),
+                    },
+                },
+                hovered_split: pane_grid::Line {
+                    color: c_theme.splitter_hover_bg(),
+                    width: 2.0,
+                },
+                picked_split: pane_grid::Line {
+                    color: c_theme.splitter_hover_bg(),
+                    width: 2.0,
+                },
+            }
+        })
+        .into()
     }
 
     // --- Right Panel ---

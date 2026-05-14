@@ -61,7 +61,6 @@ pub struct RenameState {
 
     // Layout state
     pub rules_collapsed: Vec<bool>,
-    pub left_panel_width: f32,
     pub display_limit: usize,
 }
 
@@ -72,7 +71,6 @@ impl RenameState {
             replace_infos: vec![ReplaceInfo::new()],
             max_history: 50,
             rules_collapsed: vec![false],
-            left_panel_width: 320.0,
             display_limit: 500,
             ..Default::default()
         }
