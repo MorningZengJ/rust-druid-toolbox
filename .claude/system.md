@@ -2,157 +2,175 @@
 
 ## 项目身份
 
-- **名称**: druid-toolbox（历史命名，实际使用 Iced 框架，非 Druid）
+- **名称**: druid-toolbox
 - **版本**: 0.1.0
-- **语言**: Rust (edition 2021)
-- **GUI 框架**: Iced 0.14（Elm Architecture 模式）
+- **架构**: Tauri v2 + React 18 + TypeScript + Vite + shadcn/ui
+- **后端**: Rust (edition 2021)，Tauri IPC 命令
+- **前端**: React 18 + TypeScript + Tailwind CSS + shadcn/ui (Radix UI)
+- **状态管理**: Zustand
 - **作者**: MorningZeng (zengchennihon@gmail.com)
-- **仓库**: git@github.com:MorningZengJ/rust-druid-toolbox.git
 
 ## 用途
 
-Windows 桌面工具箱应用，中文界面。包含两个主要功能模块：
+Windows 桌面工具箱应用，中文界面。包含三个主要功能模块：
 
 1. **批量文件重命名**：选择目录、过滤文件、定义替换规则、预览并执行重命名
 2. **字符画生成**：将图片转换为 ASCII 字符画，支持多种颜色模式和参数调节
+3. **视频抽帧**：从视频中提取帧图片，支持多种提取模式和输出格式
 
-## 模块边界
+## 项目结构
 
 ```
-src/
-  main.rs              → 入口，#![windows_subsystem = "windows"]，调用 ui::run()
-  core/mod.rs          → ternary_operator! / ternary_operator_let! 宏
-  model/               → 数据模型
-    file_info.rs       → FileInfo 结构体（文件元数据：name/path/parent_path/is_dir/extension/size/created_time/modified_time）
-    rename_state.rs    → RenameState（重命名页状态）、FilterItem（过滤条件）、ConflictInfo（冲突信息）
-    replace_info.rs    → ReplaceInfo（单条替换规则：id/content/target/enable/is_regex/is_error）
-    rename_result.rs   → RenameResult（重命名结果：total/success/errors）、RenameError
-    rule_template.rs   → RuleTemplate 枚举（AddPrefixNumber/AddSuffixNumber/SpaceToUnderscore/ToLowercase/RemoveDigitsBeforeExt/Custom），含 to_replace_info() 和 display_name()
-    ascii_art_state.rs → AsciiArtState（字符画状态）、CharsetPreset、ColorMode、Background 枚举
-  themes/              → 主题系统
-    mod.rs             → Theme 枚举 (Light/Dark)，get_theme() 工厂函数
-    background.rs      → 背景色定义（nav_bg/main_bg/card_bg/header_bg/border_color/table_header_bg/selected_row_bg/status_success_bg/status_error_bg/accent_color/success_color/warning_color/error_color/diff_added_bg/diff_removed_bg/conflict_bg/toolbar_bg/bottom_bar_bg/panel_bg/splitter_bg/splitter_hover_bg）
-    border.rs          → 边框样式定义
-    text.rs            → 文本颜色定义（main_text_color/secondary_text_color/muted_text_color/diff_added_text_color/diff_removed_text_color）
-  ui/                  → UI 层
-    mod.rs             → PageWithNav trait，run() 函数
-    app.rs             → 顶层 Iced 应用（App, Message, 窗口配置 800x600，最小 600x400）
-    home.rs            → 首页，左侧标签栏 + 右侧内容区，包含 Rename/AsciiArt 两个子页面
-    components/        → 可复用组件
-      c_button.rs      → MButton 组件（PrimaryNav/ContentBtn/Primary/Success 四种变体），支持 svg_btn/svg_text_btn/text_btn
-      mod.rs           → comeback_view() 辅助函数
-    navigation/        → 导航系统
-      mod.rs           → PageComponent trait, MapMessage 适配器, PageComponentExt trait, NavigationAction 枚举 (Push/Replace/Pop/PopToRoot)
-      route_page.rs    → RoutePage 枚举 (Home, Settings)
-      stack_navigator.rs → StackNavigator（push/pop/replace/pop_to_root）
-    rename/            → 重命名页面（拆分为子模块）
-      mod.rs           → Rename 组件（PageWithNav trait），Message 枚举，Pane Grid 布局（Rules/Preview 两面板）
-      file_list.rs     → 文件列表视图（含预览列、diff 高亮、选择、双击交互、虚拟滚动、加载更多）
-      logic.rs         → apply_replace_rules() 替换逻辑、validate_regex() 验证，含单元测试
-      replace_rules.rs → 替换规则列表视图（含正则/启用切换、可折叠卡片）
-      status_bar.rs    → 重命名结果状态栏（冲突警告、成功/失败提示）
-      spacing.rs       → 布局常量（XS/SM/MD/LG/XL/TOOLBAR_H/BOTTOM_BAR_H/LEFT_PANEL_RATIO/LEFT_PANEL_MIN/PANE_RESIZE_LEEWAY/CARD_RADIUS/ROW_H/DISPLAY_LIMIT）
-      virtual_list.rs  → VirtualList 自定义 Widget（虚拟滚动列表，仅渲染可见行）和 VirtualState
-    ascii_art/         → 字符画页面
-      mod.rs           → AsciiArt 组件（PageWithNav trait），Message 枚举，参数控制面板
-      preview.rs       → AsciiArtPreview 自定义 Widget（支持缩放/拖拽/居中），ColoredChar/PreviewState/ColorSpan
-    settings/mod.rs    → 设置页（占位符，仅显示文本）
-    tabs/
-      root_tab.rs      → 左侧导航标签栏（Page 枚举：Rename/AsciiArt/Settings）
-      mod.rs           → 模块声明
-  utils/               → 工具函数
-    common_utils.rs    → CommonUtils: parent_path(), join_path()
-    file_utils.rs      → FileUtils: list_files(), format_size()
-    ascii_art_engine.rs → AsciiArtEngine: convert() 主入口，支持 Monochrome/Ansi256/TrueColor/Html 四种输出模式，含 resize/adjust/charset/亮度映射/ANSI-256色转换/HTML转义等
+frontend/                    # React 前端
+  src/
+    main.tsx                 # 入口，TooltipProvider 包裹
+    App.tsx                  # 主布局：左侧 90px 导航栏 + 右侧内容区
+    globals.css              # Tailwind CSS + shadcn/ui 主题变量（亮/暗）
+    lib/utils.ts             # cn() 工具函数（clsx + tailwind-merge）
+    lib/renameLogic.ts       # 客户端重命名预览逻辑（镜像 Rust 后端）
+    types/index.ts           # TypeScript 类型定义（匹配 Rust serde 结构）
+    hooks/useTheme.ts        # 主题管理 hook（light/dark/system）
+    stores/
+      renameStore.ts         # 重命名页 Zustand store
+      asciiArtStore.ts       # 字符画页 Zustand store
+      videoFrameStore.ts     # 视频抽帧页 Zustand store
+    components/ui/           # shadcn/ui 组件（button/input/slider/select/checkbox/dialog/resizable/scroll-area/tabs/tooltip/alert/popover/table/badge）
+    pages/
+      rename/                # 重命名页面
+        RenamePage.tsx       # 主布局（ResizablePanelGroup）
+        Toolbar.tsx          # 目录路径、浏览、上级目录、撤销
+        FilterSection.tsx    # 可折叠筛选区
+        QuickFilters.tsx     # 快捷筛选按钮（全部/文件夹/文件/扩展名）
+        RuleList.tsx         # 替换规则列表
+        RuleCard.tsx         # 单条规则卡片
+        FilePreview.tsx      # 虚拟滚动文件预览（react-virtuoso）
+        StatusBar.tsx        # 底部状态栏
+        ConfirmDialog.tsx    # 确认弹窗
+      ascii-art/
+        AsciiArtPage.tsx     # 字符画页面（左侧控制面板 + 右侧预览）
+      video-frame/
+        VideoFramePage.tsx   # 视频抽帧页面（左侧参数 + 右侧帧网格）
+      settings/
+        SettingsPage.tsx     # 设置页（主题切换）
 
-docs/
-  ascii-art-plan.md    → 字符画功能企划书（设计文档，非代码）
+src-tauri/                   # Tauri 后端（Rust）
+  src/
+    main.rs                  # Windows subsystem 入口
+    lib.rs                   # Tauri Builder，注册所有命令（视频帧命令条件编译）
+    commands/
+      mod.rs                 # 模块声明（video-frame feature gate）
+      rename.rs              # 7 个 Tauri 命令：list_files/preview_renames/detect_conflicts/execute_renames/validate_regex/apply_rule_template/parent_path
+      ascii_art.rs           # 2 个命令：convert_ascii_art（async spawn_blocking）/load_image_from_file
+      video_frame.rs         # 4 个命令：check_ffmpeg/probe_video/extract_frames（async + 事件进度）/export_frames
+    model/
+      file_info.rs           # FileInfo（serde）
+      replace_info.rs        # ReplaceInfo（serde）
+      rename_result.rs       # RenameResult/RenameError（serde）
+      rule_template.rs       # RuleTemplate 枚举（serde）
+      rename_state.rs        # QuickFilter/FilterItem/ConflictInfo（serde）
+      ascii_art_state.rs     # AsciiArtParams/CharsetPreset/ColorMode/Background（serde）
+      video_frame_state.rs   # VideoInfo/ExtractedFrame/ExtractParams/ExtractMode/OutputFormat（serde）
+    utils/
+      common_utils.rs        # parent_path()/join_path()（返回 Result）
+      file_utils.rs          # list_files()/format_size()
+      rename_logic.rs        # apply_replace_rules()/validate_regex()，含 8 个单元测试
+      ascii_art_engine.rs    # AsciiArtEngine::convert_from_image()，支持 4 种输出模式
+      video_frame_engine.rs  # VideoFrameEngine：check_ffmpeg/probe_video/extract_frames
+  Cargo.toml                 # 依赖：tauri 2、serde、fancy-regex、image、ffmpeg-next(optional)、uuid、anyhow
+  tauri.conf.json            # 窗口 800x600，最小 600x400
+  build.rs                   # tauri_build::build()
 ```
 
 ## 核心架构
 
-### 导航系统（自定义栈式导航）
+### IPC 通信
 
-- `PageComponent<Message>` trait：标准组件接口（init/update/view/resize/subscription）
-- `StackNavigator<Message, RoutePage>`：页面栈管理
-- `MapMessage` 适配器：父子组件消息类型转换，通过 `PageComponentExt::map_msg()` 使用
-- `PageWithNav` trait：简化版组件接口（reload/update/view），Rename 和 AsciiArt 页面使用
+- Rust 后端通过 `#[tauri::command]` 暴露函数
+- 前端通过 `invoke()` 调用 Rust 命令
+- 所有跨 IPC 数据结构必须 derive `serde::Serialize` + `serde::Deserialize`
+- 使用 `#[serde(rename_all = "camelCase")]` 实现 Rust snake_case ↔ JS camelCase 自动转换
+- 异步命令（convert_ascii_art/extract_frames）使用 `tokio::task::spawn_blocking`
+- 进度更新通过 Tauri 事件系统：`app_handle.emit("event", data)` → `listen("event", callback)`
 
-### 消息流
+### 状态管理
 
-1. `App::boot()` 初始化 StackNavigator，起始路由为 Home
-2. 用户交互 → `Message` → `App::update()` → 路由分发
-3. Home 页面通过标签栏切换 Rename/AsciiArt 子页面
-4. 子组件消息通过 `MapMessage` 适配后向上传递
-5. `NavigationAction` (Push/Pop/Replace/PopToRoot) 驱动页面切换
+- 前端使用 Zustand store 管理页面状态
+- 每个页面独立 store：renameStore/asciiArtStore/videoFrameStore
+- UI 状态（折叠、选中等）也在 store 中管理
+- 规则撤销：store 内维护 ruleHistory 栈
 
 ### 重命名流程
 
-1. 用户选择/输入目录路径 → `FileUtils::list_files()` 异步加载文件列表
-2. 可选过滤（多条过滤条件，支持纯文本包含或正则匹配，可折叠）
-3. 用户添加多条替换规则（每条含 content/target/enable/is_regex），支持模板快速添加，规则卡片可折叠
-4. 预览：`logic::apply_replace_rules()` 对文件名逐条应用启用的规则，文件列表实时显示预览，差异部分高亮显示
-5. 冲突检测：`RenameState::detect_conflicts()` 检测重命名后文件名冲突，冲突行高亮显示
-6. 撤销系统：规则修改自动保存历史，支持撤销操作（最多 50 步）
-7. 确认弹窗 → 执行：遍历 `filter_file_list`，对每个文件应用所有启用规则后调用 `std::fs::rename()`，返回 RenameResult
-
-### 文件列表
-
-- **虚拟滚动**：VirtualList 自定义 Widget，仅渲染可见行，通过 VirtualState 管理滚动偏移和可见范围
-- **分页加载**：默认显示 500 条（DISPLAY_LIMIT），超出时显示"加载更多"按钮
-- **diff 高亮**：重命名预览列使用 diff_segments() 计算共同前缀/后缀，高亮差异部分
-- **交互**：单击选中文件，双击目录进入、双击文件用系统默认程序打开
-
-### 布局系统
-
-- **Pane Grid**：重命名页面使用 Iced 的 pane_grid 组件，上半部分为规则面板，下半部分为文件预览面板，支持拖拽调整大小
-- **间距常量**：spacing.rs 定义统一的布局常量（XS=4/SM=8/MD=12/LG=16/XL=24），各组件引用这些常量而非硬编码
-- **主题颜色**：toolbar_bg/bottom_bar_bg/panel_bg/splitter_bg/conflict_bg/diff_added_bg/diff_removed_bg 等语义化颜色
+1. 用户选择目录 → `invoke("list_files")` 加载文件列表
+2. 过滤：关键字过滤（纯文本/正则）+ 快捷筛选（全部/文件夹/文件/扩展名）
+3. 添加替换规则（content/target/enable/isRegex），支持模板
+4. 客户端预览：`renameLogic.applyReplaceRules()` 实时计算新文件名
+5. 冲突检测：`invoke("detect_conflicts")` 检测文件名冲突
+6. 确认 → `invoke("execute_renames")` 执行，返回 RenameResult
 
 ### 字符画流程
 
-1. 用户打开图片文件或从剪贴板粘贴 → 解码为 DynamicImage
-2. 调节参数（宽度/字符集/对比度/亮度/饱和度/颜色模式/背景色/宽高比），带 500ms 防抖
-3. `AsciiArtEngine::convert()` 异步转换（通过 `tokio::task::spawn_blocking`）
-4. 输出三种格式：plain_text / html_text / ansi_text
-5. AsciiArtPreview 自定义 Widget 渲染彩色字符画，支持鼠标滚轮缩放和拖拽平移
-6. 支持复制到剪贴板（纯文本/HTML/ANSI），导出功能待实现
+1. 打开图片 → `invoke("load_image_from_file")` 读取字节
+2. 调节参数（宽度/字符集/对比度/亮度/饱和度/颜色模式/背景/宽高比）
+3. `invoke("convert_ascii_art")` 异步转换（spawn_blocking）
+4. 输出 plainText/htmlText/ansiText，前端用 `dangerouslySetInnerHTML` 渲染 HTML
+5. 支持缩放（CSS transform）和复制/导出
+
+### 视频抽帧流程
+
+1. `invoke("check_ffmpeg")` 检测 FFmpeg 可用性
+2. 选择视频 → `invoke("probe_video")` 读取元数据
+3. 设置参数 → `invoke("extract_frames")` 异步提取，通过事件监听进度
+4. 帧网格展示，支持单帧预览和批量导出
+5. 视频帧命令通过 `#[cfg(feature = "video-frame")]` 条件编译
+
+### 主题系统
+
+- shadcn/ui CSS 变量（HSL 色彩空间）
+- 亮色/暗色主题通过 `.dark` class 切换
+- `useTheme` hook 管理主题状态（light/dark/system），持久化到 localStorage
+- 自定义颜色：toolbar/bottom-bar/panel/splitter/conflict/diff-added/diff-removed/success/warning
 
 ## 依赖关系
 
+### Rust 后端
+
 | 依赖 | 用途 |
 |------|------|
-| iced 0.14 | GUI 框架（tokio/image/svg/advanced features） |
-| rfd 0.16 | 原生文件夹/文件选择对话框 |
-| tokio 1 | 异步运行时（rt-multi-thread/macros） |
-| regex 1 | 正则表达式 |
-| fancy-regex 0.13 | 支持前瞻/后顾的正则（用于重命名规则验证和应用） |
-| image 0.25 | 图片处理（字符画：解码/缩放/像素操作） |
-| arboard 3 | 剪贴板操作（字符画：读取图片/写入文本和 HTML） |
-| uuid 1 | 替换规则唯一 ID（v4） |
-| anyhow 1 | 错误处理（已声明但源码中未实际使用） |
-| embed-resource 2.5.0 | 构建依赖，编译 Windows .rc 文件嵌入图标 |
+| tauri 2 | 桌面框架 |
+| tauri-plugin-dialog 2 | 文件/文件夹选择对话框 |
+| tauri-plugin-clipboard-manager 2 | 剪贴板操作 |
+| serde + serde_json | IPC 序列化 |
+| tokio 1 | 异步运行时 |
+| fancy-regex 0.13 | 正则表达式 |
+| image 0.25 | 图片处理 |
+| ffmpeg-next 8 (optional) | 视频处理（feature = "video-frame"） |
+| uuid 1 | 替换规则 ID |
+| anyhow 1 | 错误处理 |
 
-## 构建产物
+### 前端
 
-- `build.rs`：使用 embed-resource 编译 `app.rc` 嵌入 `icon.ico` 为 Windows 应用图标
-- `app.rc`：`IDI_ICON1 ICON "icon.ico"`
-- 输出：Windows 可执行文件（target/ 目录）
-- `assets/svg/`：UI 图标资源（folder_open/border_color/image/settings/delete_outline/arrow_circle_up/playlist_add/playlist_add_check/share/tune/video_file 等）
+| 依赖 | 用途 |
+|------|------|
+| react 18 | UI 框架 |
+| @tauri-apps/api 2 | Tauri IPC |
+| @tauri-apps/plugin-dialog | 对话框 |
+| @tauri-apps/plugin-clipboard-manager | 剪贴板 |
+| zustand | 状态管理 |
+| react-virtuoso | 虚拟滚动 |
+| lucide-react | 图标 |
+| tailwindcss | 样式 |
+| shadcn/ui (radix) | UI 组件 |
 
 ## 测试
 
-- `src/ui/rename/logic.rs` 包含 8 个单元测试：纯文本替换、正则替换、禁用规则、多规则链式替换、无匹配、空规则、正则验证有效/无效
-- 其他模块无测试
+- `src-tauri/src/utils/rename_logic.rs` 包含 8 个单元测试
+- 前端无测试框架（桌面应用场景，手动验证）
 
 ## 已知风险
 
-- **测试覆盖不足**：仅 logic.rs 有单元测试，其他模块无测试
-- **无 CI/CD**：无 GitHub Actions、Makefile 或其他自动化构建配置
-- **anyhow 未使用**：Cargo.toml 声明了 anyhow 依赖但源码中未实际使用
-- **硬编码颜色**：ascii_art/mod.rs 和 ascii_art/preview.rs 中部分颜色值直接硬编码（如 `0x2A, 0x2A, 0x2E`），未走主题系统
-- **项目名称误导**：包名 druid-toolbox 实际使用 Iced 框架
-- **unsafe 代码**：preview.rs 中 `center_in_viewport` 使用 `unsafe` 通过共享引用修改 `needs_center`（Cell 模式），存在 Soundness 风险
-- **导出功能未完成**：字符画的 ExportText/ExportHtml 消息处理中返回 "导出功能待实现" 错误提示
-- **settings 页为空壳**：Settings 页面仅显示占位文本
-- **AGENTS.md 引用错误路径**：AGENTS.md 引用 `.Codex/` 路径而非 `.claude/`，与实际目录不一致
+- **测试覆盖不足**：仅 rename_logic.rs 有单元测试
+- **FFmpeg 依赖**：视频抽帧需要系统安装 FFmpeg，feature flag 控制编译
+- **大图片 IPC**：大图片 Vec<u8> 通过 IPC 传输可能较慢
+- **视频帧数据**：ExtractedFrame.image_data 是大字节数组，建议后端写入临时目录
+- **字符画渲染性能**：大量 HTML span 标签可能影响渲染

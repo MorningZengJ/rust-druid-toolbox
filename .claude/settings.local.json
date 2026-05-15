@@ -26,7 +26,20 @@
       "Bash(powershell.exe *)",
       "Bash(VCPKG_ROOT=\"C:/vcpkg\" cargo build)",
       "Bash(\"C:/vcpkg/vcpkg\" list *)",
-      "Bash(FFMPEG_DIR=\"C:/vcpkg/installed/x64-windows\" cargo build)"
+      "Bash(FFMPEG_DIR=\"C:/vcpkg/installed/x64-windows\" cargo build)",
+      "Bash(npm --version)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest add button input slider select checkbox dialog resizable scroll-area tabs tooltip alert popover -y)",
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(mkdir -p .backup)",
+      "Bash(mv src *)",
+      "Bash(mv Cargo.toml .backup/Cargo.toml)",
+      "Bash(mv build.rs .backup/build.rs)",
+      "Bash(mv app.rc .backup/app.rc)"
     ]
   }
 }

@@ -1,3 +1,17 @@
+# IDE
 .idea
+
+# Rust build
 /target
+/src-tauri/target
 Cargo.lock
+
+# Frontend
+/frontend/node_modules
+/frontend/dist
+
+# Backup (old Iced code)
+.backup
+
+# Logs
+*.log

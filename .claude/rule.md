@@ -14,40 +14,44 @@
 ### 修改前
 
 - 阅读目标文件及其依赖的相关代码
-- 确认修改不会破坏现有的消息流和导航系统
-- 检查是否有已有的工具函数或组件可以复用
-- 大数据列表场景检查是否已有虚拟滚动实现可复用
+- 确认修改不会破坏现有的 IPC 接口和状态管理
+- 检查是否有已有的工具函数、组件或 store action 可以复用
 
 ### 修改时
 
-- 遵循现有的模块组织和命名约定
-- 新页面/组件必须实现 `PageWithNav` 或 `PageComponent` trait
-- 使用 `themes::get_theme()` 获取颜色和样式，不硬编码
-- 使用 `spacing.rs` 中的常量定义间距，不硬编码数值
+**前端：**
+- 遵循 React + TypeScript + Tailwind CSS 规范
+- 使用 shadcn/ui 组件，不写自定义 CSS
+- 使用 Zustand store 管理状态，不使用 React Context
+- 使用 lucide-react 图标
+- 新页面创建独立的 store 和页面组件
+
+**后端：**
+- 遵循 Rust + Tauri 命令规范
+- 所有 IPC 数据结构 derive Serialize + Deserialize
+- CPU 密集操作使用 `tokio::task::spawn_blocking`
 - 文件操作错误必须处理，不使用 `let _ =` 静默忽略
-- 异步操作使用 `Task::perform()` 模式
-- CPU 密集操作使用 `tokio::task::spawn_blocking()` 避免阻塞 UI
-- 大数据列表使用 VirtualList 自定义 Widget 实现虚拟滚动
-- 布局使用 pane_grid 实现可调整大小的面板（非手动计算）
+- 条件编译使用 `#[cfg(feature = "video-frame")]`
 
 ### 修改后
 
-- 运行 `cargo build` 验证编译通过
-- 运行 `cargo test` 验证测试通过（如有相关测试）
+- 运行 `cd frontend && npm run build` 验证前端编译通过
+- 运行 `cargo check --manifest-path src-tauri/Cargo.toml` 验证 Rust 编译通过
+- 运行 `cargo test --manifest-path src-tauri/Cargo.toml` 验证测试通过
 - 说明修改内容和验证结果
 - 如果无法运行验证（如非 Windows 环境），明确说明未验证
 
 ## 工具使用规则
 
 - 优先使用 Read/Edit/Write/Glob/Grep 等专用工具
-- 仅在 shell 命令不可替代时使用 Bash（如 cargo build、cargo test、git 操作）
+- 仅在 shell 命令不可替代时使用 Bash（如 cargo/npm 命令、git 操作）
 - 并行执行无依赖的工具调用以提高效率
 
 ## 沟通规则
 
 - 使用中文回复（与项目 UI 语言一致）
 - 回复简洁，不解释显而易见的内容
-- 引用代码时标注文件路径和行号（如 `src/ui/rename/mod.rs:115`）
+- 引用代码时标注文件路径和行号（如 `frontend/src/pages/rename/Toolbar.tsx:15`）
 - 不在回复末尾添加工作总结（用户能看到 diff）
 
 ## 不确定性处理
