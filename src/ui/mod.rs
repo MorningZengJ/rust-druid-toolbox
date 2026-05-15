@@ -6,6 +6,7 @@ pub(crate) mod rename;
 mod settings;
 mod tabs;
 pub(crate) mod components;
+pub(crate) mod video_frame;
 
 use iced::Task;
 

@@ -23,7 +23,10 @@
       "Bash(taskkill *)",
       "Bash(cmd.exe *)",
       "Bash(del *)",
-      "Bash(powershell.exe *)"
+      "Bash(powershell.exe *)",
+      "Bash(VCPKG_ROOT=\"C:/vcpkg\" cargo build)",
+      "Bash(\"C:/vcpkg/vcpkg\" list *)",
+      "Bash(FFMPEG_DIR=\"C:/vcpkg/installed/x64-windows\" cargo build)"
     ]
   }
 }

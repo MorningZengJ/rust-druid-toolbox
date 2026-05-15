@@ -16,6 +16,7 @@ pub enum Page {
     #[default]
     Rename,
     AsciiArt,
+    VideoFrame,
     Settings,
 }
 
@@ -48,6 +49,18 @@ pub fn view(active: Page) -> Element<'static, Message> {
             },
         )
         .svg_text_btn("assets/svg/image.svg", "字符画")
+        .width(Length::Fill),
+        iced::widget::Space::new().height(Length::Fixed(8.0)),
+        MButton::new_vertical(
+            ButtonType::PrimaryNav,
+            Page::VideoFrame == active,
+            if Page::VideoFrame != active {
+                Some(Message::Tab(Page::VideoFrame))
+            } else {
+                None
+            },
+        )
+        .svg_text_btn("assets/svg/video_file.svg", "抽帧")
         .width(Length::Fill),
         iced::widget::Space::new().height(Length::Fixed(8.0)),
         MButton::new_vertical(

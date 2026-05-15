@@ -4,3 +4,4 @@ pub mod rename_result;
 pub mod rename_state;
 pub mod replace_info;
 pub mod rule_template;
+pub mod video_frame_state;

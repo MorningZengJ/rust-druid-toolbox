@@ -2,6 +2,7 @@ use crate::themes::get_theme;
 use crate::ui::ascii_art;
 use crate::ui::navigation::{route_page, NavigationAction, PageComponent};
 use crate::ui::tabs::root_tab;
+use crate::ui::video_frame;
 use crate::ui::{rename, PageWithNav};
 use iced::widget::{container, row};
 use iced::{Element, Length, Size, Subscription, Task};
@@ -13,6 +14,7 @@ pub enum Message {
 
     Rename(rename::Message),
     AsciiArt(ascii_art::Message),
+    VideoFrame(video_frame::Message),
 }
 
 #[derive(Debug, Default)]
@@ -21,6 +23,7 @@ pub struct Home {
 
     rename: rename::Rename,
     ascii_art: ascii_art::AsciiArt,
+    video_frame: video_frame::VideoFrame,
 }
 
 impl PageComponent<Message> for Home {
@@ -41,6 +44,7 @@ impl PageComponent<Message> for Home {
             },
             Message::Rename(msg) => self.rename.update(msg).map(Message::Rename),
             Message::AsciiArt(msg) => self.ascii_art.update(msg).map(Message::AsciiArt),
+            Message::VideoFrame(msg) => self.video_frame.update(msg).map(Message::VideoFrame),
             Message::Navigate(_) => Task::none(),
         }
     }
@@ -51,6 +55,7 @@ impl PageComponent<Message> for Home {
         let content = match self.active_page {
             root_tab::Page::Rename => self.rename.view().map(Message::Rename),
             root_tab::Page::AsciiArt => self.ascii_art.view().map(Message::AsciiArt),
+            root_tab::Page::VideoFrame => self.video_frame.view().map(Message::VideoFrame),
             root_tab::Page::Settings => {
                 iced::widget::text("").into()
             }
