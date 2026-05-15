@@ -7,7 +7,7 @@
 Cargo.lock
 
 # Frontend
-/frontend/node_modules
+**/node_modules
 /frontend/dist
 
 # Backup (old Iced code)
