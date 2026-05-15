@@ -222,7 +222,7 @@ impl VideoFrameEngine {
             }
             ExtractMode::ByTimePoints => {
                 let mut points: Vec<f64> = time_points.to_vec();
-                points.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                points.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                 points.retain(|&t| t >= 0.0 && t <= duration);
                 points
             }

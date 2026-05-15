@@ -22,6 +22,7 @@ interface RenameState {
   ruleHistory: ReplaceInfo[][];
   status: RenameResult | null;
   displayLimit: number;
+  errorMessage: string | null;
 
   // UI state
   filterCollapsed: boolean;
@@ -50,6 +51,7 @@ interface RenameState {
   setFilterCollapsed: (collapsed: boolean) => void;
   toggleRuleCollapse: (index: number) => void;
   clearStatus: () => void;
+  clearError: () => void;
   chooseDirectory: () => Promise<void>;
   parentDirectory: () => Promise<void>;
 }
@@ -66,6 +68,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   ruleHistory: [],
   status: null,
   displayLimit: 500,
+  errorMessage: null,
 
   filterCollapsed: false,
   rulesCollapsed: [],
@@ -89,7 +92,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
       // Auto-detect conflicts after loading
       get().detectConflicts();
     } catch (e) {
-      console.error("Failed to load files:", e);
+      set({ errorMessage: `加载文件失败: ${e}` });
     }
   },
 
@@ -181,7 +184,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
       });
       get().detectConflicts();
     } catch (e) {
-      console.error("Failed to apply template:", e);
+      set({ errorMessage: `应用模板失败: ${e}` });
     }
   },
 
@@ -225,7 +228,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         })),
       });
     } catch (e) {
-      console.error("Failed to detect conflicts:", e);
+      set({ errorMessage: `检测冲突失败: ${e}` });
     }
   },
 
@@ -241,7 +244,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
       // Reload files after rename
       get().loadFiles(dirPath);
     } catch (e) {
-      console.error("Failed to execute renames:", e);
+      set({ errorMessage: `执行重命名失败: ${e}` });
     }
   },
 
@@ -273,7 +276,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         get().loadFiles(selected as string);
       }
     } catch (e) {
-      console.error("Failed to choose directory:", e);
+      set({ errorMessage: `选择目录失败: ${e}` });
     }
   },
 
@@ -286,9 +289,11 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         get().loadFiles(parent);
       }
     } catch (e) {
-      console.error("Failed to get parent directory:", e);
+      set({ errorMessage: `获取上级目录失败: ${e}` });
     }
   },
+
+  clearError: () => set({ errorMessage: null }),
 }));
 
 // Helper function to apply filters

@@ -1,7 +1,6 @@
 pub mod ascii_art_state;
 pub mod file_info;
 pub mod rename_result;
-pub mod rename_state;
 pub mod replace_info;
 pub mod rule_template;
 #[cfg(feature = "video-frame")]

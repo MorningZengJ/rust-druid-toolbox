@@ -53,9 +53,6 @@ impl CharsetPreset {
         }
     }
 
-    pub fn all() -> Vec<Self> {
-        vec![Self::Simple, Self::Standard, Self::Complex, Self::Custom]
-    }
 }
 
 impl fmt::Display for CharsetPreset {
@@ -78,12 +75,6 @@ pub enum ColorMode {
     Html,
 }
 
-impl ColorMode {
-    pub fn all() -> Vec<Self> {
-        vec![Self::Monochrome, Self::Ansi256, Self::TrueColor, Self::Html]
-    }
-}
-
 impl fmt::Display for ColorMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -101,12 +92,6 @@ pub enum Background {
     Black,
     White,
     Transparent,
-}
-
-impl Background {
-    pub fn all() -> Vec<Self> {
-        vec![Self::Black, Self::White, Self::Transparent]
-    }
 }
 
 impl fmt::Display for Background {

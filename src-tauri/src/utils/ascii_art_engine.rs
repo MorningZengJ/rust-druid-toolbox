@@ -5,6 +5,7 @@ use crate::model::ascii_art_state::{AsciiArtParams, Background, CharsetPreset, C
 pub struct AsciiArtEngine;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AsciiArtOutput {
     pub plain_text: String,
     pub html_text: String,
