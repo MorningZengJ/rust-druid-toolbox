@@ -43,7 +43,11 @@
       "PowerShell(Get-Command *)",
       "PowerShell(ls \"C:\\\\vcpkg\\\\installed\\\\x64-windows\\\\lib\\\\\" | Where-Object { $_.Name -match \"avcodec|avformat|avutil\" } | Select-Object Name)",
       "PowerShell(ls \"C:\\\\vcpkg\\\\installed\\\\x64-windows\\\\include\\\\\" | Where-Object { $_.Name -match \"libav|libsw\" } | Select-Object Name)",
-      "Bash(npx shadcn@latest add dropdown-menu)"
+      "Bash(npx shadcn@latest add dropdown-menu)",
+      "WebSearch",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:github.com)",
+      "PowerShell(cargo check *)"
     ]
   }
 }

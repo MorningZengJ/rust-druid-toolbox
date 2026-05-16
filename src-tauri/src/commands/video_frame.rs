@@ -1,5 +1,6 @@
 use crate::model::video_frame_state::{ExtractParams, VideoInfo};
 use crate::utils::video_frame_engine::VideoFrameEngine;
+use tauri::Emitter;
 
 /// Check if FFmpeg is available
 #[tauri::command]
@@ -17,17 +18,30 @@ pub fn probe_video(path: String) -> Result<VideoInfo, String> {
 #[tauri::command]
 pub async fn extract_frames(
     params: ExtractParams,
+    output_dir: Option<String>,
     app_handle: tauri::AppHandle,
 ) -> Result<Vec<crate::model::video_frame_state::ExtractedFrame>, String> {
     // Run the CPU-intensive extraction on a blocking thread
-    tokio::task::spawn_blocking(move || {
+    let frames = tokio::task::spawn_blocking(move || {
         VideoFrameEngine::extract_frames(&params, |progress| {
             let _ = app_handle.emit("video-frame://progress", progress);
         })
     })
     .await
     .map_err(|e| e.to_string())?
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_string())?;
+
+    // Write frames to disk if output_dir is specified
+    if let Some(dir) = output_dir {
+        let output_path = std::path::Path::new(&dir);
+        std::fs::create_dir_all(output_path).map_err(|e| e.to_string())?;
+        for frame in &frames {
+            let file_path = output_path.join(&frame.filename);
+            std::fs::write(&file_path, &frame.image_data).map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(frames)
 }
 
 /// Export extracted frames to disk

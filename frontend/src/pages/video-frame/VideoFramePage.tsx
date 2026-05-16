@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   Loader2,
   AlertTriangle,
   Film,
+  Upload,
 } from "lucide-react";
 import { useVideoFrameStore } from "@/stores/videoFrameStore";
 import type { ExtractMode, OutputFormat } from "@/types";
@@ -37,6 +38,48 @@ export default function VideoFramePage() {
   const loadVideo = useVideoFrameStore((s) => s.loadVideo);
   const extractFrames = useVideoFrameStore((s) => s.extractFrames);
   const exportFrames = useVideoFrameStore((s) => s.exportFrames);
+  const outputDir = useVideoFrameStore((s) => s.outputDir);
+  const setOutputDir = useVideoFrameStore((s) => s.setOutputDir);
+
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const handleBrowseOutputDir = useCallback(async () => {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const selected = await open({ directory: true });
+    if (selected) {
+      setOutputDir(selected as string);
+    }
+  }, [setOutputDir]);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        // In Tauri, dropped files give us the file path
+        const filePath = (files[0] as unknown as { path?: string }).path;
+        if (filePath) {
+          await loadVideo(filePath);
+        }
+      }
+    },
+    [loadVideo]
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const handleDoubleClick = useCallback(async () => {
+    await loadVideo();
+  }, [loadVideo]);
 
   useEffect(() => {
     checkFfmpeg();
@@ -78,11 +121,8 @@ export default function VideoFramePage() {
     <div className="flex h-full gap-3">
       {/* Left: Controls */}
       <div className="flex w-[280px] shrink-0 flex-col rounded-lg border border-border bg-panel">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-          <Button variant="outline" size="sm" className="h-7" onClick={loadVideo}>
-            <FolderOpen size={14} className="mr-1" />
-            选择视频
-          </Button>
+        <div className="flex items-center border-b border-border px-3 py-2">
+          <span className="text-xs font-medium text-muted-foreground">参数设置</span>
         </div>
 
         <ScrollArea className="flex-1">
@@ -102,6 +142,22 @@ export default function VideoFramePage() {
                 </div>
               </div>
             )}
+
+            {/* Output dir */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">帧图存放路径</label>
+              <div className="flex gap-1">
+                <Input
+                  className="h-8 text-sm flex-1"
+                  value={outputDir}
+                  onChange={(e) => setOutputDir(e.target.value)}
+                  placeholder="选择或输入路径"
+                />
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={handleBrowseOutputDir}>
+                  <FolderOpen size={14} />
+                </Button>
+              </div>
+            </div>
 
             {/* Extract mode */}
             <div className="space-y-1.5">
@@ -268,10 +324,26 @@ export default function VideoFramePage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div
+          ref={dropRef}
+          className="relative flex-1 overflow-hidden"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDoubleClick={handleDoubleClick}
+        >
           {errorMessage && (
             <div className="m-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {errorMessage}
+            </div>
+          )}
+
+          {isDragOver && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded-lg">
+              <div className="flex flex-col items-center gap-2 text-primary">
+                <Upload size={48} />
+                <span className="text-sm font-medium">松开以加载视频</span>
+              </div>
             </div>
           )}
 
@@ -321,7 +393,7 @@ export default function VideoFramePage() {
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {videoPath ? "设置参数后点击\"提取帧\"" : "选择视频文件开始"}
+              {videoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
             </div>
           )}
         </div>

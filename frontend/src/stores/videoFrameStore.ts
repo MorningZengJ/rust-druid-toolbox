@@ -19,14 +19,16 @@ interface VideoFrameState {
   isExtracting: boolean;
   progress: number;
   errorMessage: string | null;
+  outputDir: string;
 
   // UI state
   selectedFrame: number | null;
 
   // Actions
   setVideoPath: (path: string) => void;
+  setOutputDir: (dir: string) => void;
   checkFfmpeg: () => Promise<void>;
-  loadVideo: () => Promise<void>;
+  loadVideo: (path?: string) => Promise<void>;
   setExtractParams: (updates: Partial<ExtractParams>) => void;
   extractFrames: () => Promise<void>;
   exportFrames: () => Promise<void>;
@@ -54,9 +56,11 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
   isExtracting: false,
   progress: 0,
   errorMessage: null,
+  outputDir: "",
   selectedFrame: null,
 
   setVideoPath: (path) => set({ videoPath: path }),
+  setOutputDir: (dir) => set({ outputDir: dir }),
 
   checkFfmpeg: async () => {
     try {
@@ -67,22 +71,30 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
     }
   },
 
-  loadVideo: async () => {
+  loadVideo: async (path?: string) => {
     try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({
-        filters: [
-          { name: "视频文件", extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
-        ],
-      });
-      if (!selected) return;
+      let videoPath = path;
+      if (!videoPath) {
+        const { open } = await import("@tauri-apps/plugin-dialog");
+        const selected = await open({
+          filters: [
+            { name: "视频文件", extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
+          ],
+        });
+        if (!selected) return;
+        videoPath = selected as string;
+      }
 
-      const path = selected as string;
-      const info = await invoke<VideoInfo>("probe_video", { path });
+      const info = await invoke<VideoInfo>("probe_video", { path: videoPath });
+      // Auto-set output dir to video_dir/frames
+      const separator = videoPath.includes("\\") ? "\\" : "/";
+      const dir = videoPath.substring(0, videoPath.lastIndexOf(separator));
+      const defaultOutputDir = dir + separator + "frames";
       set({
-        videoPath: path,
+        videoPath,
         videoInfo: info,
-        extractParams: { ...get().extractParams, videoPath: path },
+        extractParams: { ...get().extractParams, videoPath },
+        outputDir: defaultOutputDir,
         frames: [],
         selectedFrame: null,
         errorMessage: null,
@@ -116,6 +128,7 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
     try {
       const frames = await invoke<ExtractedFrame[]>("extract_frames", {
         params: extractParams,
+        outputDir: get().outputDir || undefined,
       });
       set({ frames, isExtracting: false, progress: 100 });
     } catch (e) {

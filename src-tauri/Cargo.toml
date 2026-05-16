@@ -9,7 +9,7 @@ name = "druid_toolbox_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
-default = []
+default = ["video-frame"]
 video-frame = ["dep:ffmpeg-next"]
 
 [build-dependencies]
@@ -37,7 +37,7 @@ fancy-regex = "0.18.0"
 image = "0.25"
 
 # Video processing (optional - requires FFmpeg installed)
-ffmpeg-next = { version = "8", optional = true }
+ffmpeg-next = { version = "8", optional = true, features = ["static"] }
 
 # Utils
 uuid = { version = "1", features = ["v4"] }
