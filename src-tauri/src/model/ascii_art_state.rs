@@ -15,12 +15,50 @@ pub struct AsciiArtParams {
     pub color_mode: ColorMode,
     pub background: Background,
     pub char_aspect_ratio: f64,
+    pub render_mode: RenderMode,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum RenderMode {
+    Png,
+    Svg,
+    Canvas,
+}
+
+impl fmt::Display for RenderMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Png => write!(f, "PNG"),
+            Self::Svg => write!(f, "SVG"),
+            Self::Canvas => write!(f, "Canvas"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CharColor {
+    pub char: char,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AsciiArtOutput {
+    pub plain_text: String,
+    pub ansi_text: String,
+    pub image_data: Vec<u8>,
+    pub svg_data: String,
+    pub char_colors: Vec<CharColor>,
 }
 
 impl Default for AsciiArtParams {
     fn default() -> Self {
         Self {
-            width: 100,
+            width: 800,
             charset: CharsetPreset::Standard,
             custom_charset: String::new(),
             contrast: 1.0,
@@ -30,6 +68,7 @@ impl Default for AsciiArtParams {
             color_mode: ColorMode::Html,
             background: Background::Black,
             char_aspect_ratio: 0.5,
+            render_mode: RenderMode::Png,
         }
     }
 }

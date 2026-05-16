@@ -57,6 +57,15 @@ export type RuleTemplate =
 
 // ASCII Art types
 
+export type RenderMode = "png" | "svg" | "canvas";
+
+export interface CharColor {
+  char: string;
+  r: number;
+  g: number;
+  b: number;
+}
+
 export interface AsciiArtParams {
   width: number;
   charset: CharsetPreset;
@@ -68,6 +77,7 @@ export interface AsciiArtParams {
   colorMode: ColorMode;
   background: Background;
   charAspectRatio: number;
+  renderMode: RenderMode;
 }
 
 export type CharsetPreset = "simple" | "standard" | "complex" | "custom";
@@ -76,8 +86,10 @@ export type Background = "black" | "white" | "transparent";
 
 export interface AsciiArtOutput {
   plainText: string;
-  htmlText: string;
   ansiText: string;
+  imageData: number[];
+  svgData: string;
+  charColors: CharColor[];
 }
 
 // Video Frame types

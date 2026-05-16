@@ -21,6 +21,7 @@ pub fn run() {
         // ASCII art commands
         commands::ascii_art::convert_ascii_art,
         commands::ascii_art::load_image_from_file,
+        commands::ascii_art::export_ascii_art,
     ]);
 
     #[cfg(feature = "video-frame")]
@@ -36,6 +37,7 @@ pub fn run() {
         // ASCII art commands
         commands::ascii_art::convert_ascii_art,
         commands::ascii_art::load_image_from_file,
+        commands::ascii_art::export_ascii_art,
         // Video frame commands
         commands::video_frame::check_ffmpeg,
         commands::video_frame::probe_video,

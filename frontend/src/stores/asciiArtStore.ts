@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import type { AsciiArtParams, AsciiArtOutput, CharsetPreset, ColorMode, Background } from "@/types";
+import type { AsciiArtParams, AsciiArtOutput, CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 interface AsciiArtState {
   // Data
@@ -15,23 +15,27 @@ interface AsciiArtState {
   zoom: number;
   panX: number;
   panY: number;
+  activeTab: "original" | "ascii";
 
   // Actions
   setParams: (updates: Partial<AsciiArtParams>) => void;
-  loadImage: () => Promise<void>;
-  loadImageFromBytes: (bytes: Uint8Array) => void;
-  pasteFromClipboard: () => Promise<void>;
+  loadImageFromFile: () => Promise<void>;
+  loadImageFromDrop: (file: File) => Promise<void>;
+  loadImageFromPaste: (imageData: ArrayBuffer) => Promise<void>;
   convert: () => Promise<void>;
-  copyToClipboard: (format: "plain" | "html" | "ansi") => Promise<void>;
-  exportOutput: (format: "plain" | "html" | "ansi") => Promise<void>;
+  copyToClipboard: () => Promise<void>;
+  exportOutput: (format: "png" | "svg" | "txt" | "html") => Promise<void>;
   setZoom: (zoom: number) => void;
   setPan: (x: number, y: number) => void;
   resetView: () => void;
+  setActiveTab: (tab: "original" | "ascii") => void;
   clearError: () => void;
 }
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 const defaultParams: AsciiArtParams = {
-  width: 100,
+  width: 800,
   charset: "standard" as CharsetPreset,
   customCharset: "",
   contrast: 1.0,
@@ -41,6 +45,7 @@ const defaultParams: AsciiArtParams = {
   colorMode: "html" as ColorMode,
   background: "black" as Background,
   charAspectRatio: 0.5,
+  renderMode: "png" as RenderMode,
 };
 
 export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
@@ -53,17 +58,21 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   zoom: 1,
   panX: 0,
   panY: 0,
+  activeTab: "original",
 
   setParams: (updates) => {
     set((s) => ({ params: { ...s.params, ...updates } }));
-    // Auto-convert if image is loaded
+    // Debounce auto-convert
     const { imageBytes } = get();
     if (imageBytes) {
-      get().convert();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        get().convert();
+      }, 500);
     }
   },
 
-  loadImage: async () => {
+  loadImageFromFile: async () => {
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
@@ -78,30 +87,47 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       const blob = new Blob([uint8 as unknown as BlobPart]);
       const url = URL.createObjectURL(blob);
 
-      // Revoke old URL
       const oldUrl = get().imagePreviewUrl;
       if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-      set({ imageBytes: uint8, imagePreviewUrl: url, output: null });
+      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
       set({ errorMessage: `加载图片失败: ${e}` });
     }
   },
 
-  loadImageFromBytes: (bytes) => {
-    const blob = new Blob([bytes as unknown as BlobPart]);
-    const url = URL.createObjectURL(blob);
+  loadImageFromDrop: async (file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      const blob = new Blob([uint8 as unknown as BlobPart]);
+      const url = URL.createObjectURL(blob);
 
-    const oldUrl = get().imagePreviewUrl;
-    if (oldUrl) URL.revokeObjectURL(oldUrl);
+      const oldUrl = get().imagePreviewUrl;
+      if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-    set({ imageBytes: bytes, imagePreviewUrl: url, output: null });
-    get().convert();
+      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      get().convert();
+    } catch (e) {
+      set({ errorMessage: `加载图片失败: ${e}` });
+    }
   },
 
-  pasteFromClipboard: async () => {
-    set({ errorMessage: "剪贴板图片粘贴功能暂不支持，请使用打开文件" });
+  loadImageFromPaste: async (imageData: ArrayBuffer) => {
+    try {
+      const uint8 = new Uint8Array(imageData);
+      const blob = new Blob([uint8 as unknown as BlobPart]);
+      const url = URL.createObjectURL(blob);
+
+      const oldUrl = get().imagePreviewUrl;
+      if (oldUrl) URL.revokeObjectURL(oldUrl);
+
+      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      get().convert();
+    } catch (e) {
+      set({ errorMessage: `加载图片失败: ${e}` });
+    }
   },
 
   convert: async () => {
@@ -114,60 +140,51 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
         params,
         imageBytes: Array.from(imageBytes),
       });
-      set({ output, isConverting: false });
+      set({ output, isConverting: false, activeTab: "ascii" });
     } catch (e) {
       set({ errorMessage: `转换失败: ${e}`, isConverting: false });
     }
   },
 
-  copyToClipboard: async (format) => {
+  copyToClipboard: async () => {
     const { output } = get();
     if (!output) return;
 
     try {
       const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
-      let text: string;
-      if (format === "plain") text = output.plainText;
-      else if (format === "html") text = output.htmlText;
-      else text = output.ansiText;
-
-      await writeText(text);
+      await writeText(output.plainText);
     } catch (e) {
       set({ errorMessage: `复制失败: ${e}` });
     }
   },
 
   exportOutput: async (format) => {
-    const { output } = get();
-    if (!output) return;
+    const { imageBytes, params } = get();
+    if (!imageBytes) return;
 
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
-      const ext = format === "html" ? "html" : "txt";
+      const ext = format === "png" ? "png" : format === "svg" ? "svg" : format === "html" ? "html" : "txt";
       const filePath = await save({
         filters: [{ name: "文件", extensions: [ext] }],
         defaultPath: `ascii_art.${ext}`,
       });
       if (!filePath) return;
 
-      // Use Tauri fs write via invoke
-      let text: string;
-      if (format === "plain") text = output.plainText;
-      else if (format === "html") text = output.htmlText;
-      else text = output.ansiText;
-
-      // Write via a Tauri command or use the FS plugin
-      // For now we'll copy to clipboard as fallback
-      const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
-      await writeText(text);
-      set({ errorMessage: null });
+      await invoke("export_ascii_art", {
+        params,
+        imageBytes: Array.from(imageBytes),
+        format,
+        path: filePath,
+      });
     } catch (e) {
       set({ errorMessage: `导出失败: ${e}` });
     }
   },
 
-  setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(5, zoom)) }),
+  setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(10, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
   resetView: () => set({ zoom: 1, panX: 0, panY: 0 }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
   clearError: () => set({ errorMessage: null }),
 }));

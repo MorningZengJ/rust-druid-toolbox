@@ -1,3 +1,4 @@
+import { useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -11,16 +12,28 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  FolderOpen,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Copy,
   Download,
   ZoomIn,
   ZoomOut,
   RotateCcw,
   Loader2,
+  Image as ImageIcon,
+  FileDown,
 } from "lucide-react";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
-import type { CharsetPreset, ColorMode, Background } from "@/types";
+import type { CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 export default function AsciiArtPage() {
   const params = useAsciiArtStore((s) => s.params);
@@ -29,36 +42,242 @@ export default function AsciiArtPage() {
   const output = useAsciiArtStore((s) => s.output);
   const isConverting = useAsciiArtStore((s) => s.isConverting);
   const errorMessage = useAsciiArtStore((s) => s.errorMessage);
-  const loadImage = useAsciiArtStore((s) => s.loadImage);
+  const loadImageFromFile = useAsciiArtStore((s) => s.loadImageFromFile);
+  const loadImageFromDrop = useAsciiArtStore((s) => s.loadImageFromDrop);
+  const loadImageFromPaste = useAsciiArtStore((s) => s.loadImageFromPaste);
   const copyToClipboard = useAsciiArtStore((s) => s.copyToClipboard);
   const exportOutput = useAsciiArtStore((s) => s.exportOutput);
   const zoom = useAsciiArtStore((s) => s.zoom);
   const setZoom = useAsciiArtStore((s) => s.setZoom);
+  const panX = useAsciiArtStore((s) => s.panX);
+  const panY = useAsciiArtStore((s) => s.panY);
+  const setPan = useAsciiArtStore((s) => s.setPan);
   const resetView = useAsciiArtStore((s) => s.resetView);
+  const activeTab = useAsciiArtStore((s) => s.activeTab);
+  const setActiveTab = useAsciiArtStore((s) => s.setActiveTab);
+
+  const displayRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+  // Draw canvas when output changes and renderMode is canvas
+  useEffect(() => {
+    if (params.renderMode !== "canvas" || !output || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const charWidth = 8;
+    const charHeight = 12;
+
+    // Calculate grid dimensions from charColors length
+    const totalChars = output.charColors.length;
+    if (totalChars === 0) return;
+
+    // Try to infer width from plainText
+    const lines = output.plainText.split("\n");
+    const gridWidth = lines[0]?.length || 1;
+    const gridHeight = lines.length;
+
+    canvas.width = gridWidth * charWidth;
+    canvas.height = gridHeight * charHeight;
+
+    // Clear canvas
+    ctx.fillStyle = params.background === "white" ? "#ffffff" : params.background === "transparent" ? "transparent" : "#000000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw each character as a colored block
+    let idx = 0;
+    for (let y = 0; y < gridHeight; y++) {
+      for (let x = 0; x < gridWidth; x++) {
+        if (idx >= output.charColors.length) break;
+        const cc = output.charColors[idx];
+        ctx.fillStyle = `rgb(${cc.r},${cc.g},${cc.b})`;
+        ctx.fillRect(x * charWidth, y * charHeight, charWidth, charHeight);
+        idx++;
+      }
+    }
+  }, [output, params.renderMode, params.background]);
+
+  // Wheel zoom
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      const rect = displayRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const delta = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      const newZoom = Math.max(0.1, Math.min(10, zoom * delta));
+
+      // Adjust pan to zoom towards mouse position
+      const scale = newZoom / zoom;
+      const newPanX = mouseX - scale * (mouseX - panX);
+      const newPanY = mouseY - scale * (mouseY - panY);
+
+      setZoom(newZoom);
+      setPan(newPanX, newPanY);
+    },
+    [zoom, panX, panY, setZoom, setPan]
+  );
+
+  // Right-click drag
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button === 2) {
+        e.preventDefault();
+        isDragging.current = true;
+        dragStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+      }
+    },
+    [panX, panY]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging.current) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      setPan(dragStart.current.panX + dx, dragStart.current.panY + dy);
+    },
+    [setPan]
+  );
+
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button === 2) {
+        isDragging.current = false;
+      }
+    },
+    []
+  );
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+  }, []);
+
+  // Double-click to select image
+  const handleDoubleClick = useCallback(() => {
+    loadImageFromFile();
+  }, [loadImageFromFile]);
+
+  // Drag and drop
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) {
+        loadImageFromDrop(file);
+      }
+    },
+    [loadImageFromDrop]
+  );
+
+  // Paste handler
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const blob = item.getAsFile();
+          if (blob) {
+            blob.arrayBuffer().then((buffer) => {
+              loadImageFromPaste(buffer);
+            });
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [loadImageFromPaste]);
+
+  const renderAsciiContent = () => {
+    if (!output) return null;
+
+    const transformStyle = {
+      transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+      transformOrigin: "0 0",
+    };
+
+    switch (params.renderMode) {
+      case "png":
+        if (output.imageData.length === 0) return null;
+        const pngBlob = new Blob([new Uint8Array(output.imageData)], { type: "image/png" });
+        const pngUrl = URL.createObjectURL(pngBlob);
+        return (
+          <img
+            src={pngUrl}
+            alt="ASCII Art"
+            style={transformStyle}
+            className="block"
+            onLoad={() => URL.revokeObjectURL(pngUrl)}
+          />
+        );
+
+      case "svg":
+        if (!output.svgData) return null;
+        const svgBase64 = btoa(unescape(encodeURIComponent(output.svgData)));
+        return (
+          <img
+            src={`data:image/svg+xml;base64,${svgBase64}`}
+            alt="ASCII Art"
+            style={transformStyle}
+            className="block"
+          />
+        );
+
+      case "canvas":
+        return (
+          <canvas
+            ref={canvasRef}
+            style={transformStyle}
+            className="block"
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="flex h-full gap-3">
+    <div className="flex h-full gap-3" onPaste={(e) => e.preventDefault()}>
       {/* Left: Controls */}
       <div className="flex w-[280px] shrink-0 flex-col rounded-lg border border-border bg-panel">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-          <Button variant="outline" size="sm" className="h-7" onClick={loadImage}>
-            <FolderOpen size={14} className="mr-1" />
-            打开图片
-          </Button>
-        </div>
-
         <ScrollArea className="flex-1">
           <div className="space-y-4 p-3">
-            {/* Image preview */}
-            {imagePreviewUrl && (
-              <div className="overflow-hidden rounded border border-border">
-                <img
-                  src={imagePreviewUrl}
-                  alt="原始图片"
-                  className="max-h-[150px] w-full object-contain"
-                />
-              </div>
-            )}
+            {/* Render Mode */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">渲染模式</label>
+              <Select
+                value={params.renderMode}
+                onValueChange={(v) => setParams({ renderMode: v as RenderMode })}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="png">PNG - 快速，适合大图</SelectItem>
+                  <SelectItem value="svg">SVG - 矢量，缩放不失真</SelectItem>
+                  <SelectItem value="canvas">Canvas - 灵活，支持交互</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Width */}
             <div className="space-y-1.5">
@@ -68,9 +287,9 @@ export default function AsciiArtPage() {
               <Slider
                 value={[params.width]}
                 onValueChange={([v]) => setParams({ width: v })}
-                min={20}
-                max={300}
-                step={1}
+                min={300}
+                max={2000}
+                step={10}
               />
             </div>
 
@@ -215,34 +434,48 @@ export default function AsciiArtPage() {
       <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-panel">
         {/* Toolbar */}
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setZoom(zoom * 1.2)}
-            >
-              <ZoomIn size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setZoom(zoom / 1.2)}
-            >
-              <ZoomOut size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={resetView}
-            >
-              <RotateCcw size={14} />
-            </Button>
-            <span className="ml-2 text-xs text-muted-foreground">
-              {Math.round(zoom * 100)}%
-            </span>
+          <div className="flex items-center gap-2">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "original" | "ascii")}>
+              <TabsList className="h-7">
+                <TabsTrigger value="original" className="h-5 px-2 text-xs">
+                  <ImageIcon size={12} className="mr-1" />
+                  原图
+                </TabsTrigger>
+                <TabsTrigger value="ascii" className="h-5 px-2 text-xs" disabled={!output}>
+                  字符画
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="flex items-center gap-1 ml-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setZoom(zoom * 1.2)}
+              >
+                <ZoomIn size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setZoom(zoom / 1.2)}
+              >
+                <ZoomOut size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={resetView}
+              >
+                <RotateCcw size={14} />
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {Math.round(zoom * 100)}%
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-1">
@@ -254,51 +487,105 @@ export default function AsciiArtPage() {
               size="sm"
               className="h-7"
               disabled={!output}
-              onClick={() => copyToClipboard("plain")}
+              onClick={copyToClipboard}
             >
               <Copy size={14} className="mr-1" />
               复制
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              disabled={!output}
-              onClick={() => exportOutput("html")}
-            >
-              <Download size={14} className="mr-1" />
-              导出
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7"
+                  disabled={!output}
+                >
+                  <Download size={14} className="mr-1" />
+                  导出
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportOutput("png")}>
+                  <FileDown size={14} className="mr-2" />
+                  导出为 PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportOutput("svg")}>
+                  <FileDown size={14} className="mr-2" />
+                  导出为 SVG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportOutput("txt")}>
+                  <FileDown size={14} className="mr-2" />
+                  导出为 TXT
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportOutput("html")}>
+                  <FileDown size={14} className="mr-2" />
+                  导出为 HTML
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
-        {/* Preview area */}
-        <div className="flex-1 overflow-hidden">
+        {/* Display area */}
+        <div
+          ref={displayRef}
+          className="flex-1 overflow-hidden"
+          style={{
+            background: params.background === "white" ? "#fff" : params.background === "transparent" ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px" : "#000",
+          }}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onContextMenu={handleContextMenu}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
           {errorMessage && (
-            <div className="m-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="absolute top-2 left-2 right-2 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive z-10">
               {errorMessage}
             </div>
           )}
 
-          {output ? (
+          {activeTab === "original" ? (
             <div
-              className="h-full overflow-auto p-4"
-              style={{
-                background: params.background === "white" ? "#fff" : params.background === "transparent" ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px" : "#000",
-              }}
+              className="flex h-full items-center justify-center"
+              onDoubleClick={handleDoubleClick}
             >
-              <pre
-                className="inline-block font-mono text-[6px] leading-[6px]"
-                style={{
-                  transform: `scale(${zoom})`,
-                  transformOrigin: "top left",
-                }}
-                dangerouslySetInnerHTML={{ __html: output.htmlText }}
-              />
+              {imagePreviewUrl ? (
+                <img
+                  src={imagePreviewUrl}
+                  alt="原始图片"
+                  style={{
+                    transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+                    transformOrigin: "0 0",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+                  <ImageIcon size={48} />
+                  <p>双击选择图片</p>
+                  <p className="text-xs">支持拖拽或 Ctrl+V 粘贴</p>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {isConverting ? "正在转换..." : "打开图片开始转换"}
+            <div className="h-full overflow-hidden p-4">
+              {isConverting ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  <Loader2 size={24} className="animate-spin mr-2" />
+                  正在转换...
+                </div>
+              ) : output ? (
+                renderAsciiContent()
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  请先加载图片
+                </div>
+              )}
             </div>
           )}
         </div>

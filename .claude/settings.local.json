@@ -39,7 +39,11 @@
       "Bash(mv src *)",
       "Bash(mv Cargo.toml .backup/Cargo.toml)",
       "Bash(mv build.rs .backup/build.rs)",
-      "Bash(mv app.rc .backup/app.rc)"
+      "Bash(mv app.rc .backup/app.rc)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(ls \"C:\\\\vcpkg\\\\installed\\\\x64-windows\\\\lib\\\\\" | Where-Object { $_.Name -match \"avcodec|avformat|avutil\" } | Select-Object Name)",
+      "PowerShell(ls \"C:\\\\vcpkg\\\\installed\\\\x64-windows\\\\include\\\\\" | Where-Object { $_.Name -match \"libav|libsw\" } | Select-Object Name)",
+      "Bash(npx shadcn@latest add dropdown-menu)"
     ]
   }
 }

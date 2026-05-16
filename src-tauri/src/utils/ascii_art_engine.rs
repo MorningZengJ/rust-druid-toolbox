@@ -1,16 +1,8 @@
-use image::{DynamicImage, GenericImageView, RgbaImage};
+use image::{DynamicImage, GenericImageView, RgbaImage, Rgba};
 
-use crate::model::ascii_art_state::{AsciiArtParams, Background, CharsetPreset, ColorMode};
+use crate::model::ascii_art_state::{AsciiArtParams, AsciiArtOutput, Background, CharColor, CharsetPreset, ColorMode, RenderMode};
 
 pub struct AsciiArtEngine;
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AsciiArtOutput {
-    pub plain_text: String,
-    pub html_text: String,
-    pub ansi_text: String,
-}
 
 impl AsciiArtEngine {
     /// Convert an image to ASCII art using the given parameters
@@ -27,12 +19,17 @@ impl AsciiArtEngine {
         // Get charset
         let charset = Self::get_charset(&params.charset, &params.custom_charset);
 
-        // Generate output based on color mode
-        match params.color_mode {
-            ColorMode::Monochrome => Self::generate_monochrome(&adjusted, &charset, params.invert, &params.background),
-            ColorMode::Ansi256 => Self::generate_ansi256(&adjusted, &charset, params.invert, &params.background),
-            ColorMode::TrueColor => Self::generate_truecolor(&adjusted, &charset, params.invert, &params.background),
-            ColorMode::Html => Self::generate_html(&adjusted, &charset, params.invert, &params.background),
+        // Generate character grid based on color mode
+        let (char_grid, color_grid) = match params.color_mode {
+            ColorMode::Monochrome => Self::generate_monochrome_grid(&adjusted, &charset, params.invert),
+            ColorMode::Ansi256 | ColorMode::TrueColor | ColorMode::Html => Self::generate_color_grid(&adjusted, &charset, params.invert),
+        };
+
+        // Generate output based on render mode
+        match params.render_mode {
+            RenderMode::Png => Self::generate_png(&char_grid, &color_grid, &params.background),
+            RenderMode::Svg => Self::generate_svg(&char_grid, &color_grid, &params.background),
+            RenderMode::Canvas => Self::generate_canvas_data(&char_grid, &color_grid),
         }
     }
 
@@ -103,13 +100,6 @@ impl AsciiArtEngine {
         chars[idx.min(chars.len() - 1)]
     }
 
-    fn rgb_to_ansi256(r: u8, g: u8, b: u8) -> u8 {
-        let ri = (r as f64 / 255.0 * 5.0).round() as u8;
-        let gi = (g as f64 / 255.0 * 5.0).round() as u8;
-        let bi = (b as f64 / 255.0 * 5.0).round() as u8;
-        16 + 36 * ri + 6 * gi + bi
-    }
-
     fn escape_html_char(ch: char) -> String {
         match ch {
             '&' => "&amp;".to_string(),
@@ -121,184 +111,272 @@ impl AsciiArtEngine {
         }
     }
 
-    fn wrap_html_document(bg: &Background, body: &str) -> String {
+    fn generate_monochrome_grid(
+        img: &DynamicImage,
+        charset: &str,
+        invert: bool,
+    ) -> (Vec<Vec<char>>, Vec<Vec<(u8, u8, u8)>>) {
+        let rgba = img.to_rgba8();
+        let (width, height) = rgba.dimensions();
+        let mut char_grid = Vec::new();
+        let mut color_grid = Vec::new();
+
+        for y in 0..height {
+            let mut char_line = Vec::new();
+            let mut color_line = Vec::new();
+            for x in 0..width {
+                let pixel = rgba.get_pixel(x, y);
+                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
+                let ch = Self::brightness_to_char(brightness, charset, invert);
+                char_line.push(ch);
+                color_line.push((pixel[0], pixel[1], pixel[2]));
+            }
+            char_grid.push(char_line);
+            color_grid.push(color_line);
+        }
+
+        (char_grid, color_grid)
+    }
+
+    fn generate_color_grid(
+        img: &DynamicImage,
+        charset: &str,
+        invert: bool,
+    ) -> (Vec<Vec<char>>, Vec<Vec<(u8, u8, u8)>>) {
+        let rgba = img.to_rgba8();
+        let (width, height) = rgba.dimensions();
+        let mut char_grid = Vec::new();
+        let mut color_grid = Vec::new();
+
+        for y in 0..height {
+            let mut char_line = Vec::new();
+            let mut color_line = Vec::new();
+            for x in 0..width {
+                let pixel = rgba.get_pixel(x, y);
+                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
+                let ch = Self::brightness_to_char(brightness, charset, invert);
+                char_line.push(ch);
+                color_line.push((pixel[0], pixel[1], pixel[2]));
+            }
+            char_grid.push(char_line);
+            color_grid.push(color_line);
+        }
+
+        (char_grid, color_grid)
+    }
+
+    fn generate_png(
+        char_grid: &[Vec<char>],
+        color_grid: &[Vec<(u8, u8, u8)>],
+        bg: &Background,
+    ) -> Result<AsciiArtOutput, String> {
+        let height = char_grid.len();
+        if height == 0 {
+            return Ok(AsciiArtOutput {
+                plain_text: String::new(),
+                ansi_text: String::new(),
+                image_data: Vec::new(),
+                svg_data: String::new(),
+                char_colors: Vec::new(),
+            });
+        }
+        let width = char_grid[0].len();
+
+        let char_width = 8u32;
+        let char_height = 12u32;
+        let img_width = width as u32 * char_width;
+        let img_height = height as u32 * char_height;
+
+        let bg_color = match bg {
+            Background::Black => Rgba([0u8, 0u8, 0u8, 255u8]),
+            Background::White => Rgba([255u8, 255u8, 255u8, 255u8]),
+            Background::Transparent => Rgba([0u8, 0u8, 0u8, 0u8]),
+        };
+
+        let mut img = RgbaImage::from_pixel(img_width, img_height, bg_color);
+
+        for (y, (char_line, color_line)) in char_grid.iter().zip(color_grid.iter()).enumerate() {
+            for (x, (_ch, &(r, g, b))) in char_line.iter().zip(color_line.iter()).enumerate() {
+                let x0 = x as u32 * char_width;
+                let y0 = y as u32 * char_height;
+
+                for dy in 0..char_height {
+                    for dx in 0..char_width {
+                        let px = x0 + dx;
+                        let py = y0 + dy;
+                        if px < img_width && py < img_height {
+                            img.put_pixel(px, py, Rgba([r, g, b, 255]));
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut png_bytes: Vec<u8> = Vec::new();
+        let encoder = image::codecs::png::PngEncoder::new(&mut png_bytes);
+        image::ImageEncoder::write_image(
+            encoder,
+            img.as_raw(),
+            img_width,
+            img_height,
+            image::ExtendedColorType::Rgba8,
+        )
+        .map_err(|e| e.to_string())?;
+
+        let plain_text = char_grid
+            .iter()
+            .map(|line| line.iter().collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        let ansi_text = char_grid
+            .iter()
+            .zip(color_grid.iter())
+            .map(|(char_line, color_line)| {
+                let mut ansi_line = String::new();
+                for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
+                    ansi_line.push_str(&format!("\x1b[38;2;{};{};{}m{}", r, g, b, ch));
+                }
+                ansi_line.push_str("\x1b[0m");
+                ansi_line
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Ok(AsciiArtOutput {
+            plain_text,
+            ansi_text,
+            image_data: png_bytes,
+            svg_data: String::new(),
+            char_colors: Vec::new(),
+        })
+    }
+
+    fn generate_svg(
+        char_grid: &[Vec<char>],
+        color_grid: &[Vec<(u8, u8, u8)>],
+        bg: &Background,
+    ) -> Result<AsciiArtOutput, String> {
+        let height = char_grid.len();
+        if height == 0 {
+            return Ok(AsciiArtOutput {
+                plain_text: String::new(),
+                ansi_text: String::new(),
+                image_data: Vec::new(),
+                svg_data: String::new(),
+                char_colors: Vec::new(),
+            });
+        }
+        let width = char_grid[0].len();
+
+        let char_width = 8.0f64;
+        let char_height = 12.0f64;
+        let svg_width = width as f64 * char_width;
+        let svg_height = height as f64 * char_height;
+
         let bg_color = match bg {
             Background::Black => "#000000",
             Background::White => "#ffffff",
             Background::Transparent => "transparent",
         };
-        format!(
-            r#"<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="background:{};font-family:monospace;white-space:pre;line-height:1.0;letter-spacing:1px;font-size:12px">
-{}
-</body>
-</html>"#,
-            bg_color, body
-        )
-    }
 
-    fn generate_monochrome(
-        img: &DynamicImage,
-        charset: &str,
-        invert: bool,
-        bg: &Background,
-    ) -> Result<AsciiArtOutput, String> {
-        let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut html_body = String::new();
+        let mut svg = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}" viewBox="0 0 {} {}">"#,
+            svg_width, svg_height, svg_width, svg_height
+        );
+        svg.push_str(&format!(
+            r#"<rect width="100%" height="100%" fill="{}"/>"#,
+            bg_color
+        ));
+        svg.push_str(r#"<text font-family="monospace" font-size="10" dy="10">"#);
 
-        for y in 0..height {
-            let mut line = String::new();
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-                line.push(ch);
+        for (y, (char_line, color_line)) in char_grid.iter().zip(color_grid.iter()).enumerate() {
+            for (x, (ch, &(r, g, b))) in char_line.iter().zip(color_line.iter()).enumerate() {
+                let x_pos = x as f64 * char_width;
+                let y_pos = y as f64 * char_height;
+                let escaped = Self::escape_html_char(*ch);
+                let color = format!("#{:02x}{:02x}{:02x}", r, g, b);
+                svg.push_str(&format!(
+                    r#"<tspan x="{}" y="{}" fill="{}">{}</tspan>"#,
+                    x_pos, y_pos, color, escaped
+                ));
             }
-            plain_lines.push(line.clone());
-            html_body.push_str(&format!("{}\n", Self::escape_html_chars(&line)));
         }
 
-        let html_text = Self::wrap_html_document(bg, &html_body);
-        let ansi_text = plain_lines.join("\n");
+        svg.push_str("</text></svg>");
+
+        let plain_text = char_grid
+            .iter()
+            .map(|line| line.iter().collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        let ansi_text = char_grid
+            .iter()
+            .zip(color_grid.iter())
+            .map(|(char_line, color_line)| {
+                let mut ansi_line = String::new();
+                for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
+                    ansi_line.push_str(&format!("\x1b[38;2;{};{};{}m{}", r, g, b, ch));
+                }
+                ansi_line.push_str("\x1b[0m");
+                ansi_line
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
 
         Ok(AsciiArtOutput {
-            plain_text: plain_lines.join("\n"),
-            html_text,
+            plain_text,
             ansi_text,
+            image_data: Vec::new(),
+            svg_data: svg,
+            char_colors: Vec::new(),
         })
     }
 
-    fn generate_ansi256(
-        img: &DynamicImage,
-        charset: &str,
-        invert: bool,
-        bg: &Background,
+    fn generate_canvas_data(
+        char_grid: &[Vec<char>],
+        color_grid: &[Vec<(u8, u8, u8)>],
     ) -> Result<AsciiArtOutput, String> {
-        let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut ansi_lines = Vec::new();
-        let mut html_body = String::new();
+        let mut char_colors = Vec::new();
 
-        for y in 0..height {
-            let mut plain_line = String::new();
-            let mut ansi_line = String::new();
-            let mut html_line = String::new();
-
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-                let color_idx = Self::rgb_to_ansi256(pixel[0], pixel[1], pixel[2]);
-
-                plain_line.push(ch);
-                ansi_line.push_str(&format!("\x1b[38;5;{}m{}", color_idx, ch));
-                html_line.push_str(&format!(
-                    "<span style=\"color:#{:02x}{:02x}{:02x}\">{}</span>",
-                    pixel[0], pixel[1], pixel[2], Self::escape_html_char(ch)
-                ));
+        for (char_line, color_line) in char_grid.iter().zip(color_grid.iter()) {
+            for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
+                char_colors.push(CharColor {
+                    char: *ch,
+                    r,
+                    g,
+                    b,
+                });
             }
-
-            plain_lines.push(plain_line);
-            ansi_lines.push(format!("{}\x1b[0m", ansi_line));
-            html_body.push_str(&format!("{}\n", html_line));
         }
 
-        Ok(AsciiArtOutput {
-            plain_text: plain_lines.join("\n"),
-            html_text: Self::wrap_html_document(bg, &html_body),
-            ansi_text: ansi_lines.join("\n"),
-        })
-    }
+        let plain_text = char_grid
+            .iter()
+            .map(|line| line.iter().collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n");
 
-    fn generate_truecolor(
-        img: &DynamicImage,
-        charset: &str,
-        invert: bool,
-        bg: &Background,
-    ) -> Result<AsciiArtOutput, String> {
-        let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut ansi_lines = Vec::new();
-        let mut html_body = String::new();
-
-        for y in 0..height {
-            let mut plain_line = String::new();
-            let mut ansi_line = String::new();
-            let mut html_line = String::new();
-
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-
-                plain_line.push(ch);
-                ansi_line.push_str(&format!(
-                    "\x1b[38;2;{};{};{}m{}",
-                    pixel[0], pixel[1], pixel[2], ch
-                ));
-                html_line.push_str(&format!(
-                    "<span style=\"color:#{:02x}{:02x}{:02x}\">{}</span>",
-                    pixel[0], pixel[1], pixel[2], Self::escape_html_char(ch)
-                ));
-            }
-
-            plain_lines.push(plain_line);
-            ansi_lines.push(format!("{}\x1b[0m", ansi_line));
-            html_body.push_str(&format!("{}\n", html_line));
-        }
+        let ansi_text = char_grid
+            .iter()
+            .zip(color_grid.iter())
+            .map(|(char_line, color_line)| {
+                let mut ansi_line = String::new();
+                for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
+                    ansi_line.push_str(&format!("\x1b[38;2;{};{};{}m{}", r, g, b, ch));
+                }
+                ansi_line.push_str("\x1b[0m");
+                ansi_line
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
 
         Ok(AsciiArtOutput {
-            plain_text: plain_lines.join("\n"),
-            html_text: Self::wrap_html_document(bg, &html_body),
-            ansi_text: ansi_lines.join("\n"),
+            plain_text,
+            ansi_text,
+            image_data: Vec::new(),
+            svg_data: String::new(),
+            char_colors,
         })
-    }
-
-    fn generate_html(
-        img: &DynamicImage,
-        charset: &str,
-        invert: bool,
-        bg: &Background,
-    ) -> Result<AsciiArtOutput, String> {
-        let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let mut plain_lines = Vec::new();
-        let mut html_body = String::new();
-
-        for y in 0..height {
-            let mut plain_line = String::new();
-            let mut html_line = String::new();
-
-            for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
-                let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
-                let ch = Self::brightness_to_char(brightness, charset, invert);
-
-                plain_line.push(ch);
-                html_line.push_str(&format!(
-                    "<span style=\"color:#{:02x}{:02x}{:02x}\">{}</span>",
-                    pixel[0], pixel[1], pixel[2], Self::escape_html_char(ch)
-                ));
-            }
-
-            plain_lines.push(plain_line);
-            html_body.push_str(&format!("{}\n", html_line));
-        }
-
-        Ok(AsciiArtOutput {
-            plain_text: plain_lines.join("\n"),
-            html_text: Self::wrap_html_document(bg, &html_body),
-            ansi_text: plain_lines.join("\n"),
-        })
-    }
-
-    fn escape_html_chars(text: &str) -> String {
-        text.chars().map(|c| Self::escape_html_char(c)).collect()
     }
 }
