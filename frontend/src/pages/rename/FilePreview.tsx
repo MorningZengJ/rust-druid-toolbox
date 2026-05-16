@@ -2,6 +2,8 @@ import { useRenameStore } from "@/stores/renameStore";
 import { renameLogic } from "@/lib/renameLogic";
 import { Badge } from "@/components/ui/badge";
 import { Virtuoso } from "react-virtuoso";
+import FileIcon from "@/components/FileIcon";
+import type { FileInfo } from "@/types";
 
 export default function FilePreview() {
   const filterFileList = useRenameStore((s) => s.filterFileList);
@@ -11,6 +13,7 @@ export default function FilePreview() {
   const loadMore = useRenameStore((s) => s.loadMore);
   const selectedFile = useRenameStore((s) => s.selectedFile);
   const setSelectedFile = useRenameStore((s) => s.setSelectedFile);
+  const loadFiles = useRenameStore((s) => s.loadFiles);
 
   const activeRules = replaceInfos.filter((r) => r.enable);
   const displayedFiles = filterFileList.slice(0, displayLimit);
@@ -29,6 +32,19 @@ export default function FilePreview() {
   };
 
   const hasMore = displayLimit < filterFileList.length;
+
+  const handleDoubleClick = async (file: FileInfo) => {
+    if (file.isDir) {
+      await loadFiles(file.path);
+    } else {
+      try {
+        const { openPath } = await import("@tauri-apps/plugin-opener");
+        await openPath(file.path);
+      } catch (e) {
+        console.error("打开文件失败:", e);
+      }
+    }
+  };
 
   if (filterFileList.length === 0) {
     return (
@@ -68,14 +84,13 @@ export default function FilePreview() {
 
             return (
               <div
-                className={`flex cursor-pointer items-center gap-3 border-b border-border px-3 py-1.5 text-sm hover:bg-muted/50 ${
+                className={`flex cursor-pointer items-center gap-2 border-b border-border px-3 py-1.5 text-sm hover:bg-muted/50 ${
                   isSelected ? "bg-muted" : ""
                 } ${hasConflict ? "bg-conflict/10" : ""}`}
                 onClick={() => setSelectedFile(isSelected ? null : file)}
+                onDoubleClick={() => handleDoubleClick(file)}
               >
-                <span className="w-8 shrink-0 text-right text-xs text-muted-foreground">
-                  {index + 1}
-                </span>
+                <FileIcon isDir={file.isDir} extension={file.extension} />
                 <span className="min-w-0 flex-1 truncate font-mono text-sm">
                   {file.name}
                 </span>
@@ -94,11 +109,6 @@ export default function FilePreview() {
                 {hasConflict && (
                   <Badge variant="destructive" className="shrink-0 text-xs">
                     冲突
-                  </Badge>
-                )}
-                {file.isDir && (
-                  <Badge variant="secondary" className="shrink-0 text-xs">
-                    目录
                   </Badge>
                 )}
               </div>

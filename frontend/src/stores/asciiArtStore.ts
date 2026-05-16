@@ -30,6 +30,7 @@ interface AsciiArtState {
   resetView: () => void;
   setActiveTab: (tab: "original" | "ascii") => void;
   clearError: () => void;
+  setErrorMessage: (msg: string) => void;
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -187,4 +188,5 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   resetView: () => set({ zoom: 1, panX: 0, panY: 0 }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   clearError: () => set({ errorMessage: null }),
+  setErrorMessage: (msg) => set({ errorMessage: msg }),
 }));

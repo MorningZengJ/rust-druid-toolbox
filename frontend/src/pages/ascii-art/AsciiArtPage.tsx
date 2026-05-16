@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -61,9 +62,9 @@ export default function AsciiArtPage() {
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
 
-  // Draw canvas when output changes and renderMode is canvas
+  // Draw canvas when output changes (for canvas and png render modes)
   useEffect(() => {
-    if (params.renderMode !== "canvas" || !output || !canvasRef.current) return;
+    if (params.renderMode === "svg" || !output || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -72,11 +73,8 @@ export default function AsciiArtPage() {
     const charWidth = 8;
     const charHeight = 12;
 
-    // Calculate grid dimensions from charColors length
-    const totalChars = output.charColors.length;
-    if (totalChars === 0) return;
+    if (output.charColors.length === 0) return;
 
-    // Try to infer width from plainText
     const lines = output.plainText.split("\n");
     const gridWidth = lines[0]?.length || 1;
     const gridHeight = lines.length;
@@ -88,14 +86,18 @@ export default function AsciiArtPage() {
     ctx.fillStyle = params.background === "white" ? "#ffffff" : params.background === "transparent" ? "transparent" : "#000000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw each character as a colored block
+    // Draw actual characters
+    ctx.font = "10px monospace";
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+
     let idx = 0;
     for (let y = 0; y < gridHeight; y++) {
       for (let x = 0; x < gridWidth; x++) {
         if (idx >= output.charColors.length) break;
         const cc = output.charColors[idx];
         ctx.fillStyle = `rgb(${cc.r},${cc.g},${cc.b})`;
-        ctx.fillRect(x * charWidth, y * charHeight, charWidth, charHeight);
+        ctx.fillText(cc.char, x * charWidth, y * charHeight);
         idx++;
       }
     }
@@ -160,6 +162,30 @@ export default function AsciiArtPage() {
     e.preventDefault();
   }, []);
 
+  // Export PNG from Canvas
+  const handleExportPng = useCallback(async () => {
+    if (!canvasRef.current) return;
+    try {
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const filePath = await save({
+        filters: [{ name: "图片", extensions: ["png"] }],
+        defaultPath: "ascii_art.png",
+      });
+      if (!filePath) return;
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvasRef.current!.toBlob(resolve, "image/png")
+      );
+      if (!blob) return;
+
+      const buffer = await blob.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buffer));
+      await invoke("write_binary_file", { path: filePath, contents: bytes });
+    } catch (e) {
+      useAsciiArtStore.getState().setErrorMessage(`导出PNG失败: ${e}`);
+    }
+  }, []);
+
   // Double-click to select image
   const handleDoubleClick = useCallback(() => {
     loadImageFromFile();
@@ -215,20 +241,6 @@ export default function AsciiArtPage() {
     };
 
     switch (params.renderMode) {
-      case "png":
-        if (output.imageData.length === 0) return null;
-        const pngBlob = new Blob([new Uint8Array(output.imageData)], { type: "image/png" });
-        const pngUrl = URL.createObjectURL(pngBlob);
-        return (
-          <img
-            src={pngUrl}
-            alt="ASCII Art"
-            style={transformStyle}
-            className="block"
-            onLoad={() => URL.revokeObjectURL(pngUrl)}
-          />
-        );
-
       case "svg":
         if (!output.svgData) return null;
         const svgBase64 = btoa(unescape(encodeURIComponent(output.svgData)));
@@ -241,6 +253,7 @@ export default function AsciiArtPage() {
           />
         );
 
+      case "png":
       case "canvas":
         return (
           <canvas
@@ -505,7 +518,7 @@ export default function AsciiArtPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportOutput("png")}>
+                <DropdownMenuItem onClick={handleExportPng}>
                   <FileDown size={14} className="mr-2" />
                   导出为 PNG
                 </DropdownMenuItem>

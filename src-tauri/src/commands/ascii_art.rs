@@ -22,6 +22,12 @@ pub fn load_image_from_file(path: String) -> Result<Vec<u8>, String> {
     std::fs::read(&path).map_err(|e| e.to_string())
 }
 
+/// Write binary data to a file
+#[tauri::command]
+pub fn write_binary_file(path: String, contents: Vec<u8>) -> Result<(), String> {
+    std::fs::write(&path, &contents).map_err(|e| e.to_string())
+}
+
 /// Export ASCII art to file in specified format
 #[tauri::command]
 pub async fn export_ascii_art(

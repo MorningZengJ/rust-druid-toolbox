@@ -21,7 +21,7 @@ impl AsciiArtEngine {
 
         // Generate character grid based on color mode
         let (char_grid, color_grid) = match params.color_mode {
-            ColorMode::Monochrome => Self::generate_monochrome_grid(&adjusted, &charset, params.invert),
+            ColorMode::Monochrome => Self::generate_monochrome_grid(&adjusted, &charset, params.invert, &params.background),
             ColorMode::Ansi256 | ColorMode::TrueColor | ColorMode::Html => Self::generate_color_grid(&adjusted, &charset, params.invert),
         };
 
@@ -111,11 +111,30 @@ impl AsciiArtEngine {
         }
     }
 
+    fn build_char_colors(
+        char_grid: &[Vec<char>],
+        color_grid: &[Vec<(u8, u8, u8)>],
+    ) -> Vec<CharColor> {
+        let mut char_colors = Vec::new();
+        for (char_line, color_line) in char_grid.iter().zip(color_grid.iter()) {
+            for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
+                char_colors.push(CharColor { char: *ch, r, g, b });
+            }
+        }
+        char_colors
+    }
+
     fn generate_monochrome_grid(
         img: &DynamicImage,
         charset: &str,
         invert: bool,
+        bg: &Background,
     ) -> (Vec<Vec<char>>, Vec<Vec<(u8, u8, u8)>>) {
+        let mono_color = match bg {
+            Background::White => (0u8, 0u8, 0u8),
+            _ => (255u8, 255u8, 255u8),
+        };
+
         let rgba = img.to_rgba8();
         let (width, height) = rgba.dimensions();
         let mut char_grid = Vec::new();
@@ -129,7 +148,7 @@ impl AsciiArtEngine {
                 let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
                 let ch = Self::brightness_to_char(brightness, charset, invert);
                 char_line.push(ch);
-                color_line.push((pixel[0], pixel[1], pixel[2]));
+                color_line.push(mono_color);
             }
             char_grid.push(char_line);
             color_grid.push(color_line);
@@ -248,7 +267,7 @@ impl AsciiArtEngine {
             ansi_text,
             image_data: png_bytes,
             svg_data: String::new(),
-            char_colors: Vec::new(),
+            char_colors: Self::build_char_colors(&char_grid, &color_grid),
         })
     }
 
@@ -330,7 +349,7 @@ impl AsciiArtEngine {
             ansi_text,
             image_data: Vec::new(),
             svg_data: svg,
-            char_colors: Vec::new(),
+            char_colors: Self::build_char_colors(&char_grid, &color_grid),
         })
     }
 
@@ -338,18 +357,7 @@ impl AsciiArtEngine {
         char_grid: &[Vec<char>],
         color_grid: &[Vec<(u8, u8, u8)>],
     ) -> Result<AsciiArtOutput, String> {
-        let mut char_colors = Vec::new();
-
-        for (char_line, color_line) in char_grid.iter().zip(color_grid.iter()) {
-            for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
-                char_colors.push(CharColor {
-                    char: *ch,
-                    r,
-                    g,
-                    b,
-                });
-            }
-        }
+        let char_colors = Self::build_char_colors(char_grid, color_grid);
 
         let plain_text = char_grid
             .iter()
