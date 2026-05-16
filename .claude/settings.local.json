@@ -47,7 +47,8 @@
       "WebSearch",
       "WebFetch(domain:crates.io)",
       "WebFetch(domain:github.com)",
-      "PowerShell(cargo check *)"
+      "PowerShell(cargo check *)",
+      "PowerShell(Get-NetTCPConnection *)"
     ]
   }
 }

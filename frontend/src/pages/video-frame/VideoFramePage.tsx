@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,11 @@ import {
   Film,
   Upload,
 } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useVideoFrameStore } from "@/stores/videoFrameStore";
 import type { ExtractMode, OutputFormat } from "@/types";
+
+const VIDEO_EXTENSIONS = ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"];
 
 export default function VideoFramePage() {
   const videoPath = useVideoFrameStore((s) => s.videoPath);
@@ -42,7 +45,6 @@ export default function VideoFramePage() {
   const setOutputDir = useVideoFrameStore((s) => s.setOutputDir);
 
   const [isDragOver, setIsDragOver] = useState(false);
-  const dropRef = useRef<HTMLDivElement>(null);
 
   const handleBrowseOutputDir = useCallback(async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
@@ -52,30 +54,29 @@ export default function VideoFramePage() {
     }
   }, [setOutputDir]);
 
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        // In Tauri, dropped files give us the file path
-        const filePath = (files[0] as unknown as { path?: string }).path;
-        if (filePath) {
-          await loadVideo(filePath);
+  // Tauri native file drag & drop
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onDragDropEvent((event) => {
+      if (event.payload.type === "over") {
+        setIsDragOver(true);
+      } else if (event.payload.type === "leave") {
+        setIsDragOver(false);
+      } else if (event.payload.type === "drop") {
+        setIsDragOver(false);
+        const paths = event.payload.paths;
+        const videoPath = paths.find((p) => {
+          const ext = p.split(".").pop()?.toLowerCase() ?? "";
+          return VIDEO_EXTENSIONS.includes(ext);
+        });
+        if (videoPath) {
+          loadVideo(videoPath);
         }
       }
-    },
-    [loadVideo]
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setIsDragOver(false);
-  }, []);
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [loadVideo]);
 
   const handleDoubleClick = useCallback(async () => {
     await loadVideo();
@@ -325,11 +326,7 @@ export default function VideoFramePage() {
 
         {/* Content */}
         <div
-          ref={dropRef}
           className="relative flex-1 overflow-hidden"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
           onDoubleClick={handleDoubleClick}
         >
           {errorMessage && (
