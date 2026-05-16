@@ -9,6 +9,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useWindowState } from "@/hooks/useWindowState";
 import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
 import VideoFramePage from "@/pages/video-frame/VideoFramePage";
@@ -26,6 +27,7 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
 function App() {
   const [activePage, setActivePage] = useState<Page>("rename");
   const { isDark, setTheme } = useTheme();
+  useWindowState();
 
   const toggleTheme = () => {
     setTheme(isDark ? "light" : "dark");

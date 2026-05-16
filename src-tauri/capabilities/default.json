@@ -12,6 +12,7 @@
     "dialog:allow-confirm",
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text",
-    "opener:allow-open-path"
+    "opener:allow-open-path",
+    "store:default"
   ]
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { LazyStore } from "@tauri-apps/plugin-store";
 
 export type ColorMode = "light" | "dark" | "system";
 export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
@@ -11,6 +12,8 @@ export const COLOR_THEMES: { value: ColorTheme; label: string; color: string }[]
   { value: "orange", label: "橙色", color: "hsl(25, 95%, 53%)" },
   { value: "rose", label: "玫红", color: "hsl(347, 77%, 50%)" },
 ];
+
+const store = new LazyStore("settings.json");
 
 function applyColorMode(colorMode: ColorMode) {
   const root = document.documentElement;
@@ -58,19 +61,29 @@ function applyColorTheme(colorTheme: ColorTheme, customPrimary?: string) {
 }
 
 export function useTheme() {
-  const [colorMode, setColorModeState] = useState<ColorMode>(() => {
-    return (localStorage.getItem("colorMode") as ColorMode) || "light";
-  });
+  const [colorMode, setColorModeState] = useState<ColorMode>("system");
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>("default");
+  const [customPrimary, setCustomPrimaryState] = useState<string | undefined>(undefined);
+  const [loaded, setLoaded] = useState(false);
 
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>(() => {
-    return (localStorage.getItem("colorTheme") as ColorTheme) || "default";
-  });
-
-  const [customPrimary, setCustomPrimaryState] = useState<string | undefined>(() => {
-    return localStorage.getItem("customPrimary") || undefined;
-  });
-
+  // Load persisted values from store on mount
   useEffect(() => {
+    (async () => {
+      const [savedMode, savedTheme, savedCustom] = await Promise.all([
+        store.get<ColorMode>("colorMode"),
+        store.get<ColorTheme>("colorTheme"),
+        store.get<string>("customPrimary"),
+      ]);
+      if (savedMode) setColorModeState(savedMode);
+      if (savedTheme) setColorThemeState(savedTheme);
+      if (savedCustom) setCustomPrimaryState(savedCustom);
+      setLoaded(true);
+    })();
+  }, []);
+
+  // Apply color mode after load and on change
+  useEffect(() => {
+    if (!loaded) return;
     applyColorMode(colorMode);
 
     if (colorMode === "system") {
@@ -79,36 +92,38 @@ export function useTheme() {
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
     }
-  }, [colorMode]);
+  }, [colorMode, loaded]);
 
+  // Apply color theme after load and on change
   useEffect(() => {
+    if (!loaded) return;
     applyColorTheme(colorTheme, customPrimary);
-  }, [colorTheme, customPrimary]);
+  }, [colorTheme, customPrimary, loaded]);
 
   const setColorMode = useCallback((mode: ColorMode) => {
     setColorModeState(mode);
-    localStorage.setItem("colorMode", mode);
+    store.set("colorMode", mode);
   }, []);
 
   const setColorTheme = useCallback((theme: ColorTheme) => {
     setColorThemeState(theme);
-    localStorage.setItem("colorTheme", theme);
+    store.set("colorTheme", theme);
     // Clear custom primary when switching to a preset theme
     if (theme !== "default") {
       setCustomPrimaryState(undefined);
-      localStorage.removeItem("customPrimary");
+      store.set("customPrimary", undefined);
     }
   }, []);
 
   const setCustomPrimary = useCallback((hsl: string | undefined) => {
     setCustomPrimaryState(hsl);
     if (hsl) {
-      localStorage.setItem("customPrimary", hsl);
+      store.set("customPrimary", hsl);
       // Switch to default theme when custom color is set
       setColorThemeState("default");
-      localStorage.setItem("colorTheme", "default");
+      store.set("colorTheme", "default");
     } else {
-      localStorage.removeItem("customPrimary");
+      store.set("customPrimary", undefined);
     }
   }, []);
 
