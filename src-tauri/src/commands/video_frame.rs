@@ -21,10 +21,11 @@ pub async fn extract_frames(
     output_dir: Option<String>,
     app_handle: tauri::AppHandle,
 ) -> Result<Vec<crate::model::video_frame_state::ExtractedFrame>, String> {
+    let handle = app_handle.clone();
     // Run the CPU-intensive extraction on a blocking thread
     let frames = tokio::task::spawn_blocking(move || {
         VideoFrameEngine::extract_frames(&params, |progress| {
-            let _ = app_handle.emit("video-frame://progress", progress);
+            let _ = handle.emit("video-frame://progress", progress);
         })
     })
     .await

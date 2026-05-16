@@ -91,7 +91,14 @@ impl VideoFrameEngine {
             decoder.height()
         };
 
-        let target_timestamps = Self::calculate_timestamps(&params.mode, duration, fps_value, &params.time_points);
+        let target_timestamps = Self::calculate_timestamps(
+            &params.mode,
+            duration,
+            fps_value,
+            params.interval_secs,
+            params.frame_count as usize,
+            &params.time_points,
+        );
         let total_targets = target_timestamps.len();
 
         let mut scaler = ffmpeg_next::software::scaling::Context::get(
@@ -183,7 +190,7 @@ impl VideoFrameEngine {
         Ok(frames)
     }
 
-    fn calculate_timestamps(mode: &ExtractMode, duration: f64, fps: f64, time_points: &[f64]) -> Vec<f64> {
+    fn calculate_timestamps(mode: &ExtractMode, duration: f64, fps: f64, interval_secs: f64, frame_count: usize, time_points: &[f64]) -> Vec<f64> {
         match mode {
             ExtractMode::AllFrames => {
                 let frame_interval = 1.0 / fps;
@@ -193,11 +200,7 @@ impl VideoFrameEngine {
                     .collect()
             }
             ExtractMode::ByInterval => {
-                let interval = if time_points.is_empty() {
-                    1.0
-                } else {
-                    time_points[0]
-                };
+                let interval = if interval_secs > 0.0 { interval_secs } else { 1.0 };
                 let mut timestamps = Vec::new();
                 let mut t = 0.0;
                 while t < duration {
@@ -207,11 +210,7 @@ impl VideoFrameEngine {
                 timestamps
             }
             ExtractMode::ByCount => {
-                let count = if time_points.is_empty() {
-                    10
-                } else {
-                    time_points[0] as usize
-                };
+                let count = if frame_count > 0 { frame_count } else { 10 };
                 if count <= 1 {
                     return vec![0.0];
                 }
