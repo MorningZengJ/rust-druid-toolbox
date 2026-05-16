@@ -124,6 +124,6 @@ export interface ExtractParams {
 export interface ExtractedFrame {
   index: number;
   timestamp: number;
-  imageData: number[];
   filename: string;
+  filePath: string;
 }

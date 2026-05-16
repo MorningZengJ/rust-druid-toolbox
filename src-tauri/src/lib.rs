@@ -28,7 +28,6 @@ pub fn run() {
         commands::video_frame::check_ffmpeg,
         commands::video_frame::probe_video,
         commands::video_frame::extract_frames,
-        commands::video_frame::export_frames,
     ]);
 
     builder

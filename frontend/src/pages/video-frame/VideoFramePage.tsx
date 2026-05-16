@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -13,13 +13,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   FolderOpen,
   Play,
-  Download,
   Loader2,
   AlertTriangle,
   Film,
   Upload,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { useVideoFrameStore } from "@/stores/videoFrameStore";
 import type { ExtractMode, OutputFormat } from "@/types";
 
@@ -40,7 +40,6 @@ export default function VideoFramePage() {
   const checkFfmpeg = useVideoFrameStore((s) => s.checkFfmpeg);
   const loadVideo = useVideoFrameStore((s) => s.loadVideo);
   const extractFrames = useVideoFrameStore((s) => s.extractFrames);
-  const exportFrames = useVideoFrameStore((s) => s.exportFrames);
   const outputDir = useVideoFrameStore((s) => s.outputDir);
   const setOutputDir = useVideoFrameStore((s) => s.setOutputDir);
 
@@ -85,23 +84,6 @@ export default function VideoFramePage() {
   useEffect(() => {
     checkFfmpeg();
   }, [checkFfmpeg]);
-
-  // Create blob URLs for frame thumbnails
-  const frameUrls = useMemo(() => {
-    return frames.map((frame) => {
-      const blob = new Blob([new Uint8Array(frame.imageData) as unknown as BlobPart], {
-        type: "image/png",
-      });
-      return URL.createObjectURL(blob);
-    });
-  }, [frames]);
-
-  // Cleanup blob URLs
-  useEffect(() => {
-    return () => {
-      frameUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [frameUrls]);
 
   if (!ffmpegAvailable) {
     return (
@@ -312,16 +294,10 @@ export default function VideoFramePage() {
       {/* Right: Frame grid */}
       <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-panel">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <div className="flex items-center border-b border-border px-3 py-2">
           <span className="text-xs font-medium text-muted-foreground">
             {frames.length > 0 ? `提取的帧 (${frames.length})` : "视频抽帧"}
           </span>
-          {frames.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-7" onClick={exportFrames}>
-              <Download size={14} className="mr-1" />
-              导出全部
-            </Button>
-          )}
         </div>
 
         {/* Content */}
@@ -360,7 +336,7 @@ export default function VideoFramePage() {
                       onClick={() => setSelectedFrame(i)}
                     >
                       <img
-                        src={frameUrls[i]}
+                        src={convertFileSrc(frame.filePath)}
                         alt={`Frame ${frame.index}`}
                         className="aspect-video w-full object-cover"
                       />
@@ -376,7 +352,7 @@ export default function VideoFramePage() {
               {selectedFrame !== null && frames[selectedFrame] && (
                 <div className="w-[300px] shrink-0 border-l border-border p-3">
                   <img
-                    src={frameUrls[selectedFrame]}
+                    src={convertFileSrc(frames[selectedFrame].filePath)}
                     alt={`Frame ${frames[selectedFrame].index}`}
                     className="w-full rounded border border-border"
                   />

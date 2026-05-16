@@ -56,8 +56,8 @@ pub struct VideoInfo {
 pub struct ExtractedFrame {
     pub index: usize,
     pub timestamp: f64,
-    pub image_data: Vec<u8>,
     pub filename: String,
+    pub file_path: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

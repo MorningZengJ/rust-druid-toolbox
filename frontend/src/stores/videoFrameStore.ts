@@ -31,7 +31,6 @@ interface VideoFrameState {
   loadVideo: (path?: string) => Promise<void>;
   setExtractParams: (updates: Partial<ExtractParams>) => void;
   extractFrames: () => Promise<void>;
-  exportFrames: () => Promise<void>;
   setSelectedFrame: (index: number | null) => void;
   clearError: () => void;
 }
@@ -111,50 +110,29 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
   },
 
   extractFrames: async () => {
-    const { extractParams, isExtracting } = get();
-    if (!extractParams.videoPath || isExtracting) return;
+    const { extractParams, isExtracting, outputDir } = get();
+    if (!extractParams.videoPath || isExtracting || !outputDir) return;
 
     set({ isExtracting: true, progress: 0, errorMessage: null, frames: [] });
 
-    // Listen for progress events
-    const unlisten = await listen<{ current: number; total: number }>(
+    // Listen for progress events (backend emits a float 0.0~1.0)
+    const unlisten = await listen<number>(
       "video-frame://progress",
       (event) => {
-        const { current, total } = event.payload;
-        set({ progress: total > 0 ? (current / total) * 100 : 0 });
+        set({ progress: event.payload * 100 });
       }
     );
 
     try {
       const frames = await invoke<ExtractedFrame[]>("extract_frames", {
         params: extractParams,
-        outputDir: get().outputDir || undefined,
+        outputDir,
       });
       set({ frames, isExtracting: false, progress: 100 });
     } catch (e) {
       set({ errorMessage: `提取帧失败: ${e}`, isExtracting: false });
     } finally {
       unlisten();
-    }
-  },
-
-  exportFrames: async () => {
-    const { frames } = get();
-    if (frames.length === 0) return;
-
-    try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({ directory: true });
-      if (!selected) return;
-
-      await invoke<string>("export_frames", {
-        frames,
-        outputDir: selected as string,
-      });
-      set({ errorMessage: null });
-      // Could show success message
-    } catch (e) {
-      set({ errorMessage: `导出失败: ${e}` });
     }
   },
 

@@ -51,10 +51,11 @@ impl VideoFrameEngine {
         })
     }
 
-    pub fn extract_frames<F>(params: &ExtractParams, mut progress_cb: F) -> Result<Vec<ExtractedFrame>>
+    pub fn extract_frames<F>(params: &ExtractParams, output_dir: &Path, mut progress_cb: F) -> Result<Vec<ExtractedFrame>>
     where
         F: FnMut(f32),
     {
+        std::fs::create_dir_all(output_dir).map_err(|e| anyhow!("创建输出目录失败: {}", e))?;
         ffmpeg_next::init().map_err(|e| anyhow!("FFmpeg 初始化失败: {}", e))?;
 
         let mut input = ffmpeg_next::format::input(&params.video_path)
@@ -142,6 +143,7 @@ impl VideoFrameEngine {
                             params.jpeg_quality,
                             frame_count,
                             timestamp,
+                            output_dir,
                         )?;
                         frames.push(encoded);
                         target_idx += 1;
@@ -179,6 +181,7 @@ impl VideoFrameEngine {
                     params.jpeg_quality,
                     frame_count,
                     timestamp,
+                    output_dir,
                 )?;
                 frames.push(encoded);
                 target_idx += 1;
@@ -237,6 +240,7 @@ impl VideoFrameEngine {
         _quality: u8,
         index: usize,
         timestamp: f64,
+        output_dir: &Path,
     ) -> Result<ExtractedFrame> {
         let mut rgb_frame = ffmpeg_next::util::frame::video::Video::empty();
         scaler.run(frame, &mut rgb_frame)
@@ -260,32 +264,33 @@ impl VideoFrameEngine {
 
         let dynamic_img = image::DynamicImage::ImageRgb8(img);
 
-        let image_data = match format {
+        let ts_ms = (timestamp * 1000.0).round() as u64;
+        let (filename, image_data) = match format {
             OutputFormat::Png => {
+                let fname = format!("frame_{:06}_{}ms.png", index, ts_ms);
                 let mut buf = std::io::Cursor::new(Vec::new());
                 dynamic_img.write_to(&mut buf, image::ImageFormat::Png)
                     .map_err(|e| anyhow!("PNG 编码失败: {}", e))?;
-                buf.into_inner()
+                (fname, buf.into_inner())
             }
             OutputFormat::Jpeg => {
+                let fname = format!("frame_{:06}_{}ms.jpg", index, ts_ms);
                 let mut buf = std::io::Cursor::new(Vec::new());
                 dynamic_img.write_to(&mut buf, image::ImageFormat::Jpeg)
                     .map_err(|e| anyhow!("JPEG 编码失败: {}", e))?;
-                buf.into_inner()
+                (fname, buf.into_inner())
             }
         };
 
-        let ts_ms = (timestamp * 1000.0).round() as u64;
-        let filename = match format {
-            OutputFormat::Png => format!("frame_{:06}_{}ms.png", index, ts_ms),
-            OutputFormat::Jpeg => format!("frame_{:06}_{}ms.jpg", index, ts_ms),
-        };
+        let file_path = output_dir.join(&filename);
+        std::fs::write(&file_path, &image_data)
+            .map_err(|e| anyhow!("写入帧文件失败 {}: {}", file_path.display(), e))?;
 
         Ok(ExtractedFrame {
             index,
             timestamp,
-            image_data,
             filename,
+            file_path: file_path.to_string_lossy().to_string(),
         })
     }
 }
