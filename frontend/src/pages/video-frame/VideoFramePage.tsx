@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,11 @@ import {
   Film,
   Upload,
 } from "lucide-react";
+import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useVideoFrameStore } from "@/stores/videoFrameStore";
@@ -54,6 +59,11 @@ export default function VideoFramePage() {
   const estimatedTimeRemaining = useVideoFrameStore((s) => s.estimatedTimeRemaining);
 
   const [isDragOver, setIsDragOver] = useState(false);
+  const logEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
 
   const handleBrowseOutputDir = useCallback(async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
@@ -124,7 +134,8 @@ export default function VideoFramePage() {
           <span className="text-xs font-medium text-muted-foreground">参数设置</span>
         </div>
 
-        <ScrollArea className="flex-1">
+        {/* Parameters - scrollable */}
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-4 p-3">
             {/* Video info */}
             {videoInfo && (
@@ -306,9 +317,17 @@ export default function VideoFramePage() {
                 />
               </div>
             )}
+          </div>
+        </div>
 
-            {isExtracting && logs.length > 0 && (
-              <ScrollArea className="h-[120px] rounded border border-border bg-muted/30 p-2">
+        {/* Logs - always visible, fixed at bottom */}
+        <div className="h-[140px] shrink-0 border-t border-border">
+          <div className="flex items-center border-b border-border px-3 py-1.5">
+            <span className="text-xs font-medium text-muted-foreground">日志</span>
+          </div>
+          <div className="h-[calc(100%-28px)] overflow-y-auto p-2">
+            {logs.length > 0 ? (
+              <>
                 {logs.map((log, i) => (
                   <div key={i} className="text-xs py-0.5">
                     <span className={log.level === 'error' ? 'text-destructive' : log.level === 'warn' ? 'text-warning' : 'text-muted-foreground'}>
@@ -316,10 +335,15 @@ export default function VideoFramePage() {
                     </span>
                   </div>
                 ))}
-              </ScrollArea>
+                <div ref={logEndRef} />
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                暂无日志
+              </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Right: Frame grid */}
@@ -352,14 +376,61 @@ export default function VideoFramePage() {
           )}
 
           {frames.length > 0 ? (
-            <div className="flex h-full">
-              {/* Frame grid */}
-              <ScrollArea className="flex-1">
-                <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+            selectedFrame !== null && frames[selectedFrame] ? (
+              <ResizablePanelGroup orientation="horizontal" className="h-full">
+                <ResizablePanel defaultSize={60} minSize={30}>
+                  <ScrollArea className="h-full">
+                    <div className="flex flex-wrap justify-center gap-2 p-3">
+                      {frames.map((frame, i) => (
+                        <div
+                          key={frame.index}
+                          className={`w-[100px] shrink-0 cursor-pointer overflow-hidden rounded border-2 transition-colors ${
+                            selectedFrame === i
+                              ? "border-primary"
+                              : "border-transparent hover:border-muted-foreground/30"
+                          }`}
+                          onClick={() => setSelectedFrame(i)}
+                        >
+                          <img
+                            src={convertFileSrc(frame.filePath)}
+                            alt={`Frame ${frame.index}`}
+                            className="aspect-video w-full object-cover"
+                          />
+                          <div className="bg-muted px-1 py-0.5 text-center text-[10px] text-muted-foreground">
+                            {frame.timestamp.toFixed(2)}s
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                <ResizablePanel defaultSize={40} minSize={20}>
+                  <ScrollArea className="h-full">
+                    <div className="p-3">
+                      <img
+                        src={convertFileSrc(frames[selectedFrame].filePath)}
+                        alt={`Frame ${frames[selectedFrame].index}`}
+                        className="w-full rounded border border-border"
+                      />
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <div>帧索引: {frames[selectedFrame].index}</div>
+                        <div>时间戳: {frames[selectedFrame].timestamp.toFixed(3)}s</div>
+                        <div>文件名: {frames[selectedFrame].filename}</div>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <ScrollArea className="h-full">
+                <div className="flex flex-wrap gap-2 p-3">
                   {frames.map((frame, i) => (
                     <div
                       key={frame.index}
-                      className={`cursor-pointer overflow-hidden rounded border-2 transition-colors ${
+                      className={`w-[100px] shrink-0 cursor-pointer overflow-hidden rounded border-2 transition-colors ${
                         selectedFrame === i
                           ? "border-primary"
                           : "border-transparent hover:border-muted-foreground/30"
@@ -378,23 +449,7 @@ export default function VideoFramePage() {
                   ))}
                 </div>
               </ScrollArea>
-
-              {/* Selected frame preview */}
-              {selectedFrame !== null && frames[selectedFrame] && (
-                <div className="w-[300px] shrink-0 border-l border-border p-3">
-                  <img
-                    src={convertFileSrc(frames[selectedFrame].filePath)}
-                    alt={`Frame ${frames[selectedFrame].index}`}
-                    className="w-full rounded border border-border"
-                  />
-                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                    <div>帧索引: {frames[selectedFrame].index}</div>
-                    <div>时间戳: {frames[selectedFrame].timestamp.toFixed(3)}s</div>
-                    <div>文件名: {frames[selectedFrame].filename}</div>
-                  </div>
-                </div>
-              )}
-            </div>
+            )
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               {videoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
