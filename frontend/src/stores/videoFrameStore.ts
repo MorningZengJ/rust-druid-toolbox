@@ -157,6 +157,14 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
       }
     );
 
+    // Listen for real-time frame events
+    const unlistenFrame = await listen<ExtractedFrame>(
+      "video-frame://frame",
+      (event) => {
+        set((state) => ({ frames: [...state.frames, event.payload] }));
+      }
+    );
+
     try {
       const frames = await invoke<ExtractedFrame[]>("extract_frames", {
         params: extractParams,
@@ -169,6 +177,7 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
     } finally {
       unlistenProgress();
       unlistenLog();
+      unlistenFrame();
     }
   },
 

@@ -52,10 +52,11 @@ impl VideoFrameEngine {
         })
     }
 
-    pub fn extract_frames<P, L>(params: &ExtractParams, output_dir: &Path, mut progress_cb: P, mut log_cb: L) -> Result<Vec<ExtractedFrame>>
+    pub fn extract_frames<P, L, F>(params: &ExtractParams, output_dir: &Path, mut progress_cb: P, mut log_cb: L, mut frame_cb: F) -> Result<Vec<ExtractedFrame>>
     where
         P: FnMut(ProgressInfo),
         L: FnMut(LogEntry),
+        F: FnMut(ExtractedFrame),
     {
         std::fs::create_dir_all(output_dir).map_err(|e| anyhow!("创建输出目录失败: {}", e))?;
         ffmpeg_next::init().map_err(|e| anyhow!("FFmpeg 初始化失败: {}", e))?;
@@ -168,6 +169,7 @@ impl VideoFrameEngine {
                             timestamp,
                             output_dir,
                         )?;
+                        frame_cb(encoded.clone());
                         frames.push(encoded);
                         target_idx += 1;
 
@@ -180,17 +182,15 @@ impl VideoFrameEngine {
                                 elapsed_ms: elapsed,
                             });
 
-                            if target_idx % 10 == 0 || target_idx == total_targets {
-                                let timestamp = std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .unwrap_or_default()
-                                    .as_millis() as u64;
-                                log_cb(LogEntry {
-                                    level: "info".to_string(),
-                                    message: format!("已提取 {}/{} 帧", target_idx, total_targets),
-                                    timestamp,
-                                });
-                            }
+                            let ts = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_millis() as u64;
+                            log_cb(LogEntry {
+                                level: "info".to_string(),
+                                message: format!("已提取 {}/{} 帧", target_idx, total_targets),
+                                timestamp: ts,
+                            });
                         }
                     } else {
                         break;
@@ -230,6 +230,7 @@ impl VideoFrameEngine {
                     timestamp,
                     output_dir,
                 )?;
+                frame_cb(encoded.clone());
                 frames.push(encoded);
                 target_idx += 1;
                 frame_count += 1;
