@@ -86,10 +86,9 @@ export type Background = "black" | "white" | "transparent";
 
 export interface AsciiArtOutput {
   plainText: string;
-  ansiText: string;
-  imageData: number[];
-  svgData: string;
-  charColors: CharColor[];
+  imageData?: number[];
+  svgData?: string;
+  charColors?: CharColor[];
 }
 
 // Video Frame types

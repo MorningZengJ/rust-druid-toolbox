@@ -1,10 +1,11 @@
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import type { AsciiArtParams, AsciiArtOutput, CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 interface AsciiArtState {
   // Data
   params: AsciiArtParams;
+  imagePath: string | null;
   imageBytes: Uint8Array | null;
   imagePreviewUrl: string | null;
   output: AsciiArtOutput | null;
@@ -52,6 +53,7 @@ const defaultParams: AsciiArtParams = {
 
 export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   params: { ...defaultParams },
+  imagePath: null,
   imageBytes: null,
   imagePreviewUrl: null,
   output: null,
@@ -64,9 +66,8 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
 
   setParams: (updates) => {
     set((s) => ({ params: { ...s.params, ...updates } }));
-    // Debounce auto-convert
-    const { imageBytes } = get();
-    if (imageBytes) {
+    const { imagePath, imageBytes } = get();
+    if (imagePath || imageBytes) {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         get().convert();
@@ -84,15 +85,13 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       });
       if (!selected) return;
 
-      const bytes = await invoke<number[]>("load_image_from_file", { path: selected as string });
-      const uint8 = new Uint8Array(bytes);
-      const blob = new Blob([uint8 as unknown as BlobPart]);
-      const url = URL.createObjectURL(blob);
+      const path = selected as string;
+      const url = convertFileSrc(path);
 
       const oldUrl = get().imagePreviewUrl;
       if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      set({ imagePath: path, imageBytes: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
       set({ errorMessage: `加载图片失败: ${e}` });
@@ -109,7 +108,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       const oldUrl = get().imagePreviewUrl;
       if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      set({ imageBytes: uint8, imagePath: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
       set({ errorMessage: `加载图片失败: ${e}` });
@@ -118,15 +117,12 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
 
   loadImageFromPath: async (path: string) => {
     try {
-      const bytes = await invoke<number[]>("load_image_from_file", { path });
-      const uint8 = new Uint8Array(bytes);
-      const blob = new Blob([uint8 as unknown as BlobPart]);
-      const url = URL.createObjectURL(blob);
+      const url = convertFileSrc(path);
 
       const oldUrl = get().imagePreviewUrl;
       if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      set({ imagePath: path, imageBytes: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
       set({ errorMessage: `加载图片失败: ${e}` });
@@ -142,7 +138,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       const oldUrl = get().imagePreviewUrl;
       if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      set({ imageBytes: uint8, imagePath: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
       set({ errorMessage: `加载图片失败: ${e}` });
@@ -150,15 +146,25 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   },
 
   convert: async () => {
-    const { imageBytes, params, isConverting } = get();
-    if (!imageBytes || isConverting) return;
+    const { imagePath, imageBytes, params, isConverting } = get();
+    if ((!imagePath && !imageBytes) || isConverting) return;
 
     set({ isConverting: true, errorMessage: null });
     try {
-      const output = await invoke<AsciiArtOutput>("convert_ascii_art", {
-        params,
-        imageBytes: Array.from(imageBytes),
-      });
+      let output: AsciiArtOutput;
+      if (imagePath) {
+        output = await invoke<AsciiArtOutput>("convert_ascii_art_from_path", {
+          params,
+          imagePath,
+        });
+      } else {
+        const [tempPath, result] = await invoke<[string, AsciiArtOutput]>(
+          "save_temp_image_and_convert",
+          { params, imageBytes: Array.from(imageBytes!) }
+        );
+        output = result;
+        set({ imagePath: tempPath });
+      }
       set({ output, isConverting: false, activeTab: "ascii" });
     } catch (e) {
       set({ errorMessage: `转换失败: ${e}`, isConverting: false });
@@ -178,8 +184,8 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   },
 
   exportOutput: async (format) => {
-    const { imageBytes, params } = get();
-    if (!imageBytes) return;
+    const { imagePath, params } = get();
+    if (!imagePath) return;
 
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
@@ -192,7 +198,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
 
       await invoke("export_ascii_art", {
         params,
-        imageBytes: Array.from(imageBytes),
+        imagePath,
         format,
         path: filePath,
       });

@@ -49,10 +49,12 @@ pub struct CharColor {
 #[serde(rename_all = "camelCase")]
 pub struct AsciiArtOutput {
     pub plain_text: String,
-    pub ansi_text: String,
-    pub image_data: Vec<u8>,
-    pub svg_data: String,
-    pub char_colors: Vec<CharColor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_data: Option<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub svg_data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub char_colors: Option<Vec<CharColor>>,
 }
 
 impl Default for AsciiArtParams {

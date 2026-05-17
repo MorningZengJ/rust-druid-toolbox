@@ -22,7 +22,8 @@ pub fn run() {
             commands::rename::apply_rule_template,
             commands::rename::parent_path,
             // ASCII art commands
-            commands::ascii_art::convert_ascii_art,
+            commands::ascii_art::convert_ascii_art_from_path,
+            commands::ascii_art::save_temp_image_and_convert,
             commands::ascii_art::load_image_from_file,
             commands::ascii_art::export_ascii_art,
             commands::ascii_art::write_binary_file,

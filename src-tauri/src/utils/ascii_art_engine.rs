@@ -40,7 +40,7 @@ impl AsciiArtEngine {
         img.resize_exact(target_width, target_height, image::imageops::FilterType::Lanczos3)
     }
 
-    fn adjust_image(img: &DynamicImage, brightness: f64, contrast: f64, saturation: f64) -> DynamicImage {
+    fn adjust_image(img: &DynamicImage, brightness: f64, contrast: f64, saturation: f64) -> RgbaImage {
         let rgba = img.to_rgba8();
         let (width, height) = rgba.dimensions();
         let mut adjusted = RgbaImage::new(width, height);
@@ -73,7 +73,7 @@ impl AsciiArtEngine {
             }
         }
 
-        DynamicImage::ImageRgba8(adjusted)
+        adjusted
     }
 
     fn get_charset(preset: &CharsetPreset, custom: &str) -> String {
@@ -125,7 +125,7 @@ impl AsciiArtEngine {
     }
 
     fn generate_monochrome_grid(
-        img: &DynamicImage,
+        img: &RgbaImage,
         charset: &str,
         invert: bool,
         bg: &Background,
@@ -135,8 +135,7 @@ impl AsciiArtEngine {
             _ => (255u8, 255u8, 255u8),
         };
 
-        let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
+        let (width, height) = img.dimensions();
         let mut char_grid = Vec::new();
         let mut color_grid = Vec::new();
 
@@ -144,7 +143,7 @@ impl AsciiArtEngine {
             let mut char_line = Vec::new();
             let mut color_line = Vec::new();
             for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
+                let pixel = img.get_pixel(x, y);
                 let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
                 let ch = Self::brightness_to_char(brightness, charset, invert);
                 char_line.push(ch);
@@ -158,12 +157,11 @@ impl AsciiArtEngine {
     }
 
     fn generate_color_grid(
-        img: &DynamicImage,
+        img: &RgbaImage,
         charset: &str,
         invert: bool,
     ) -> (Vec<Vec<char>>, Vec<Vec<(u8, u8, u8)>>) {
-        let rgba = img.to_rgba8();
-        let (width, height) = rgba.dimensions();
+        let (width, height) = img.dimensions();
         let mut char_grid = Vec::new();
         let mut color_grid = Vec::new();
 
@@ -171,7 +169,7 @@ impl AsciiArtEngine {
             let mut char_line = Vec::new();
             let mut color_line = Vec::new();
             for x in 0..width {
-                let pixel = rgba.get_pixel(x, y);
+                let pixel = img.get_pixel(x, y);
                 let brightness = Self::perceived_brightness(pixel[0], pixel[1], pixel[2]);
                 let ch = Self::brightness_to_char(brightness, charset, invert);
                 char_line.push(ch);
@@ -193,10 +191,9 @@ impl AsciiArtEngine {
         if height == 0 {
             return Ok(AsciiArtOutput {
                 plain_text: String::new(),
-                ansi_text: String::new(),
-                image_data: Vec::new(),
-                svg_data: String::new(),
-                char_colors: Vec::new(),
+                image_data: None,
+                svg_data: None,
+                char_colors: None,
             });
         }
         let width = char_grid[0].len();
@@ -248,26 +245,11 @@ impl AsciiArtEngine {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let ansi_text = char_grid
-            .iter()
-            .zip(color_grid.iter())
-            .map(|(char_line, color_line)| {
-                let mut ansi_line = String::new();
-                for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
-                    ansi_line.push_str(&format!("\x1b[38;2;{};{};{}m{}", r, g, b, ch));
-                }
-                ansi_line.push_str("\x1b[0m");
-                ansi_line
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-
         Ok(AsciiArtOutput {
             plain_text,
-            ansi_text,
-            image_data: png_bytes,
-            svg_data: String::new(),
-            char_colors: Self::build_char_colors(&char_grid, &color_grid),
+            image_data: Some(png_bytes),
+            svg_data: None,
+            char_colors: None,
         })
     }
 
@@ -280,10 +262,9 @@ impl AsciiArtEngine {
         if height == 0 {
             return Ok(AsciiArtOutput {
                 plain_text: String::new(),
-                ansi_text: String::new(),
-                image_data: Vec::new(),
-                svg_data: String::new(),
-                char_colors: Vec::new(),
+                image_data: None,
+                svg_data: None,
+                char_colors: None,
             });
         }
         let width = char_grid[0].len();
@@ -310,14 +291,40 @@ impl AsciiArtEngine {
         svg.push_str(r#"<text font-family="monospace" font-size="10" dy="10">"#);
 
         for (y, (char_line, color_line)) in char_grid.iter().zip(color_grid.iter()).enumerate() {
+            let y_pos = y as f64 * char_height;
+            let mut run_start_x: usize = 0;
+            let mut run_color: (u8, u8, u8) = (0, 0, 0);
+            let mut run_chars = String::new();
+            let mut in_run = false;
+
             for (x, (ch, &(r, g, b))) in char_line.iter().zip(color_line.iter()).enumerate() {
-                let x_pos = x as f64 * char_width;
-                let y_pos = y as f64 * char_height;
-                let escaped = Self::escape_html_char(*ch);
-                let color = format!("#{:02x}{:02x}{:02x}", r, g, b);
+                if !in_run {
+                    run_start_x = x;
+                    run_color = (r, g, b);
+                    run_chars.clear();
+                    run_chars.push_str(&Self::escape_html_char(*ch));
+                    in_run = true;
+                } else if (r, g, b) == run_color {
+                    run_chars.push_str(&Self::escape_html_char(*ch));
+                } else {
+                    let x_pos = run_start_x as f64 * char_width;
+                    let color = format!("#{:02x}{:02x}{:02x}", run_color.0, run_color.1, run_color.2);
+                    svg.push_str(&format!(
+                        r#"<tspan x="{}" y="{}" fill="{}">{}</tspan>"#,
+                        x_pos, y_pos, color, run_chars
+                    ));
+                    run_start_x = x;
+                    run_color = (r, g, b);
+                    run_chars.clear();
+                    run_chars.push_str(&Self::escape_html_char(*ch));
+                }
+            }
+            if in_run {
+                let x_pos = run_start_x as f64 * char_width;
+                let color = format!("#{:02x}{:02x}{:02x}", run_color.0, run_color.1, run_color.2);
                 svg.push_str(&format!(
                     r#"<tspan x="{}" y="{}" fill="{}">{}</tspan>"#,
-                    x_pos, y_pos, color, escaped
+                    x_pos, y_pos, color, run_chars
                 ));
             }
         }
@@ -330,26 +337,11 @@ impl AsciiArtEngine {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let ansi_text = char_grid
-            .iter()
-            .zip(color_grid.iter())
-            .map(|(char_line, color_line)| {
-                let mut ansi_line = String::new();
-                for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
-                    ansi_line.push_str(&format!("\x1b[38;2;{};{};{}m{}", r, g, b, ch));
-                }
-                ansi_line.push_str("\x1b[0m");
-                ansi_line
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-
         Ok(AsciiArtOutput {
             plain_text,
-            ansi_text,
-            image_data: Vec::new(),
-            svg_data: svg,
-            char_colors: Self::build_char_colors(&char_grid, &color_grid),
+            image_data: None,
+            svg_data: Some(svg),
+            char_colors: None,
         })
     }
 
@@ -365,26 +357,11 @@ impl AsciiArtEngine {
             .collect::<Vec<_>>()
             .join("\n");
 
-        let ansi_text = char_grid
-            .iter()
-            .zip(color_grid.iter())
-            .map(|(char_line, color_line)| {
-                let mut ansi_line = String::new();
-                for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
-                    ansi_line.push_str(&format!("\x1b[38;2;{};{};{}m{}", r, g, b, ch));
-                }
-                ansi_line.push_str("\x1b[0m");
-                ansi_line
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-
         Ok(AsciiArtOutput {
             plain_text,
-            ansi_text,
-            image_data: Vec::new(),
-            svg_data: String::new(),
-            char_colors,
+            image_data: None,
+            svg_data: None,
+            char_colors: Some(char_colors),
         })
     }
 }
