@@ -25,6 +25,13 @@ import type { ExtractMode, OutputFormat } from "@/types";
 
 const VIDEO_EXTENSIONS = ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"];
 
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}秒`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return secs > 0 ? `${mins}分${secs}秒` : `${mins}分`;
+}
+
 export default function VideoFramePage() {
   const videoPath = useVideoFrameStore((s) => s.videoPath);
   const videoInfo = useVideoFrameStore((s) => s.videoInfo);
@@ -43,6 +50,8 @@ export default function VideoFramePage() {
   const outputDir = useVideoFrameStore((s) => s.outputDir);
   const setOutputDir = useVideoFrameStore((s) => s.setOutputDir);
   const stopWatcher = useVideoFrameStore((s) => s.stopWatcher);
+  const logs = useVideoFrameStore((s) => s.logs);
+  const estimatedTimeRemaining = useVideoFrameStore((s) => s.estimatedTimeRemaining);
 
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -277,6 +286,9 @@ export default function VideoFramePage() {
                 <>
                   <Loader2 size={14} className="mr-1 animate-spin" />
                   提取中 {progress.toFixed(0)}%
+                  {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 && (
+                    <span className="ml-1">· 剩余 {formatTime(estimatedTimeRemaining)}</span>
+                  )}
                 </>
               ) : (
                 <>
@@ -293,6 +305,18 @@ export default function VideoFramePage() {
                   style={{ width: `${progress}%` }}
                 />
               </div>
+            )}
+
+            {isExtracting && logs.length > 0 && (
+              <ScrollArea className="h-[120px] rounded border border-border bg-muted/30 p-2">
+                {logs.map((log, i) => (
+                  <div key={i} className="text-xs py-0.5">
+                    <span className={log.level === 'error' ? 'text-destructive' : log.level === 'warn' ? 'text-warning' : 'text-muted-foreground'}>
+                      {log.message}
+                    </span>
+                  </div>
+                ))}
+              </ScrollArea>
             )}
           </div>
         </ScrollArea>

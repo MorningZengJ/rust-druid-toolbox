@@ -72,3 +72,20 @@ pub struct ExtractParams {
     pub jpeg_quality: u8,
     pub resize_width: Option<u32>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProgressInfo {
+    pub progress: f32,
+    pub current_frame: usize,
+    pub total_frames: usize,
+    pub elapsed_ms: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogEntry {
+    pub level: String,
+    pub message: String,
+    pub timestamp: u64,
+}

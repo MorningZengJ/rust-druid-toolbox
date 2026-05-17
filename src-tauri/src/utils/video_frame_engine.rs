@@ -1,6 +1,7 @@
-use crate::model::video_frame_state::{ExtractMode, ExtractParams, ExtractedFrame, OutputFormat, VideoInfo};
+use crate::model::video_frame_state::{ExtractMode, ExtractParams, ExtractedFrame, LogEntry, OutputFormat, ProgressInfo, VideoInfo};
 use anyhow::{anyhow, Result};
 use std::path::Path;
+use std::time::Instant;
 
 pub struct VideoFrameEngine;
 
@@ -51,12 +52,24 @@ impl VideoFrameEngine {
         })
     }
 
-    pub fn extract_frames<F>(params: &ExtractParams, output_dir: &Path, mut progress_cb: F) -> Result<Vec<ExtractedFrame>>
+    pub fn extract_frames<P, L>(params: &ExtractParams, output_dir: &Path, mut progress_cb: P, mut log_cb: L) -> Result<Vec<ExtractedFrame>>
     where
-        F: FnMut(f32),
+        P: FnMut(ProgressInfo),
+        L: FnMut(LogEntry),
     {
         std::fs::create_dir_all(output_dir).map_err(|e| anyhow!("创建输出目录失败: {}", e))?;
         ffmpeg_next::init().map_err(|e| anyhow!("FFmpeg 初始化失败: {}", e))?;
+
+        let start_time = Instant::now();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        log_cb(LogEntry {
+            level: "info".to_string(),
+            message: "开始提取帧...".to_string(),
+            timestamp,
+        });
 
         let mut input = ffmpeg_next::format::input(&params.video_path)
             .map_err(|e| anyhow!("无法打开视频文件: {}", e))?;
@@ -101,6 +114,16 @@ impl VideoFrameEngine {
             &params.time_points,
         );
         let total_targets = target_timestamps.len();
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        log_cb(LogEntry {
+            level: "info".to_string(),
+            message: format!("计划提取 {} 帧", total_targets),
+            timestamp,
+        });
 
         let mut scaler = ffmpeg_next::software::scaling::Context::get(
             decoder.format(),
@@ -149,7 +172,25 @@ impl VideoFrameEngine {
                         target_idx += 1;
 
                         if total_targets > 0 {
-                            progress_cb(target_idx as f32 / total_targets as f32);
+                            let elapsed = start_time.elapsed().as_millis() as u64;
+                            progress_cb(ProgressInfo {
+                                progress: target_idx as f32 / total_targets as f32,
+                                current_frame: target_idx,
+                                total_frames: total_targets,
+                                elapsed_ms: elapsed,
+                            });
+
+                            if target_idx % 10 == 0 || target_idx == total_targets {
+                                let timestamp = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_millis() as u64;
+                                log_cb(LogEntry {
+                                    level: "info".to_string(),
+                                    message: format!("已提取 {}/{} 帧", target_idx, total_targets),
+                                    timestamp,
+                                });
+                            }
                         }
                     } else {
                         break;
@@ -159,7 +200,13 @@ impl VideoFrameEngine {
                 frame_count += 1;
 
                 if target_idx >= target_timestamps.len() {
-                    progress_cb(1.0);
+                    let elapsed = start_time.elapsed().as_millis() as u64;
+                    progress_cb(ProgressInfo {
+                        progress: 1.0,
+                        current_frame: total_targets,
+                        total_frames: total_targets,
+                        elapsed_ms: elapsed,
+                    });
                     return Ok(frames);
                 }
             }
@@ -189,7 +236,24 @@ impl VideoFrameEngine {
             }
         }
 
-        progress_cb(1.0);
+        let elapsed = start_time.elapsed().as_millis() as u64;
+        progress_cb(ProgressInfo {
+            progress: 1.0,
+            current_frame: total_targets,
+            total_frames: total_targets,
+            elapsed_ms: elapsed,
+        });
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        log_cb(LogEntry {
+            level: "info".to_string(),
+            message: format!("提取完成，共 {} 帧，耗时 {:.1} 秒", frames.len(), elapsed as f64 / 1000.0),
+            timestamp,
+        });
+
         Ok(frames)
     }
 

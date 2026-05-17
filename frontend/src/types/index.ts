@@ -127,3 +127,16 @@ export interface ExtractedFrame {
   filename: string;
   filePath: string;
 }
+
+export interface ProgressInfo {
+  progress: number;
+  currentFrame: number;
+  totalFrames: number;
+  elapsedMs: number;
+}
+
+export interface LogEntry {
+  level: string;
+  message: string;
+  timestamp: number;
+}

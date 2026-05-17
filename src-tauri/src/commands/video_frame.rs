@@ -1,4 +1,4 @@
-use crate::model::video_frame_state::{ExtractParams, VideoInfo};
+use crate::model::video_frame_state::{ExtractParams, LogEntry, ProgressInfo, VideoInfo};
 use crate::utils::video_frame_engine::VideoFrameEngine;
 use notify::{RecommendedWatcher, Watcher, RecursiveMode, EventKind};
 use std::sync::{Arc, Mutex};
@@ -37,12 +37,20 @@ pub async fn extract_frames(
     app_handle: tauri::AppHandle,
 ) -> Result<Vec<crate::model::video_frame_state::ExtractedFrame>, String> {
     let handle = app_handle.clone();
+    let log_handle = app_handle.clone();
     let out_dir = std::path::PathBuf::from(&output_dir);
     // Run the CPU-intensive extraction on a blocking thread
     let frames = tokio::task::spawn_blocking(move || {
-        VideoFrameEngine::extract_frames(&params, &out_dir, |progress| {
-            let _ = handle.emit("video-frame://progress", progress);
-        })
+        VideoFrameEngine::extract_frames(
+            &params,
+            &out_dir,
+            |progress: ProgressInfo| {
+                let _ = handle.emit("video-frame://progress", progress);
+            },
+            |log: LogEntry| {
+                let _ = log_handle.emit("video-frame://log", log);
+            },
+        )
     })
     .await
     .map_err(|e| e.to_string())?

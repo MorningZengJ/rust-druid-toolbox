@@ -7,6 +7,8 @@ import type {
   ExtractMode,
   OutputFormat,
   ExtractedFrame,
+  ProgressInfo,
+  LogEntry,
 } from "@/types";
 
 interface VideoFrameState {
@@ -24,6 +26,10 @@ interface VideoFrameState {
   // UI state
   selectedFrame: number | null;
 
+  // Progress state
+  logs: LogEntry[];
+  estimatedTimeRemaining: number | null;
+
   // Watcher state
   _watcherUnlisten: (() => void) | null;
 
@@ -38,6 +44,8 @@ interface VideoFrameState {
   clearError: () => void;
   startWatcher: () => Promise<void>;
   stopWatcher: () => void;
+  addLog: (entry: LogEntry) => void;
+  clearLogs: () => void;
 }
 
 const defaultParams: ExtractParams = {
@@ -62,6 +70,8 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
   errorMessage: null,
   outputDir: "",
   selectedFrame: null,
+  logs: [],
+  estimatedTimeRemaining: null,
   _watcherUnlisten: null,
 
   setVideoPath: (path) => set({ videoPath: path }),
@@ -121,13 +131,29 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
     if (!extractParams.videoPath || isExtracting || !outputDir) return;
 
     get().stopWatcher();
-    set({ isExtracting: true, progress: 0, errorMessage: null, frames: [] });
+    set({ isExtracting: true, progress: 0, errorMessage: null, frames: [], logs: [], estimatedTimeRemaining: null });
 
-    // Listen for progress events (backend emits a float 0.0~1.0)
-    const unlisten = await listen<number>(
+    // Listen for progress events
+    const unlistenProgress = await listen<ProgressInfo>(
       "video-frame://progress",
       (event) => {
-        set({ progress: event.payload * 100 });
+        const info = event.payload;
+        set({ progress: info.progress * 100 });
+
+        // Calculate ETA
+        if (info.progress > 0 && info.elapsedMs > 0) {
+          const totalEstimatedMs = info.elapsedMs / info.progress;
+          const remainingMs = totalEstimatedMs - info.elapsedMs;
+          set({ estimatedTimeRemaining: Math.ceil(remainingMs / 1000) });
+        }
+      }
+    );
+
+    // Listen for log events
+    const unlistenLog = await listen<LogEntry>(
+      "video-frame://log",
+      (event) => {
+        get().addLog(event.payload);
       }
     );
 
@@ -136,17 +162,24 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
         params: extractParams,
         outputDir,
       });
-      set({ frames, isExtracting: false, progress: 100 });
+      set({ frames, isExtracting: false, progress: 100, estimatedTimeRemaining: 0 });
       get().startWatcher();
     } catch (e) {
       set({ errorMessage: `提取帧失败: ${e}`, isExtracting: false });
     } finally {
-      unlisten();
+      unlistenProgress();
+      unlistenLog();
     }
   },
 
   setSelectedFrame: (index) => set({ selectedFrame: index }),
   clearError: () => set({ errorMessage: null }),
+
+  addLog: (entry) => {
+    set((state) => ({ logs: [...state.logs, entry] }));
+  },
+
+  clearLogs: () => set({ logs: [] }),
 
   startWatcher: async () => {
     const { outputDir, stopWatcher } = get();
