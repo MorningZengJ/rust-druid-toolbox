@@ -1,5 +1,6 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -44,8 +45,10 @@ export default function AsciiArtPage() {
   const isConverting = useAsciiArtStore((s) => s.isConverting);
   const errorMessage = useAsciiArtStore((s) => s.errorMessage);
   const loadImageFromFile = useAsciiArtStore((s) => s.loadImageFromFile);
-  const loadImageFromDrop = useAsciiArtStore((s) => s.loadImageFromDrop);
+  const loadImageFromPath = useAsciiArtStore((s) => s.loadImageFromPath);
   const loadImageFromPaste = useAsciiArtStore((s) => s.loadImageFromPaste);
+
+  const [isDragOver, setIsDragOver] = useState(false);
   const copyToClipboard = useAsciiArtStore((s) => s.copyToClipboard);
   const exportOutput = useAsciiArtStore((s) => s.exportOutput);
   const zoom = useAsciiArtStore((s) => s.zoom);
@@ -191,23 +194,30 @@ export default function AsciiArtPage() {
     loadImageFromFile();
   }, [loadImageFromFile]);
 
-  // Drag and drop
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith("image/")) {
-        loadImageFromDrop(file);
+  // Tauri native file drag & drop
+  useEffect(() => {
+    const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
+    const unlisten = getCurrentWindow().onDragDropEvent((event) => {
+      if (event.payload.type === "over") {
+        setIsDragOver(true);
+      } else if (event.payload.type === "leave") {
+        setIsDragOver(false);
+      } else if (event.payload.type === "drop") {
+        setIsDragOver(false);
+        const paths = event.payload.paths;
+        const imagePath = paths.find((p) => {
+          const ext = p.split(".").pop()?.toLowerCase() ?? "";
+          return IMAGE_EXTENSIONS.includes(ext);
+        });
+        if (imagePath) {
+          loadImageFromPath(imagePath);
+        }
       }
-    },
-    [loadImageFromDrop]
-  );
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [loadImageFromPath]);
 
   // Paste handler
   useEffect(() => {
@@ -542,7 +552,7 @@ export default function AsciiArtPage() {
         {/* Display area */}
         <div
           ref={displayRef}
-          className="flex-1 overflow-hidden"
+          className={`flex-1 overflow-hidden relative ${isDragOver ? "ring-2 ring-primary ring-inset" : ""}`}
           style={{
             background: params.background === "white" ? "#fff" : params.background === "transparent" ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px" : "#000",
           }}
@@ -551,9 +561,14 @@ export default function AsciiArtPage() {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onContextMenu={handleContextMenu}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
         >
+          {isDragOver && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 pointer-events-none">
+              <div className="rounded-lg border-2 border-dashed border-primary bg-background/80 px-8 py-4 text-sm font-medium text-primary">
+                释放以加载图片
+              </div>
+            </div>
+          )}
           {errorMessage && (
             <div className="absolute top-2 left-2 right-2 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive z-10">
               {errorMessage}

@@ -21,6 +21,7 @@ interface AsciiArtState {
   setParams: (updates: Partial<AsciiArtParams>) => void;
   loadImageFromFile: () => Promise<void>;
   loadImageFromDrop: (file: File) => Promise<void>;
+  loadImageFromPath: (path: string) => Promise<void>;
   loadImageFromPaste: (imageData: ArrayBuffer) => Promise<void>;
   convert: () => Promise<void>;
   copyToClipboard: () => Promise<void>;
@@ -102,6 +103,23 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
     try {
       const arrayBuffer = await file.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
+      const blob = new Blob([uint8 as unknown as BlobPart]);
+      const url = URL.createObjectURL(blob);
+
+      const oldUrl = get().imagePreviewUrl;
+      if (oldUrl) URL.revokeObjectURL(oldUrl);
+
+      set({ imageBytes: uint8, imagePreviewUrl: url, output: null, activeTab: "original" });
+      get().convert();
+    } catch (e) {
+      set({ errorMessage: `加载图片失败: ${e}` });
+    }
+  },
+
+  loadImageFromPath: async (path: string) => {
+    try {
+      const bytes = await invoke<number[]>("load_image_from_file", { path });
+      const uint8 = new Uint8Array(bytes);
       const blob = new Blob([uint8 as unknown as BlobPart]);
       const url = URL.createObjectURL(blob);
 
