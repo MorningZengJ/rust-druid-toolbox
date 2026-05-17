@@ -24,6 +24,9 @@ interface VideoFrameState {
   // UI state
   selectedFrame: number | null;
 
+  // Watcher state
+  _watcherUnlisten: (() => void) | null;
+
   // Actions
   setVideoPath: (path: string) => void;
   setOutputDir: (dir: string) => void;
@@ -33,6 +36,8 @@ interface VideoFrameState {
   extractFrames: () => Promise<void>;
   setSelectedFrame: (index: number | null) => void;
   clearError: () => void;
+  startWatcher: () => Promise<void>;
+  stopWatcher: () => void;
 }
 
 const defaultParams: ExtractParams = {
@@ -57,6 +62,7 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
   errorMessage: null,
   outputDir: "",
   selectedFrame: null,
+  _watcherUnlisten: null,
 
   setVideoPath: (path) => set({ videoPath: path }),
   setOutputDir: (dir) => set({ outputDir: dir }),
@@ -71,6 +77,7 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
   },
 
   loadVideo: async (path?: string) => {
+    get().stopWatcher();
     try {
       let videoPath = path;
       if (!videoPath) {
@@ -113,6 +120,7 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
     const { extractParams, isExtracting, outputDir } = get();
     if (!extractParams.videoPath || isExtracting || !outputDir) return;
 
+    get().stopWatcher();
     set({ isExtracting: true, progress: 0, errorMessage: null, frames: [] });
 
     // Listen for progress events (backend emits a float 0.0~1.0)
@@ -129,6 +137,7 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
         outputDir,
       });
       set({ frames, isExtracting: false, progress: 100 });
+      get().startWatcher();
     } catch (e) {
       set({ errorMessage: `提取帧失败: ${e}`, isExtracting: false });
     } finally {
@@ -138,4 +147,30 @@ export const useVideoFrameStore = create<VideoFrameState>((set, get) => ({
 
   setSelectedFrame: (index) => set({ selectedFrame: index }),
   clearError: () => set({ errorMessage: null }),
+
+  startWatcher: async () => {
+    const { outputDir, stopWatcher } = get();
+    if (!outputDir) return;
+
+    stopWatcher();
+
+    try {
+      await invoke("start_frame_watcher", { outputDir });
+      const unlisten = await listen("video-frame://frames-deleted", () => {
+        set({ frames: [], selectedFrame: null });
+      });
+      set({ _watcherUnlisten: unlisten });
+    } catch (e) {
+      console.error("Failed to start frame watcher:", e);
+    }
+  },
+
+  stopWatcher: () => {
+    const { _watcherUnlisten } = get();
+    if (_watcherUnlisten) {
+      _watcherUnlisten();
+      set({ _watcherUnlisten: null });
+    }
+    invoke("stop_frame_watcher").catch(() => {});
+  },
 }));

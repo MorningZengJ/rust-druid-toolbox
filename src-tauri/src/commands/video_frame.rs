@@ -1,6 +1,20 @@
 use crate::model::video_frame_state::{ExtractParams, VideoInfo};
 use crate::utils::video_frame_engine::VideoFrameEngine;
+use notify::{RecommendedWatcher, Watcher, RecursiveMode, EventKind};
+use std::sync::{Arc, Mutex};
 use tauri::Emitter;
+
+pub struct FrameWatcherState {
+    watcher: Arc<Mutex<Option<RecommendedWatcher>>>,
+}
+
+impl FrameWatcherState {
+    pub fn new() -> Self {
+        Self {
+            watcher: Arc::new(Mutex::new(None)),
+        }
+    }
+}
 
 
 /// Check if FFmpeg is available
@@ -35,4 +49,48 @@ pub async fn extract_frames(
     .map_err(|e| e.to_string())?;
 
     Ok(frames)
+}
+
+/// Start watching output directory for frame file deletions
+#[tauri::command]
+pub fn start_frame_watcher(
+    output_dir: String,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<FrameWatcherState>,
+) -> Result<(), String> {
+    // Stop existing watcher first
+    let mut guard = state.watcher.lock().map_err(|e| e.to_string())?;
+    *guard = None;
+
+    let handle = app_handle.clone();
+    let path = std::path::PathBuf::from(&output_dir);
+
+    let mut watcher = RecommendedWatcher::new(
+        move |res: Result<notify::Event, notify::Error>| {
+            if let Ok(event) = res {
+                if matches!(event.kind, EventKind::Remove(_)) {
+                    let _ = handle.emit("video-frame://frames-deleted", ());
+                }
+            }
+        },
+        notify::Config::default(),
+    )
+    .map_err(|e| e.to_string())?;
+
+    watcher
+        .watch(&path, RecursiveMode::NonRecursive)
+        .map_err(|e| e.to_string())?;
+
+    *guard = Some(watcher);
+    Ok(())
+}
+
+/// Stop watching output directory
+#[tauri::command]
+pub fn stop_frame_watcher(
+    state: tauri::State<FrameWatcherState>,
+) -> Result<(), String> {
+    let mut guard = state.watcher.lock().map_err(|e| e.to_string())?;
+    *guard = None;
+    Ok(())
 }

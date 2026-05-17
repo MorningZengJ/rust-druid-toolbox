@@ -42,6 +42,7 @@ export default function VideoFramePage() {
   const extractFrames = useVideoFrameStore((s) => s.extractFrames);
   const outputDir = useVideoFrameStore((s) => s.outputDir);
   const setOutputDir = useVideoFrameStore((s) => s.setOutputDir);
+  const stopWatcher = useVideoFrameStore((s) => s.stopWatcher);
 
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -84,6 +85,12 @@ export default function VideoFramePage() {
   useEffect(() => {
     checkFfmpeg();
   }, [checkFfmpeg]);
+
+  useEffect(() => {
+    return () => {
+      stopWatcher();
+    };
+  }, [stopWatcher]);
 
   if (!ffmpegAvailable) {
     return (
