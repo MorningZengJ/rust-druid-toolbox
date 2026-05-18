@@ -20,18 +20,18 @@
 ### 修改时
 
 **前端：**
-- 遵循 React + TypeScript + Tailwind CSS 规范
+- 遵循 React 19 + TypeScript + Tailwind CSS v4 规范
 - 使用 shadcn/ui 组件，不写自定义 CSS
-- 使用 Zustand store 管理状态，不使用 React Context
+- 使用 Zustand store（v5）管理状态，不使用 React Context
 - 使用 lucide-react 图标
-- 新页面创建独立的 store 和页面组件
+- 新页面创建独立的 store 和页面组件，并在 App.tsx 中注册
 
 **后端：**
 - 遵循 Rust + Tauri 命令规范
-- 所有 IPC 数据结构 derive Serialize + Deserialize
+- 所有 IPC 数据结构 derive Serialize + Deserialize + `#[serde(rename_all = "camelCase")]`
 - CPU 密集操作使用 `tokio::task::spawn_blocking`
 - 文件操作错误必须处理，不使用 `let _ =` 静默忽略
-- 条件编译使用 `#[cfg(feature = "video-frame")]`
+- 视频帧相关代码使用 `#[cfg(feature = "video-frame")]` 条件编译
 
 ### 修改后
 

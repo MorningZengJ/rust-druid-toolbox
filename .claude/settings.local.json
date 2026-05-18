@@ -48,7 +48,23 @@
       "WebFetch(domain:crates.io)",
       "WebFetch(domain:github.com)",
       "PowerShell(cargo check *)",
-      "PowerShell(Get-NetTCPConnection *)"
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(C:/vcpkg/vcpkg install *)",
+      "Read(//c/vcpkg/buildtrees/ffmpeg/**)",
+      "Read(//c/vcpkg/installed/x64-windows-static-md/**)",
+      "Read(//c/vcpkg/installed/x64-windows-static-md/include/libavutil/**)",
+      "Bash(mkdir -p C:/vcpkg/ffmpeg-manual/lib C:/vcpkg/ffmpeg-manual/include)",
+      "Bash(cp C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/lib*/av*.lib C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/lib*/sw*.lib C:/vcpkg/ffmpeg-manual/lib/)",
+      "Bash(cp -r C:/vcpkg/buildtrees/ffmpeg/src/n8.1.1-fcc3c0d59a.clean/libavutil C:/vcpkg/ffmpeg-manual/include/)",
+      "Bash(cp -r C:/vcpkg/buildtrees/ffmpeg/src/n8.1.1-fcc3c0d59a.clean/libavcodec C:/vcpkg/ffmpeg-manual/include/)",
+      "Bash(cp -r C:/vcpkg/buildtrees/ffmpeg/src/n8.1.1-fcc3c0d59a.clean/libavformat C:/vcpkg/ffmpeg-manual/include/)",
+      "Bash(cp C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/config.h C:/vcpkg/ffmpeg-manual/include/)",
+      "Bash(cp C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/libavutil/avconfig.h C:/vcpkg/ffmpeg-manual/include/libavutil/)",
+      "Bash(cp C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/libavutil/ffversion.h C:/vcpkg/ffmpeg-manual/include/libavutil/)",
+      "Bash(cp C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/config_components.h C:/vcpkg/ffmpeg-manual/include/)",
+      "Read(//c/vcpkg/ffmpeg-manual/include/**)",
+      "Bash(FFMPEG_DIR=C:/vcpkg/ffmpeg-manual cargo check --manifest-path src-tauri/Cargo.toml --features video-frame)",
+      "Bash(FFMPEG_DIR=C:/vcpkg/ffmpeg-manual cargo check --manifest-path src-tauri/Cargo.toml --features video-frame -vv)"
     ]
   }
 }
