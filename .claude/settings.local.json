@@ -64,7 +64,15 @@
       "Bash(cp C:/vcpkg/buildtrees/ffmpeg/x64-windows-static-md-rel/config_components.h C:/vcpkg/ffmpeg-manual/include/)",
       "Read(//c/vcpkg/ffmpeg-manual/include/**)",
       "Bash(FFMPEG_DIR=C:/vcpkg/ffmpeg-manual cargo check --manifest-path src-tauri/Cargo.toml --features video-frame)",
-      "Bash(FFMPEG_DIR=C:/vcpkg/ffmpeg-manual cargo check --manifest-path src-tauri/Cargo.toml --features video-frame -vv)"
+      "Bash(FFMPEG_DIR=C:/vcpkg/ffmpeg-manual cargo check --manifest-path src-tauri/Cargo.toml --features video-frame -vv)",
+      "Bash(choco install *)",
+      "Bash(winget install *)",
+      "Bash(FFMPEG_DIR=C:/vcpkg/ffmpeg-manual LIBCLANG_PATH=\"C:/Program Files/LLVM/bin\" cargo check *)",
+      "Bash(powershell -Command \"[Environment]::SetEnvironmentVariable\\('FFMPEG_DIR', 'C:\\\\vcpkg\\\\ffmpeg-manual', 'User'\\)\")",
+      "Bash(powershell -Command \"[Environment]::SetEnvironmentVariable\\('LIBCLANG_PATH', 'C:\\\\Program Files\\\\LLVM\\\\bin', 'User'\\)\")",
+      "Bash(powershell -Command \"[Environment]::GetEnvironmentVariable\\('FFMPEG_DIR', 'User'\\)\")",
+      "Bash(powershell -Command \"[Environment]::GetEnvironmentVariable\\('LIBCLANG_PATH', 'User'\\)\")",
+      "Bash(curl -L -o \"C:/Users/zengc/Workspace/RustroverProjects/druid-toolbox/src-tauri/fonts/DejaVuSansMono.ttf\" \"https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSansMono.ttf\")"
     ]
   }
 }

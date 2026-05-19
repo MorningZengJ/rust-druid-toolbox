@@ -24,6 +24,9 @@ export function useWindowState() {
       if (!state) return;
       if (state.isMaximized) {
         win.maximize();
+      } else if (state.x < 0 || state.y < 0) {
+        win.center();
+        win.setSize(new LogicalSize(state.width, state.height));
       } else {
         win.setPosition(new LogicalPosition(state.x, state.y));
         win.setSize(new LogicalSize(state.width, state.height));

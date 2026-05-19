@@ -36,6 +36,9 @@ fancy-regex = "0.18.0"
 # Image processing
 image = "0.25"
 
+# Font rendering for ASCII art PNG
+ab_glyph = "0.2"
+
 # Video processing (optional - requires FFmpeg installed)
 ffmpeg-next = { version = "8", optional = true, features = ["static"] }
 

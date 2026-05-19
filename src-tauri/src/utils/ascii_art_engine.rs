@@ -1,6 +1,7 @@
 use image::{DynamicImage, GenericImageView, RgbaImage, Rgba};
 
 use crate::model::ascii_art_state::{AsciiArtParams, AsciiArtOutput, Background, CharColor, CharsetPreset, ColorMode, RenderMode};
+use crate::utils::font_renderer::render_char_to_image;
 
 pub struct AsciiArtEngine;
 
@@ -212,19 +213,10 @@ impl AsciiArtEngine {
         let mut img = RgbaImage::from_pixel(img_width, img_height, bg_color);
 
         for (y, (char_line, color_line)) in char_grid.iter().zip(color_grid.iter()).enumerate() {
-            for (x, (_ch, &(r, g, b))) in char_line.iter().zip(color_line.iter()).enumerate() {
+            for (x, (&ch, &(r, g, b))) in char_line.iter().zip(color_line.iter()).enumerate() {
                 let x0 = x as u32 * char_width;
                 let y0 = y as u32 * char_height;
-
-                for dy in 0..char_height {
-                    for dx in 0..char_width {
-                        let px = x0 + dx;
-                        let py = y0 + dy;
-                        if px < img_width && py < img_height {
-                            img.put_pixel(px, py, Rgba([r, g, b, 255]));
-                        }
-                    }
-                }
+                render_char_to_image(&mut img, ch, x0, y0, char_width, char_height, (r, g, b));
             }
         }
 
