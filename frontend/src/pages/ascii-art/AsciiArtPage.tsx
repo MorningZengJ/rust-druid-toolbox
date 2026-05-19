@@ -62,8 +62,29 @@ export default function AsciiArtPage() {
 
   const displayRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const transformState = useRef({ zoom, panX, panY });
+  const rafId = useRef(0);
+
+  // Keep transformRef in sync with store state
+  useEffect(() => {
+    transformState.current = { zoom, panX, panY };
+  }, [zoom, panX, panY]);
+
+  // Apply transform directly to DOM, bypassing React render
+  const applyTransform = useCallback((z: number, px: number, py: number) => {
+    const el = contentRef.current;
+    if (!el) return;
+    transformState.current = { zoom: z, panX: px, panY: py };
+    el.style.transform = `translate(${px}px, ${py}px) scale(${z})`;
+  }, []);
+
+  // Cleanup rAF on unmount
+  useEffect(() => {
+    return () => { cancelAnimationFrame(rafId.current); };
+  }, []);
 
   // Draw canvas when output changes (canvas render mode only; PNG uses <img>)
   useEffect(() => {
@@ -119,7 +140,8 @@ export default function AsciiArtPage() {
     }
   }, [output, params.renderMode, params.background]);
 
-  // Wheel zoom
+  // Wheel zoom — direct DOM manipulation, sync to store after 150ms idle
+  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
@@ -128,50 +150,64 @@ export default function AsciiArtPage() {
 
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
+      const { zoom: curZoom, panX: curPanX, panY: curPanY } = transformState.current;
 
       const delta = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-      const newZoom = Math.max(0.1, Math.min(10, zoom * delta));
+      const newZoom = Math.max(0.1, Math.min(10, curZoom * delta));
 
-      // Adjust pan to zoom towards mouse position
-      const scale = newZoom / zoom;
-      const newPanX = mouseX - scale * (mouseX - panX);
-      const newPanY = mouseY - scale * (mouseY - panY);
+      const scale = newZoom / curZoom;
+      const newPanX = mouseX - scale * (mouseX - curPanX);
+      const newPanY = mouseY - scale * (mouseY - curPanY);
 
-      setZoom(newZoom);
-      setPan(newPanX, newPanY);
+      applyTransform(newZoom, newPanX, newPanY);
+
+      if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
+      wheelTimerRef.current = setTimeout(() => {
+        const { zoom: z, panX: px, panY: py } = transformState.current;
+        setZoom(z);
+        setPan(px, py);
+      }, 150);
     },
-    [zoom, panX, panY, setZoom, setPan]
+    [applyTransform, setZoom, setPan]
   );
 
-  // Right-click drag
+  // Right-click drag — direct DOM manipulation with rAF throttle
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 2) {
         e.preventDefault();
         isDragging.current = true;
-        dragStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+        const { panX: curPanX, panY: curPanY } = transformState.current;
+        dragStart.current = { x: e.clientX, y: e.clientY, panX: curPanX, panY: curPanY };
       }
     },
-    [panX, panY]
+    []
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!isDragging.current) return;
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      setPan(dragStart.current.panX + dx, dragStart.current.panY + dy);
+      cancelAnimationFrame(rafId.current);
+      rafId.current = requestAnimationFrame(() => {
+        const dx = e.clientX - dragStart.current.x;
+        const dy = e.clientY - dragStart.current.y;
+        const { zoom: curZoom } = transformState.current;
+        applyTransform(curZoom, dragStart.current.panX + dx, dragStart.current.panY + dy);
+      });
     },
-    [setPan]
+    [applyTransform]
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 2) {
         isDragging.current = false;
+        const { zoom: z, panX: px, panY: py } = transformState.current;
+        setZoom(z);
+        setPan(px, py);
       }
     },
-    []
+    [setZoom, setPan]
   );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -264,55 +300,63 @@ export default function AsciiArtPage() {
   const renderAsciiContent = () => {
     if (!output) return null;
 
-    const transformStyle = {
-      transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
-      transformOrigin: "0 0",
-    };
-
-    switch (params.renderMode) {
-      case "svg":
-        if (!output.svgData) return null;
-        const svgBase64 = btoa(unescape(encodeURIComponent(output.svgData)));
-        return (
-          <img
-            src={`data:image/svg+xml;base64,${svgBase64}`}
-            alt="ASCII Art"
-            style={transformStyle}
-            className="block"
-          />
-        );
-
-      case "png":
-        if (!output.imageData) return null;
-        {
-          const bytes = new Uint8Array(output.imageData);
-          let binary = "";
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          const base64 = btoa(binary);
+    const child = (() => {
+      switch (params.renderMode) {
+        case "svg":
+          if (!output.svgData) return null;
+          const svgBase64 = btoa(unescape(encodeURIComponent(output.svgData)));
           return (
             <img
-              src={`data:image/png;base64,${base64}`}
+              src={`data:image/svg+xml;base64,${svgBase64}`}
               alt="ASCII Art"
-              style={transformStyle}
               className="block"
             />
           );
-        }
 
-      case "canvas":
-        return (
-          <canvas
-            ref={canvasRef}
-            style={transformStyle}
-            className="block"
-          />
-        );
+        case "png":
+          if (!output.imageData) return null;
+          {
+            const bytes = new Uint8Array(output.imageData);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const base64 = btoa(binary);
+            return (
+              <img
+                src={`data:image/png;base64,${base64}`}
+                alt="ASCII Art"
+                className="block"
+              />
+            );
+          }
 
-      default:
-        return null;
-    }
+        case "canvas":
+          return (
+            <canvas
+              ref={canvasRef}
+              className="block"
+            />
+          );
+
+        default:
+          return null;
+      }
+    })();
+
+    if (!child) return null;
+
+    return (
+      <div
+        ref={contentRef}
+        style={{
+          transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+          transformOrigin: "0 0",
+        }}
+      >
+        {child}
+      </div>
+    );
   };
 
   return (

@@ -37,7 +37,7 @@ impl AsciiArtEngine {
     fn resize_image(img: &DynamicImage, target_width: u32, char_aspect_ratio: f64) -> DynamicImage {
         let (orig_w, orig_h) = img.dimensions();
         let ratio = orig_h as f64 / orig_w as f64;
-        let target_height = (target_width as f64 * ratio * char_aspect_ratio) as u32;
+        let target_height = (target_width as f64 * ratio / char_aspect_ratio) as u32;
         img.resize_exact(target_width, target_height, image::imageops::FilterType::Lanczos3)
     }
 
