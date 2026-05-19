@@ -1,15 +1,70 @@
-use crate::model::ascii_art_state::AsciiArtParams;
+use std::path::PathBuf;
+use tauri::Emitter;
+
+use crate::model::ascii_art_state::{AsciiArtOutput, AsciiArtParams, AsciiArtProgress};
 use crate::utils::ascii_art_engine::AsciiArtEngine;
+
+fn get_ascii_art_temp_dir() -> PathBuf {
+    std::env::temp_dir().join("druid_ascii_art")
+}
+
+fn cleanup_ascii_art_dir() {
+    let dir = get_ascii_art_temp_dir();
+    if dir.exists() {
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+fn write_output_png(png_bytes: &[u8], source_name: &str) -> Result<String, String> {
+    let dir = get_ascii_art_temp_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    let filename = format!("{}_ascii.png", source_name);
+    let path = dir.join(&filename);
+    std::fs::write(&path, png_bytes).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+fn source_name_from_path(image_path: &str) -> String {
+    std::path::Path::new(image_path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("ascii_art")
+        .to_string()
+}
 
 /// Convert image from file path to ASCII art
 #[tauri::command]
 pub async fn convert_ascii_art_from_path(
     params: AsciiArtParams,
     image_path: String,
-) -> Result<crate::model::ascii_art_state::AsciiArtOutput, String> {
+    app_handle: tauri::AppHandle,
+) -> Result<AsciiArtOutput, String> {
     tokio::task::spawn_blocking(move || {
+        let start_time = std::time::Instant::now();
+        let handle = app_handle.clone();
+        let source_name = source_name_from_path(&image_path);
+
         let img = image::open(&image_path).map_err(|e| e.to_string())?;
-        AsciiArtEngine::convert_from_image(&params, &img)
+        let mut output = AsciiArtEngine::convert_from_image(&params, &img, |progress: AsciiArtProgress| {
+            let _ = handle.emit("ascii-art://progress", progress);
+        })?;
+
+        // PNG mode: write to temp file
+        if let Some(ref png_bytes) = output.image_data {
+            cleanup_ascii_art_dir();
+            let path = write_output_png(png_bytes, &source_name)?;
+            output.output_path = Some(path);
+            output.image_data = None;
+        }
+
+        let _ = app_handle.emit("ascii-art://progress", AsciiArtProgress {
+            stage: "encode".to_string(),
+            progress: 1.0,
+            elapsed_ms: start_time.elapsed().as_millis() as u64,
+        });
+
+        Ok(output)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -20,15 +75,36 @@ pub async fn convert_ascii_art_from_path(
 pub async fn save_temp_image_and_convert(
     params: AsciiArtParams,
     image_bytes: Vec<u8>,
-) -> Result<(String, crate::model::ascii_art_state::AsciiArtOutput), String> {
+    app_handle: tauri::AppHandle,
+) -> Result<(String, AsciiArtOutput), String> {
     tokio::task::spawn_blocking(move || {
+        let start_time = std::time::Instant::now();
+        let handle = app_handle.clone();
+
         let temp_dir = std::env::temp_dir();
         let filename = format!("ascii_art_{}.png", uuid::Uuid::new_v4());
         let temp_path = temp_dir.join(&filename);
         std::fs::write(&temp_path, &image_bytes).map_err(|e| e.to_string())?;
 
         let img = image::load_from_memory(&image_bytes).map_err(|e| e.to_string())?;
-        let output = AsciiArtEngine::convert_from_image(&params, &img)?;
+        let mut output = AsciiArtEngine::convert_from_image(&params, &img, |progress: AsciiArtProgress| {
+            let _ = handle.emit("ascii-art://progress", progress);
+        })?;
+
+        // PNG mode: write to temp file
+        if let Some(ref png_bytes) = output.image_data {
+            cleanup_ascii_art_dir();
+            let path = write_output_png(png_bytes, "ascii_art")?;
+            output.output_path = Some(path);
+            output.image_data = None;
+        }
+
+        let _ = app_handle.emit("ascii-art://progress", AsciiArtProgress {
+            stage: "encode".to_string(),
+            progress: 1.0,
+            elapsed_ms: start_time.elapsed().as_millis() as u64,
+        });
+
         Ok((temp_path.to_string_lossy().to_string(), output))
     })
     .await
@@ -57,7 +133,7 @@ pub async fn export_ascii_art(
 ) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let img = image::open(&image_path).map_err(|e| e.to_string())?;
-        let output = AsciiArtEngine::convert_from_image(&params, &img)?;
+        let output = AsciiArtEngine::convert_from_image(&params, &img, |_progress| {})?;
 
         let content = match format.as_str() {
             "png" => {
@@ -87,8 +163,18 @@ pub async fn export_ascii_art(
             _ => return Err(format!("不支持的导出格式: {}", format)),
         };
 
-        std::fs::write(&path, content).map_err(|e| e.to_string())
+        std::fs::write(&path, &content).map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Clean up ASCII art temporary directory
+#[tauri::command]
+pub fn cleanup_ascii_art_file(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if p.exists() {
+        std::fs::remove_file(p).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }

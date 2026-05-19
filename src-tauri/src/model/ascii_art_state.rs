@@ -1,6 +1,15 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Progress event for ASCII art conversion
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AsciiArtProgress {
+    pub stage: String,
+    pub progress: f32,
+    pub elapsed_ms: u64,
+}
+
 /// Serializable parameters for ASCII art conversion
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,6 +64,8 @@ pub struct AsciiArtOutput {
     pub svg_data: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub char_colors: Option<Vec<CharColor>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_path: Option<String>,
 }
 
 impl Default for AsciiArtParams {

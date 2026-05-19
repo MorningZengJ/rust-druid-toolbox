@@ -89,6 +89,7 @@ export interface AsciiArtOutput {
   imageData?: number[];
   svgData?: string;
   charColors?: CharColor[];
+  outputPath?: string;
 }
 
 // Video Frame types
@@ -138,4 +139,10 @@ export interface LogEntry {
   level: string;
   message: string;
   timestamp: number;
+}
+
+export interface AsciiArtProgress {
+  stage: string;
+  progress: number;
+  elapsedMs: number;
 }

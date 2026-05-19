@@ -8,7 +8,15 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_store::Builder::new().build());
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .setup(|_app| {
+            // Clean up ASCII art temp directory on startup
+            let temp_dir = std::env::temp_dir().join("druid_ascii_art");
+            if temp_dir.exists() {
+                let _ = std::fs::remove_dir_all(&temp_dir);
+            }
+            Ok(())
+        });
 
     let builder = builder
         .manage(commands::video_frame::FrameWatcherState::new())
@@ -27,6 +35,7 @@ pub fn run() {
             commands::ascii_art::load_image_from_file,
             commands::ascii_art::export_ascii_art,
             commands::ascii_art::write_binary_file,
+            commands::ascii_art::cleanup_ascii_art_file,
             // Video frame commands
             commands::video_frame::check_ffmpeg,
             commands::video_frame::probe_video,

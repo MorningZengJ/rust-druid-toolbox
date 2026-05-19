@@ -1,37 +1,64 @@
 use image::{DynamicImage, GenericImageView, RgbaImage, Rgba};
+use std::time::Instant;
 
-use crate::model::ascii_art_state::{AsciiArtParams, AsciiArtOutput, Background, CharColor, CharsetPreset, ColorMode, RenderMode};
+use crate::model::ascii_art_state::{AsciiArtOutput, AsciiArtParams, AsciiArtProgress, Background, CharColor, CharsetPreset, ColorMode, RenderMode};
 use crate::utils::font_renderer::render_char_to_image;
 
 pub struct AsciiArtEngine;
 
 impl AsciiArtEngine {
     /// Convert an image to ASCII art using the given parameters
-    pub fn convert_from_image(
+    pub fn convert_from_image<P>(
         params: &AsciiArtParams,
         img: &DynamicImage,
-    ) -> Result<AsciiArtOutput, String> {
-        // Resize image
-        let resized = Self::resize_image(img, params.width, params.char_aspect_ratio);
+        mut progress_cb: P,
+    ) -> Result<AsciiArtOutput, String>
+    where
+        P: FnMut(AsciiArtProgress),
+    {
+        let start_time = Instant::now();
 
-        // Adjust brightness/contrast/saturation
-        let adjusted = Self::adjust_image(&resized, params.brightness, params.contrast, params.saturation);
+        // Stage 1: Resize image (0% - 5%)
+        progress_cb(AsciiArtProgress {
+            stage: "resize".to_string(),
+            progress: 0.0,
+            elapsed_ms: 0,
+        });
+        let resized = Self::resize_image(img, params.width, params.char_aspect_ratio);
+        progress_cb(AsciiArtProgress {
+            stage: "resize".to_string(),
+            progress: 0.05,
+            elapsed_ms: start_time.elapsed().as_millis() as u64,
+        });
+
+        // Stage 2: Adjust brightness/contrast/saturation (5% - 20%)
+        let adjusted = Self::adjust_image(&resized, params.brightness, params.contrast, params.saturation, &start_time, &mut progress_cb);
 
         // Get charset
         let charset = Self::get_charset(&params.charset, &params.custom_charset);
 
-        // Generate character grid based on color mode
+        // Stage 3: Generate character grid (20% - 50%)
         let (char_grid, color_grid) = match params.color_mode {
-            ColorMode::Monochrome => Self::generate_monochrome_grid(&adjusted, &charset, params.invert, &params.background),
-            ColorMode::Ansi256 | ColorMode::TrueColor | ColorMode::Html => Self::generate_color_grid(&adjusted, &charset, params.invert),
+            ColorMode::Monochrome => Self::generate_monochrome_grid(&adjusted, &charset, params.invert, &params.background, &start_time, &mut progress_cb),
+            ColorMode::Ansi256 | ColorMode::TrueColor | ColorMode::Html => Self::generate_color_grid(&adjusted, &charset, params.invert, &start_time, &mut progress_cb),
         };
 
-        // Generate output based on render mode
-        match params.render_mode {
-            RenderMode::Png => Self::generate_png(&char_grid, &color_grid, &params.background),
-            RenderMode::Svg => Self::generate_svg(&char_grid, &color_grid, &params.background),
-            RenderMode::Canvas => Self::generate_canvas_data(&char_grid, &color_grid),
-        }
+        // Stage 4: Generate output based on render mode (50% - 95%)
+        let mut output = match params.render_mode {
+            RenderMode::Png => Self::generate_png(&char_grid, &color_grid, &params.background, &start_time, &mut progress_cb),
+            RenderMode::Svg => Self::generate_svg(&char_grid, &color_grid, &params.background, &start_time, &mut progress_cb),
+            RenderMode::Canvas => Self::generate_canvas_data(&char_grid, &color_grid, &start_time, &mut progress_cb),
+        }?;
+
+        // Stage 5: Encode complete (100%)
+        output.output_path = None;
+        progress_cb(AsciiArtProgress {
+            stage: "encode".to_string(),
+            progress: 1.0,
+            elapsed_ms: start_time.elapsed().as_millis() as u64,
+        });
+
+        Ok(output)
     }
 
     fn resize_image(img: &DynamicImage, target_width: u32, char_aspect_ratio: f64) -> DynamicImage {
@@ -41,7 +68,14 @@ impl AsciiArtEngine {
         img.resize_exact(target_width, target_height, image::imageops::FilterType::Lanczos3)
     }
 
-    fn adjust_image(img: &DynamicImage, brightness: f64, contrast: f64, saturation: f64) -> RgbaImage {
+    fn adjust_image(
+        img: &DynamicImage,
+        brightness: f64,
+        contrast: f64,
+        saturation: f64,
+        start_time: &Instant,
+        progress_cb: &mut dyn FnMut(AsciiArtProgress),
+    ) -> RgbaImage {
         let rgba = img.to_rgba8();
         let (width, height) = rgba.dimensions();
         let mut adjusted = RgbaImage::new(width, height);
@@ -71,6 +105,16 @@ impl AsciiArtEngine {
                 let b = (gray + saturation * (b - gray)).clamp(0.0, 255.0);
 
                 adjusted.put_pixel(x, y, image::Rgba([r as u8, g as u8, b as u8, pixel[3]]));
+            }
+
+            // Progress: 5% to 20%
+            if height > 0 {
+                let progress = 0.05 + (y as f32 / height as f32) * 0.15;
+                progress_cb(AsciiArtProgress {
+                    stage: "adjust".to_string(),
+                    progress,
+                    elapsed_ms: start_time.elapsed().as_millis() as u64,
+                });
             }
         }
 
@@ -112,24 +156,13 @@ impl AsciiArtEngine {
         }
     }
 
-    fn build_char_colors(
-        char_grid: &[Vec<char>],
-        color_grid: &[Vec<(u8, u8, u8)>],
-    ) -> Vec<CharColor> {
-        let mut char_colors = Vec::new();
-        for (char_line, color_line) in char_grid.iter().zip(color_grid.iter()) {
-            for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
-                char_colors.push(CharColor { char: *ch, r, g, b });
-            }
-        }
-        char_colors
-    }
-
     fn generate_monochrome_grid(
         img: &RgbaImage,
         charset: &str,
         invert: bool,
         bg: &Background,
+        start_time: &Instant,
+        progress_cb: &mut dyn FnMut(AsciiArtProgress),
     ) -> (Vec<Vec<char>>, Vec<Vec<(u8, u8, u8)>>) {
         let mono_color = match bg {
             Background::White => (0u8, 0u8, 0u8),
@@ -152,6 +185,16 @@ impl AsciiArtEngine {
             }
             char_grid.push(char_line);
             color_grid.push(color_line);
+
+            // Progress: 20% to 50%
+            if height > 0 {
+                let progress = 0.20 + (y as f32 / height as f32) * 0.30;
+                progress_cb(AsciiArtProgress {
+                    stage: "grid".to_string(),
+                    progress,
+                    elapsed_ms: start_time.elapsed().as_millis() as u64,
+                });
+            }
         }
 
         (char_grid, color_grid)
@@ -161,6 +204,8 @@ impl AsciiArtEngine {
         img: &RgbaImage,
         charset: &str,
         invert: bool,
+        start_time: &Instant,
+        progress_cb: &mut dyn FnMut(AsciiArtProgress),
     ) -> (Vec<Vec<char>>, Vec<Vec<(u8, u8, u8)>>) {
         let (width, height) = img.dimensions();
         let mut char_grid = Vec::new();
@@ -178,6 +223,16 @@ impl AsciiArtEngine {
             }
             char_grid.push(char_line);
             color_grid.push(color_line);
+
+            // Progress: 20% to 50%
+            if height > 0 {
+                let progress = 0.20 + (y as f32 / height as f32) * 0.30;
+                progress_cb(AsciiArtProgress {
+                    stage: "grid".to_string(),
+                    progress,
+                    elapsed_ms: start_time.elapsed().as_millis() as u64,
+                });
+            }
         }
 
         (char_grid, color_grid)
@@ -187,6 +242,8 @@ impl AsciiArtEngine {
         char_grid: &[Vec<char>],
         color_grid: &[Vec<(u8, u8, u8)>],
         bg: &Background,
+        start_time: &Instant,
+        progress_cb: &mut dyn FnMut(AsciiArtProgress),
     ) -> Result<AsciiArtOutput, String> {
         let height = char_grid.len();
         if height == 0 {
@@ -195,6 +252,7 @@ impl AsciiArtEngine {
                 image_data: None,
                 svg_data: None,
                 char_colors: None,
+                output_path: None,
             });
         }
         let width = char_grid[0].len();
@@ -218,7 +276,24 @@ impl AsciiArtEngine {
                 let y0 = y as u32 * char_height;
                 render_char_to_image(&mut img, ch, x0, y0, char_width, char_height, (r, g, b));
             }
+
+            // Progress: 50% to 95%
+            if height > 0 {
+                let progress = 0.50 + (y as f32 / height as f32) * 0.45;
+                progress_cb(AsciiArtProgress {
+                    stage: "render".to_string(),
+                    progress,
+                    elapsed_ms: start_time.elapsed().as_millis() as u64,
+                });
+            }
         }
+
+        // Encode PNG (95% to 100%)
+        progress_cb(AsciiArtProgress {
+            stage: "encode".to_string(),
+            progress: 0.95,
+            elapsed_ms: start_time.elapsed().as_millis() as u64,
+        });
 
         let mut png_bytes: Vec<u8> = Vec::new();
         let encoder = image::codecs::png::PngEncoder::new(&mut png_bytes);
@@ -242,6 +317,7 @@ impl AsciiArtEngine {
             image_data: Some(png_bytes),
             svg_data: None,
             char_colors: None,
+            output_path: None,
         })
     }
 
@@ -249,6 +325,8 @@ impl AsciiArtEngine {
         char_grid: &[Vec<char>],
         color_grid: &[Vec<(u8, u8, u8)>],
         bg: &Background,
+        start_time: &Instant,
+        progress_cb: &mut dyn FnMut(AsciiArtProgress),
     ) -> Result<AsciiArtOutput, String> {
         let height = char_grid.len();
         if height == 0 {
@@ -257,6 +335,7 @@ impl AsciiArtEngine {
                 image_data: None,
                 svg_data: None,
                 char_colors: None,
+                output_path: None,
             });
         }
         let width = char_grid[0].len();
@@ -319,6 +398,16 @@ impl AsciiArtEngine {
                     x_pos, y_pos, color, run_chars
                 ));
             }
+
+            // Progress: 50% to 95%
+            if height > 0 {
+                let progress = 0.50 + (y as f32 / height as f32) * 0.45;
+                progress_cb(AsciiArtProgress {
+                    stage: "render".to_string(),
+                    progress,
+                    elapsed_ms: start_time.elapsed().as_millis() as u64,
+                });
+            }
         }
 
         svg.push_str("</text></svg>");
@@ -334,14 +423,34 @@ impl AsciiArtEngine {
             image_data: None,
             svg_data: Some(svg),
             char_colors: None,
+            output_path: None,
         })
     }
 
     fn generate_canvas_data(
         char_grid: &[Vec<char>],
         color_grid: &[Vec<(u8, u8, u8)>],
+        start_time: &Instant,
+        progress_cb: &mut dyn FnMut(AsciiArtProgress),
     ) -> Result<AsciiArtOutput, String> {
-        let char_colors = Self::build_char_colors(char_grid, color_grid);
+        let height = char_grid.len();
+        let mut char_colors = Vec::new();
+
+        for (y, (char_line, color_line)) in char_grid.iter().zip(color_grid.iter()).enumerate() {
+            for (ch, &(r, g, b)) in char_line.iter().zip(color_line.iter()) {
+                char_colors.push(CharColor { char: *ch, r, g, b });
+            }
+
+            // Progress: 50% to 95%
+            if height > 0 {
+                let progress = 0.50 + (y as f32 / height as f32) * 0.45;
+                progress_cb(AsciiArtProgress {
+                    stage: "render".to_string(),
+                    progress,
+                    elapsed_ms: start_time.elapsed().as_millis() as u64,
+                });
+            }
+        }
 
         let plain_text = char_grid
             .iter()
@@ -354,6 +463,7 @@ impl AsciiArtEngine {
             image_data: None,
             svg_data: None,
             char_colors: Some(char_colors),
+            output_path: None,
         })
     }
 }

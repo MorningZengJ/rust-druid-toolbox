@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import type { AsciiArtParams, AsciiArtOutput, CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
+import { listen } from "@tauri-apps/api/event";
+import type { AsciiArtParams, AsciiArtOutput, AsciiArtProgress, CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 interface AsciiArtState {
   // Data
@@ -11,6 +12,11 @@ interface AsciiArtState {
   output: AsciiArtOutput | null;
   isConverting: boolean;
   errorMessage: string | null;
+
+  // Progress state
+  progress: number;
+  progressStage: string;
+  estimatedTimeRemaining: number | null;
 
   // UI state
   zoom: number;
@@ -33,6 +39,7 @@ interface AsciiArtState {
   setActiveTab: (tab: "original" | "ascii") => void;
   clearError: () => void;
   setErrorMessage: (msg: string) => void;
+  cleanup: () => Promise<void>;
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -59,6 +66,9 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   output: null,
   isConverting: false,
   errorMessage: null,
+  progress: 0,
+  progressStage: "",
+  estimatedTimeRemaining: null,
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -149,7 +159,24 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
     const { imagePath, imageBytes, params, isConverting } = get();
     if ((!imagePath && !imageBytes) || isConverting) return;
 
-    set({ isConverting: true, errorMessage: null });
+    set({ isConverting: true, errorMessage: null, progress: 0, progressStage: "" });
+
+    const unlistenProgress = await listen<AsciiArtProgress>(
+      "ascii-art://progress",
+      (event) => {
+        const info = event.payload;
+        set({
+          progress: info.progress * 100,
+          progressStage: info.stage,
+        });
+        if (info.progress > 0 && info.elapsedMs > 0) {
+          const totalEstimatedMs = info.elapsedMs / info.progress;
+          const remainingMs = totalEstimatedMs - info.elapsedMs;
+          set({ estimatedTimeRemaining: Math.ceil(remainingMs / 1000) });
+        }
+      }
+    );
+
     try {
       let output: AsciiArtOutput;
       if (imagePath) {
@@ -165,9 +192,11 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
         output = result;
         set({ imagePath: tempPath });
       }
-      set({ output, isConverting: false, activeTab: "ascii" });
+      set({ output, isConverting: false, progress: 100, estimatedTimeRemaining: 0, activeTab: "ascii" });
     } catch (e) {
       set({ errorMessage: `转换失败: ${e}`, isConverting: false });
+    } finally {
+      unlistenProgress();
     }
   },
 
@@ -213,4 +242,15 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   clearError: () => set({ errorMessage: null }),
   setErrorMessage: (msg) => set({ errorMessage: msg }),
+
+  cleanup: async () => {
+    const { output } = get();
+    if (output?.outputPath) {
+      try {
+        await invoke("cleanup_ascii_art_file", { path: output.outputPath });
+      } catch {
+        // ignore cleanup errors
+      }
+    }
+  },
 }));
