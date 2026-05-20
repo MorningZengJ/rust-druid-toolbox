@@ -9,8 +9,9 @@ name = "druid_toolbox_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
-default = ["video-frame"]
+default = ["video-frame", "live-record"]
 video-frame = ["dep:ffmpeg-next"]
+live-record = ["dep:ffmpeg-next"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

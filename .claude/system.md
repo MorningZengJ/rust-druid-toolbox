@@ -18,6 +18,7 @@ Windows 桌面工具箱应用，中文界面。包含三个主要功能模块：
 1. **批量文件重命名**：选择目录、过滤文件、定义替换规则、预览并执行重命名
 2. **字符画生成**：将图片转换为 ASCII 字符画，支持多种颜色模式和参数调节
 3. **视频抽帧**：从视频中提取帧图片，支持多种提取模式和输出格式
+4. **直播录制**：录制直播流（HLS/RTMP/RTSP/HTTP），支持多任务并发、实时预览、流复制、分段录制
 
 ## 项目结构
 
@@ -25,7 +26,7 @@ Windows 桌面工具箱应用，中文界面。包含三个主要功能模块：
 frontend/                    # React 前端
   src/
     main.tsx                 # 入口，StrictMode + TooltipProvider 包裹
-    App.tsx                  # 主布局：左侧 90px 导航栏 + 右侧内容区（display 切换，非路由）
+    App.tsx                  # 主布局：左侧 90px 导航栏 + 右侧内容区（display 切换，非路由，5 个页面）
     globals.css              # Tailwind CSS + shadcn/ui 主题变量（亮/暗 + 6 色彩主题）
     lib/
       utils.ts               # cn() 工具函数（clsx + tailwind-merge）
@@ -39,15 +40,18 @@ frontend/                    # React 前端
       renameStore.ts         # 重命名页 Zustand store
       asciiArtStore.ts       # 字符画页 Zustand store
       videoFrameStore.ts     # 视频抽帧页 Zustand store
+      liveRecordStore.ts     # 直播录制页 Zustand store（多任务管理、事件监听）
     components/
       FileIcon.tsx           # 文件类型图标组件
-      ui/                    # shadcn/ui 组件（15 个）
+      ui/                    # shadcn/ui 组件（16 个）
     pages/
       rename/                # 重命名页面（8 个子组件）
       ascii-art/
         AsciiArtPage.tsx     # 字符画页面（左侧控制面板 + 右侧预览）
       video-frame/
         VideoFramePage.tsx   # 视频抽帧页面（左侧参数 + 右侧帧网格）
+      live-record/
+        LiveRecordPage.tsx   # 直播录制页面（左侧表单/任务列表 + 右侧实时预览）
       settings/
         SettingsPage.tsx     # 设置页（主题切换 + 自定义主色）
 
@@ -58,8 +62,9 @@ src-tauri/                   # Tauri 后端（Rust）
     commands/
       mod.rs                 # 模块声明（video_frame 有 feature gate）
       rename.rs              # 7 个命令：list_files/preview_renames/detect_conflicts/execute_renames/validate_regex/apply_rule_template/parent_path
-      ascii_art.rs           # 5 个命令：convert_ascii_art_from_path/save_temp_image_and_convert/load_image_from_file/write_binary_file/export_ascii_art
+      ascii_art.rs           # 6 个命令：convert_ascii_art_from_path/save_temp_image_and_convert/load_image_from_file/write_binary_file/export_ascii_art/cleanup_ascii_art_file
       video_frame.rs         # 5 个命令：check_ffmpeg/probe_video/extract_frames/start_frame_watcher/stop_frame_watcher
+      live_record.rs         # 3 个命令：start_recording/stop_recording/list_recordings（feature-gated: live-record）
     model/
       mod.rs                 # 模块声明（video_frame_state 有 feature gate）
       file_info.rs           # FileInfo（name/path/parent_path/is_dir/extension/size/created_time/modified_time）
@@ -67,15 +72,18 @@ src-tauri/                   # Tauri 后端（Rust）
       rename_result.rs       # RenameResult + RenameError
       rule_template.rs       # RuleTemplate 枚举（6 变体）
       ascii_art_state.rs     # AsciiArtParams/AsciiArtOutput/CharsetPreset/ColorMode/Background/RenderMode/CharColor
-      video_frame_state.rs   # VideoInfo/ExtractedFrame/ExtractParams/ExtractMode/OutputFormat/ProgressInfo/LogEntry（feature-gated）
+      video_frame_state.rs   # VideoInfo/ExtractedFrame/ExtractParams/ExtractMode/OutputFormat/ProgressInfo/LogEntry（feature-gated: video-frame）
+      live_record_state.rs   # RecordingStatus/ContainerFormat/RecordParams/RecordProgressInfo/PreviewFrame/RecordingTaskInfo（feature-gated: live-record）
     utils/
       mod.rs                 # 模块声明（video_frame_engine 有 feature gate）
       common_utils.rs        # CommonUtils: parent_path()/join_path()
+      font_renderer.rs       # 字体渲染（私有模块，用于 ASCII art PNG 导出，依赖 ab_glyph）
       file_utils.rs          # FileUtils: list_files()/format_size()
       rename_logic.rs        # apply_replace_rules()/validate_regex()，含 8 个单元测试
       ascii_art_engine.rs    # AsciiArtEngine: convert_from_image()，支持 PNG/SVG/Canvas 输出模式
-      video_frame_engine.rs  # VideoFrameEngine: check_ffmpeg/probe_video/extract_frames（含进度/日志/帧回调）
-  Cargo.toml                 # 依赖：tauri 2、serde、fancy-regex 0.18、image 0.25、ffmpeg-next 8(optional)、uuid、anyhow、notify 7
+      video_frame_engine.rs  # VideoFrameEngine: check_ffmpeg/probe_video/extract_frames（含进度/日志/帧回调，feature-gated: video-frame）
+      live_record_engine.rs  # LiveRecordEngine: start_recording（流复制、分段、预览帧，feature-gated: live-record）
+  Cargo.toml                 # 依赖：tauri 2、serde、fancy-regex 0.18、image 0.25、ab_glyph 0.2、ffmpeg-next 8(optional)、uuid、anyhow、notify 7
   tauri.conf.json            # 窗口 800x600，最小 600x400
   build.rs                   # tauri_build::build()
 ```
@@ -124,6 +132,18 @@ src-tauri/                   # Tauri 后端（Rust）
 5. 帧网格展示，支持单帧预览和批量导出
 6. 视频帧命令通过 `#[cfg(feature = "video-frame")]` 条件编译
 
+### 直播录制流程
+
+1. 用户输入直播源 URL（HLS/RTMP/RTSP/HTTP）+ 输出目录 + 参数
+2. `invoke("start_recording")` 异步启动录制（spawn_blocking），立即返回 RecordingTaskInfo
+3. 录制引擎通过 `ffmpeg_next::format::input(&url)` 打开流，流复制 packet 到输出文件
+4. 通过事件监听实时更新：`live-record://progress`（时长/大小/码率）、`live-record://preview`（JPEG 预览帧）、`live-record://log`（日志）、`live-record://status`（状态变更）
+5. 预览通过独立解码连接实现（二次连接同一 URL，解码+缩放+JPEG 编码）
+6. 分段录制：超过设定时长自动关闭当前文件，创建新文件继续
+7. `invoke("stop_recording")` 设置 stop_flag，引擎写 trailer 后结束
+8. 支持多任务并发，左侧任务列表切换，右侧实时预览
+9. 引擎和模型通过 `#[cfg(feature = "live-record")]` 条件编译
+
 ### 主题系统
 
 - shadcn/ui CSS 变量（HSL 色彩空间）
@@ -148,6 +168,7 @@ src-tauri/                   # Tauri 后端（Rust）
 | tokio | 1 (rt-multi-thread, macros) | 异步运行时 |
 | fancy-regex | 0.18.0 | 正则表达式（支持前瞻/后顾） |
 | image | 0.25 | 图片处理 |
+| ab_glyph | 0.2 | 字体渲染（ASCII art PNG 导出） |
 | ffmpeg-next | 8 (optional, static) | 视频处理（feature = "video-frame"） |
 | uuid | 1 (v4) | 替换规则 ID |
 | anyhow | 1 | 错误处理 |

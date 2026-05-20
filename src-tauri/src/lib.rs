@@ -20,6 +20,7 @@ pub fn run() {
 
     let builder = builder
         .manage(commands::video_frame::FrameWatcherState::new())
+        .manage(commands::live_record::LiveRecordManager::new())
         .invoke_handler(tauri::generate_handler![
             // Rename commands
             commands::rename::list_files,
@@ -42,6 +43,10 @@ pub fn run() {
             commands::video_frame::extract_frames,
             commands::video_frame::start_frame_watcher,
             commands::video_frame::stop_frame_watcher,
+            // Live record commands
+            commands::live_record::start_recording,
+            commands::live_record::stop_recording,
+            commands::live_record::list_recordings,
         ]);
 
     builder

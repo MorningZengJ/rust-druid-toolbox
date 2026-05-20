@@ -5,3 +5,5 @@ pub mod replace_info;
 pub mod rule_template;
 #[cfg(feature = "video-frame")]
 pub mod video_frame_state;
+#[cfg(feature = "live-record")]
+pub mod live_record_state;

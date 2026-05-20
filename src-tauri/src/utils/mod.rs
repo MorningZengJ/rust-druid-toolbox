@@ -5,3 +5,5 @@ pub mod file_utils;
 pub mod rename_logic;
 #[cfg(feature = "video-frame")]
 pub mod video_frame_engine;
+#[cfg(feature = "live-record")]
+pub mod live_record_engine;

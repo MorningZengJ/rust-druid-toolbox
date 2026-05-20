@@ -146,3 +146,57 @@ export interface AsciiArtProgress {
   progress: number;
   elapsedMs: number;
 }
+
+// Live Record types
+
+export type RecordingStatus = "connecting" | "recording" | "stopping" | "stopped" | "error";
+
+export type ContainerFormat = "mp4" | "mkv" | "flv" | "ts";
+
+export interface RecordParams {
+  url: string;
+  outputDir: string;
+  filenamePrefix: string;
+  containerFormat: ContainerFormat;
+  streamCopy: boolean;
+  segmentDurationSecs: number | null;
+  previewEnabled: boolean;
+  previewIntervalMs: number;
+}
+
+export interface RecordProgressInfo {
+  taskId: string;
+  status: RecordingStatus;
+  durationSecs: number;
+  fileSizeBytes: number;
+  bitrateKbps: number;
+  currentSegment: number;
+  outputPath: string;
+}
+
+export interface PreviewFrame {
+  taskId: string;
+  jpegData: number[];
+  width: number;
+  height: number;
+  timestamp: number;
+}
+
+export interface LiveRecordLogEntry {
+  taskId: string;
+  level: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface RecordingTaskInfo {
+  taskId: string;
+  url: string;
+  status: RecordingStatus;
+  params: RecordParams;
+  durationSecs: number;
+  fileSizeBytes: number;
+  outputPath: string;
+  currentSegment: number;
+  startTimeMs: number;
+}
