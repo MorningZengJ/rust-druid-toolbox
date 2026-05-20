@@ -200,3 +200,69 @@ export interface RecordingTaskInfo {
   currentSegment: number;
   startTimeMs: number;
 }
+
+// Video Tool types
+
+export interface MergeVideosParams {
+  inputPaths: string[];
+  outputPath: string;
+  outputFormat: string;
+  reencode: boolean;
+}
+
+export interface MergeVideosResult {
+  outputPath: string;
+  durationSecs: number;
+  fileSizeBytes: number;
+}
+
+export interface ImagesToVideoParams {
+  imagePaths: string[];
+  outputPath: string;
+  fps: number;
+  outputFormat: string;
+  resolution: [number, number] | null;
+  audioPath: string | null;
+  loopCount: number | null;
+}
+
+export interface ImagesToVideoResult {
+  outputPath: string;
+  durationSecs: number;
+  frameCount: number;
+  fileSizeBytes: number;
+}
+
+export type ConversionTarget =
+  | { videoFormat: string }
+  | { audioFormat: string };
+
+export interface ConvertFormatParams {
+  inputPath: string;
+  outputPath: string;
+  target: ConversionTarget;
+  audioBitrate: string | null;
+  videoBitrate: string | null;
+  resolution: [number, number] | null;
+}
+
+export interface ConvertFormatResult {
+  outputPath: string;
+  fileSizeBytes: number;
+}
+
+export interface VideoToolProgress {
+  taskId: string;
+  progress: number;
+  currentStep: string;
+  elapsedMs: number;
+}
+
+export interface VideoToolLog {
+  taskId: string;
+  level: string;
+  message: string;
+  timestamp: number;
+}
+
+export type VideoToolTab = "merge" | "images" | "convert";

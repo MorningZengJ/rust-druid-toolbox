@@ -7,3 +7,5 @@ pub mod rename_logic;
 pub mod video_frame_engine;
 #[cfg(feature = "live-record")]
 pub mod live_record_engine;
+#[cfg(feature = "video-frame")]
+pub mod video_tool_engine;

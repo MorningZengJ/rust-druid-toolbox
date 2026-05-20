@@ -53,6 +53,11 @@ pub fn run() {
         commands::live_record::start_recording,
         commands::live_record::stop_recording,
         commands::live_record::list_recordings,
+        // Video tool commands
+        commands::video_tool::check_video_encoders,
+        commands::video_tool::merge_videos,
+        commands::video_tool::images_to_video,
+        commands::video_tool::convert_format,
     ]);
 
     #[cfg(all(feature = "video-frame", not(feature = "live-record")))]
@@ -78,6 +83,11 @@ pub fn run() {
         commands::video_frame::extract_frames,
         commands::video_frame::start_frame_watcher,
         commands::video_frame::stop_frame_watcher,
+        // Video tool commands
+        commands::video_tool::check_video_encoders,
+        commands::video_tool::merge_videos,
+        commands::video_tool::images_to_video,
+        commands::video_tool::convert_format,
     ]);
 
     #[cfg(all(not(feature = "video-frame"), feature = "live-record"))]

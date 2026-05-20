@@ -7,3 +7,5 @@ pub mod rule_template;
 pub mod video_frame_state;
 #[cfg(feature = "live-record")]
 pub mod live_record_state;
+#[cfg(feature = "video-frame")]
+pub mod video_tool_state;

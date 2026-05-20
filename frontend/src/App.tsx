@@ -8,6 +8,7 @@ import {
   Sun,
   Moon,
   Radio,
+  Wrench,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useWindowState } from "@/hooks/useWindowState";
@@ -15,15 +16,17 @@ import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
 import VideoFramePage from "@/pages/video-frame/VideoFramePage";
 import LiveRecordPage from "@/pages/live-record/LiveRecordPage";
+import VideoToolPage from "@/pages/video-tool/VideoToolPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 
-type Page = "rename" | "ascii-art" | "video-frame" | "live-record" | "settings";
+type Page = "rename" | "ascii-art" | "video-frame" | "live-record" | "video-tool" | "settings";
 
 const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
   { id: "rename", label: "重命名", icon: <PenLine size={20} /> },
   { id: "ascii-art", label: "字符画", icon: <ImageIcon size={20} /> },
   { id: "video-frame", label: "抽帧", icon: <Film size={20} /> },
   { id: "live-record", label: "录制", icon: <Radio size={20} /> },
+  { id: "video-tool", label: "视频工具", icon: <Wrench size={20} /> },
   { id: "settings", label: "设置", icon: <Settings size={20} /> },
 ];
 
@@ -45,7 +48,7 @@ function App() {
         </div>
 
         <div className="flex flex-1 flex-col gap-1">
-          {navItems.slice(0, 4).map((item) => (
+          {navItems.slice(0, 5).map((item) => (
             <Button
               key={item.id}
               variant={activePage === item.id ? "secondary" : "ghost"}
@@ -103,6 +106,12 @@ function App() {
           style={{ display: activePage === "live-record" ? "block" : "none" }}
         >
           <LiveRecordPage />
+        </div>
+        <div
+          className="h-full p-4"
+          style={{ display: activePage === "video-tool" ? "block" : "none" }}
+        >
+          <VideoToolPage />
         </div>
         <div
           className="h-full p-4"

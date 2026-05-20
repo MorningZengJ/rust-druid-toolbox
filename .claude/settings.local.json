@@ -73,7 +73,9 @@
       "Bash(powershell -Command \"[Environment]::GetEnvironmentVariable\\('FFMPEG_DIR', 'User'\\)\")",
       "Bash(powershell -Command \"[Environment]::GetEnvironmentVariable\\('LIBCLANG_PATH', 'User'\\)\")",
       "Bash(curl -L -o \"C:/Users/zengc/Workspace/RustroverProjects/druid-toolbox/src-tauri/fonts/DejaVuSansMono.ttf\" \"https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSansMono.ttf\")",
-      "Bash(grep -v -E '^\\\\.$|^\\\\.\\\\.$')"
+      "Bash(grep -v -E '^\\\\.$|^\\\\.\\\\.$')",
+      "Bash(npx tsc *)",
+      "Bash(ffmpeg -encoders)"
     ]
   }
 }
