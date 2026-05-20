@@ -462,6 +462,18 @@ impl VideoToolEngine {
         // Encode each image as a video frame
         let time_base = ffmpeg_next::Rational::new(1, params.fps as i32);
 
+        // Create SwsContext for RGB24 -> YUV420P conversion
+        let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
+            ffmpeg_next::format::Pixel::RGB24,
+            width,
+            height,
+            ffmpeg_next::format::Pixel::YUV420P,
+            width,
+            height,
+            ffmpeg_next::software::scaling::Flags::BILINEAR,
+        )
+        .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
+
         for (i, img_path) in params.image_paths.iter().enumerate() {
             let img = image::open(img_path)
                 .map_err(|e| anyhow!("打开图片 {} 失败: {}", img_path.display(), e))?;
@@ -469,44 +481,34 @@ impl VideoToolEngine {
             let resized = img.resize_exact(width, height, image::imageops::FilterType::Lanczos3);
             let rgb = resized.to_rgb8();
 
-            let mut frame = ffmpeg_next::util::frame::video::Video::new(
+            // Create RGB24 frame from image data
+            let mut rgb_frame = ffmpeg_next::util::frame::video::Video::new(
+                ffmpeg_next::format::Pixel::RGB24,
+                width,
+                height,
+            );
+            let rgb_data = rgb.as_raw();
+            let rgb_stride = (width * 3) as usize;
+            for y in 0..height as usize {
+                let src_offset = y * rgb_stride;
+                let dst_offset = y * rgb_frame.stride(0);
+                rgb_frame.data_mut(0)[dst_offset..dst_offset + rgb_stride]
+                    .copy_from_slice(&rgb_data[src_offset..src_offset + rgb_stride]);
+            }
+
+            // Convert to YUV420P using SwsContext
+            let mut yuv_frame = ffmpeg_next::util::frame::video::Video::new(
                 ffmpeg_next::format::Pixel::YUV420P,
                 width,
                 height,
             );
-            // Convert RGB to YUV420P
-            let y_size = (width * height) as usize;
-            let uv_size = ((width / 2) * (height / 2)) as usize;
-            let mut y_plane = vec![0u8; y_size];
-            let mut u_plane = vec![0u8; uv_size];
-            let mut v_plane = vec![0u8; uv_size];
-
-            for y in 0..height as usize {
-                for x in 0..width as usize {
-                    let pixel = rgb.get_pixel(x as u32, y as u32);
-                    let r = pixel[0] as f64;
-                    let g = pixel[1] as f64;
-                    let b = pixel[2] as f64;
-
-                    let y_val = (0.299 * r + 0.587 * g + 0.114 * b) as u8;
-                    y_plane[y * width as usize + x] = y_val;
-
-                    if x % 2 == 0 && y % 2 == 0 {
-                        let u_val = (-0.169 * r - 0.331 * g + 0.500 * b + 128.0) as u8;
-                        let v_val = (0.500 * r - 0.419 * g - 0.081 * b + 128.0) as u8;
-                        u_plane[(y / 2) * (width as usize / 2) + x / 2] = u_val;
-                        v_plane[(y / 2) * (width as usize / 2) + x / 2] = v_val;
-                    }
-                }
-            }
-
-            frame.data_mut(0)[..y_size].copy_from_slice(&y_plane);
-            frame.data_mut(1)[..uv_size].copy_from_slice(&u_plane);
-            frame.data_mut(2)[..uv_size].copy_from_slice(&v_plane);
-            frame.set_pts(Some(i as i64));
+            sws_ctx
+                .run(&rgb_frame, &mut yuv_frame)
+                .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+            yuv_frame.set_pts(Some(i as i64));
 
             encoder
-                .send_frame(&frame)
+                .send_frame(&yuv_frame)
                 .map_err(|e| anyhow!("发送帧到编码器失败: {}", e))?;
 
             let mut encoded_packet = ffmpeg_next::Packet::empty();
