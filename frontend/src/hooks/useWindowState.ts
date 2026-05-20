@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LogicalSize, LogicalPosition } from "@tauri-apps/api/dpi";
 import { LazyStore } from "@tauri-apps/plugin-store";
 
 interface WindowState {
@@ -18,20 +17,6 @@ const DEBOUNCE_MS = 500;
 export function useWindowState() {
   useEffect(() => {
     const win = getCurrentWindow();
-
-    // Restore window state on mount
-    store.get<WindowState>(WINDOW_STATE_KEY).then((state) => {
-      if (!state) return;
-      if (state.isMaximized) {
-        win.maximize();
-      } else if (state.x < 0 || state.y < 0) {
-        win.center();
-        win.setSize(new LogicalSize(state.width, state.height));
-      } else {
-        win.setPosition(new LogicalPosition(state.x, state.y));
-        win.setSize(new LogicalSize(state.width, state.height));
-      }
-    });
 
     // Debounce helper
     let timer: ReturnType<typeof setTimeout> | null = null;

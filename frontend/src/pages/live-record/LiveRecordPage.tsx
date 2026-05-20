@@ -220,6 +220,11 @@ export default function LiveRecordPage() {
                   <SelectItem value="flv">FLV</SelectItem>
                 </SelectContent>
               </Select>
+              {newRecordParams.containerFormat === "mp4" && (
+                <p className="text-[10px] text-amber-500">
+                  MP4 格式在异常中断时文件可能不可用，推荐 TS 或 MKV
+                </p>
+              )}
             </div>
 
             {/* Stream copy toggle */}

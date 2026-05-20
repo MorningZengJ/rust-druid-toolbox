@@ -18,36 +18,109 @@ pub fn run() {
             Ok(())
         });
 
-    let builder = builder
-        .manage(commands::video_frame::FrameWatcherState::new())
-        .manage(commands::live_record::LiveRecordManager::new())
-        .invoke_handler(tauri::generate_handler![
-            // Rename commands
-            commands::rename::list_files,
-            commands::rename::preview_renames,
-            commands::rename::detect_conflicts,
-            commands::rename::execute_renames,
-            commands::rename::validate_regex,
-            commands::rename::apply_rule_template,
-            commands::rename::parent_path,
-            // ASCII art commands
-            commands::ascii_art::convert_ascii_art_from_path,
-            commands::ascii_art::save_temp_image_and_convert,
-            commands::ascii_art::load_image_from_file,
-            commands::ascii_art::export_ascii_art,
-            commands::ascii_art::write_binary_file,
-            commands::ascii_art::cleanup_ascii_art_file,
-            // Video frame commands
-            commands::video_frame::check_ffmpeg,
-            commands::video_frame::probe_video,
-            commands::video_frame::extract_frames,
-            commands::video_frame::start_frame_watcher,
-            commands::video_frame::stop_frame_watcher,
-            // Live record commands
-            commands::live_record::start_recording,
-            commands::live_record::stop_recording,
-            commands::live_record::list_recordings,
-        ]);
+    // R9: Feature-gate managed state
+    #[cfg(feature = "video-frame")]
+    let builder = builder.manage(commands::video_frame::FrameWatcherState::new());
+
+    #[cfg(feature = "live-record")]
+    let builder = builder.manage(commands::live_record::LiveRecordManager::new());
+
+    // R9: Feature-gate commands in handler
+    #[cfg(all(feature = "video-frame", feature = "live-record"))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        // Rename commands
+        commands::rename::list_files,
+        commands::rename::preview_renames,
+        commands::rename::detect_conflicts,
+        commands::rename::execute_renames,
+        commands::rename::validate_regex,
+        commands::rename::apply_rule_template,
+        commands::rename::parent_path,
+        // ASCII art commands
+        commands::ascii_art::convert_ascii_art_from_path,
+        commands::ascii_art::save_temp_image_and_convert,
+        commands::ascii_art::load_image_from_file,
+        commands::ascii_art::export_ascii_art,
+        commands::ascii_art::write_binary_file,
+        commands::ascii_art::cleanup_ascii_art_file,
+        // Video frame commands
+        commands::video_frame::check_ffmpeg,
+        commands::video_frame::probe_video,
+        commands::video_frame::extract_frames,
+        commands::video_frame::start_frame_watcher,
+        commands::video_frame::stop_frame_watcher,
+        // Live record commands
+        commands::live_record::start_recording,
+        commands::live_record::stop_recording,
+        commands::live_record::list_recordings,
+    ]);
+
+    #[cfg(all(feature = "video-frame", not(feature = "live-record")))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        // Rename commands
+        commands::rename::list_files,
+        commands::rename::preview_renames,
+        commands::rename::detect_conflicts,
+        commands::rename::execute_renames,
+        commands::rename::validate_regex,
+        commands::rename::apply_rule_template,
+        commands::rename::parent_path,
+        // ASCII art commands
+        commands::ascii_art::convert_ascii_art_from_path,
+        commands::ascii_art::save_temp_image_and_convert,
+        commands::ascii_art::load_image_from_file,
+        commands::ascii_art::export_ascii_art,
+        commands::ascii_art::write_binary_file,
+        commands::ascii_art::cleanup_ascii_art_file,
+        // Video frame commands
+        commands::video_frame::check_ffmpeg,
+        commands::video_frame::probe_video,
+        commands::video_frame::extract_frames,
+        commands::video_frame::start_frame_watcher,
+        commands::video_frame::stop_frame_watcher,
+    ]);
+
+    #[cfg(all(not(feature = "video-frame"), feature = "live-record"))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        // Rename commands
+        commands::rename::list_files,
+        commands::rename::preview_renames,
+        commands::rename::detect_conflicts,
+        commands::rename::execute_renames,
+        commands::rename::validate_regex,
+        commands::rename::apply_rule_template,
+        commands::rename::parent_path,
+        // ASCII art commands
+        commands::ascii_art::convert_ascii_art_from_path,
+        commands::ascii_art::save_temp_image_and_convert,
+        commands::ascii_art::load_image_from_file,
+        commands::ascii_art::export_ascii_art,
+        commands::ascii_art::write_binary_file,
+        commands::ascii_art::cleanup_ascii_art_file,
+        // Live record commands
+        commands::live_record::start_recording,
+        commands::live_record::stop_recording,
+        commands::live_record::list_recordings,
+    ]);
+
+    #[cfg(not(any(feature = "video-frame", feature = "live-record")))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        // Rename commands
+        commands::rename::list_files,
+        commands::rename::preview_renames,
+        commands::rename::detect_conflicts,
+        commands::rename::execute_renames,
+        commands::rename::validate_regex,
+        commands::rename::apply_rule_template,
+        commands::rename::parent_path,
+        // ASCII art commands
+        commands::ascii_art::convert_ascii_art_from_path,
+        commands::ascii_art::save_temp_image_and_convert,
+        commands::ascii_art::load_image_from_file,
+        commands::ascii_art::export_ascii_art,
+        commands::ascii_art::write_binary_file,
+        commands::ascii_art::cleanup_ascii_art_file,
+    ]);
 
     builder
         .run(tauri::generate_context!())

@@ -60,13 +60,34 @@ function applyColorTheme(colorTheme: ColorTheme, customPrimary?: string) {
   }
 }
 
+function readColorThemeFromDOM(): ColorTheme {
+  const classList = document.documentElement.classList;
+  if (classList.contains("theme-blue")) return "blue";
+  if (classList.contains("theme-green")) return "green";
+  if (classList.contains("theme-purple")) return "purple";
+  if (classList.contains("theme-orange")) return "orange";
+  if (classList.contains("theme-rose")) return "rose";
+  return "default";
+}
+
 export function useTheme() {
-  const [colorMode, setColorModeState] = useState<ColorMode>("system");
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>("default");
-  const [customPrimary, setCustomPrimaryState] = useState<string | undefined>(undefined);
+  // Initialize from DOM (main.tsx applies config before React mounts)
+  const [colorMode, setColorModeState] = useState<ColorMode>(() => {
+    const root = document.documentElement;
+    const customPrimary = root.style.getPropertyValue("--primary").trim();
+    if (customPrimary) return root.classList.contains("dark") ? "dark" : "light";
+    return root.classList.contains("dark") ? "dark" : "light";
+  });
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>(() =>
+    readColorThemeFromDOM()
+  );
+  const [customPrimary, setCustomPrimaryState] = useState<string | undefined>(() => {
+    const val = document.documentElement.style.getPropertyValue("--primary").trim();
+    return val || undefined;
+  });
   const [loaded, setLoaded] = useState(false);
 
-  // Load persisted values from store on mount
+  // Sync with store on mount (main.tsx already applied these values to DOM)
   useEffect(() => {
     (async () => {
       const [savedMode, savedTheme, savedCustom] = await Promise.all([

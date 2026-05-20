@@ -7,6 +7,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+/// remux_loop 退出原因
+enum RemuxResult {
+    /// 分段时长到达，需要继续下一段
+    SegmentComplete,
+    /// 用户停止或流结束
+    Done,
+}
+
 pub struct LiveRecordEngine;
 
 impl LiveRecordEngine {
@@ -34,6 +42,18 @@ impl LiveRecordEngine {
                 .unwrap_or_default()
                 .as_millis() as u64
         };
+
+        // R6: streamCopy 参数提示
+        let mut params = params.clone();
+        if !params.stream_copy {
+            log_cb(LiveRecordLogEntry {
+                task_id: task_id.to_string(),
+                level: "warn".to_string(),
+                message: "当前版本仅支持流复制模式，已自动启用".to_string(),
+                timestamp: now_ms(),
+            });
+            params.stream_copy = true;
+        }
 
         log_cb(LiveRecordLogEntry {
             task_id: task_id.to_string(),
@@ -82,21 +102,6 @@ impl LiveRecordEngine {
             .map(|d| d as u64);
 
         let mut segment_index: u32 = 1;
-        let mut output_path = Self::make_output_path(params, segment_index);
-        let mut segment_start = Instant::now();
-
-        // Create output
-        let mut output = Self::create_output(
-            &params.url,
-            &output_path,
-            params,
-            &input,
-            &stream_mapping,
-            out_stream_count,
-        )?;
-
-        let record_start = Instant::now();
-        let mut last_progress_time = Instant::now();
 
         // Preview thread (if enabled)
         let preview_handle = if params.preview_enabled {
@@ -111,31 +116,89 @@ impl LiveRecordEngine {
             None
         };
 
-        // Main recording loop (stream copy)
-        let result = Self::remux_loop(
-            &mut input,
-            &mut output,
-            &stream_mapping,
-            stop_flag.clone(),
-            segment_duration,
-            &mut segment_index,
-            &mut output_path,
-            &mut segment_start,
-            params,
-            record_start,
-            &mut last_progress_time,
-            task_id,
-            &mut progress_cb,
-            &mut log_cb,
-        );
+        // R1: Outer loop for segment continuation
+        let record_start = Instant::now();
 
-        // Finalize
-        let _ = output.write_trailer();
+        loop {
+            let mut output_path = Self::make_output_path(&params, segment_index);
+            let mut segment_start = Instant::now();
+
+            // Create output for this segment
+            let mut output = Self::create_output(
+                &params.url,
+                &output_path,
+                &params,
+                &input,
+                &stream_mapping,
+                out_stream_count,
+            )?;
+
+            let mut last_progress_time = Instant::now();
+
+            let remux_result = Self::remux_loop(
+                &mut input,
+                &mut output,
+                &stream_mapping,
+                stop_flag.clone(),
+                segment_duration,
+                &mut segment_index,
+                &mut output_path,
+                &mut segment_start,
+                &params,
+                record_start,
+                &mut last_progress_time,
+                task_id,
+                &mut progress_cb,
+                &mut log_cb,
+            );
+
+            // R4: Log trailer write errors instead of silently ignoring
+            if let Err(e) = output.write_trailer() {
+                log_cb(LiveRecordLogEntry {
+                    task_id: task_id.to_string(),
+                    level: "warn".to_string(),
+                    message: format!("写入文件尾失败: {}", e),
+                    timestamp: now_ms(),
+                });
+            }
+
+            match remux_result {
+                Ok(RemuxResult::SegmentComplete) => {
+                    log_cb(LiveRecordLogEntry {
+                        task_id: task_id.to_string(),
+                        level: "info".to_string(),
+                        message: format!("分段 {} 完成", segment_index),
+                        timestamp: now_ms(),
+                    });
+                    segment_index += 1;
+                    // Continue loop to create next segment
+                    // Re-open input for the new segment
+                    input = ffmpeg_next::format::input(&params.url)
+                        .map_err(|e| anyhow!("重新连接流失败: {}", e))?;
+                    continue;
+                }
+                Ok(RemuxResult::Done) => {
+                    break;
+                }
+                Err(e) => {
+                    log_cb(LiveRecordLogEntry {
+                        task_id: task_id.to_string(),
+                        level: "error".to_string(),
+                        message: format!("录制错误: {}", e),
+                        timestamp: now_ms(),
+                    });
+                    if let Some(h) = preview_handle {
+                        let _ = h.join();
+                    }
+                    return Err(e);
+                }
+            }
+        }
 
         let elapsed = record_start.elapsed().as_secs_f64();
         log_cb(LiveRecordLogEntry {
             task_id: task_id.to_string(),
-            level: if result.is_ok() { "info" } else { "error" }.to_string(),
+            level: "info".to_string(),
             message: format!("录制结束，总时长 {:.1} 秒，共 {} 个分段", elapsed, segment_index),
             timestamp: now_ms(),
         });
@@ -144,7 +207,7 @@ impl LiveRecordEngine {
             let _ = h.join();
         }
 
-        result
+        Ok(())
     }
 
     fn remux_loop<P, L>(
@@ -156,27 +219,31 @@ impl LiveRecordEngine {
         segment_index: &mut u32,
         output_path: &mut PathBuf,
         segment_start: &mut Instant,
-        params: &RecordParams,
+        _params: &RecordParams,
         record_start: Instant,
         last_progress_time: &mut Instant,
         task_id: &str,
         progress_cb: &mut P,
-        log_cb: &mut L,
-    ) -> Result<()>
+        _log_cb: &mut L,
+    ) -> Result<RemuxResult>
     where
         P: FnMut(RecordProgressInfo),
         L: FnMut(LiveRecordLogEntry),
     {
-        let now_ms = || {
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
+        // R7: 发送 Recording 状态事件，通知前端状态切换
+        progress_cb(RecordProgressInfo {
+            task_id: task_id.to_string(),
+            status: RecordingStatus::Recording,
+            duration_secs: 0.0,
+            file_size_bytes: 0,
+            bitrate_kbps: 0.0,
+            current_segment: *segment_index,
+            output_path: output_path.to_string_lossy().to_string(),
+        });
 
         for (stream, mut packet) in input.packets() {
             if stop_flag.load(Ordering::Relaxed) {
-                break;
+                return Ok(RemuxResult::Done);
             }
 
             let in_idx = stream.index();
@@ -185,9 +252,11 @@ impl LiveRecordEngine {
                 None => continue,
             };
 
-            // Rescale timestamps
+            // R2: Replace unwrap with error handling
+            let out_st = output
+                .stream(out_idx as usize)
+                .ok_or_else(|| anyhow!("输出流索引 {} 越界", out_idx))?;
             let in_tb = stream.time_base();
-            let out_st = output.stream(out_idx as usize).unwrap();
             let out_tb = out_st.time_base();
             packet.rescale_ts(in_tb, out_tb);
             packet.set_stream(out_idx);
@@ -224,29 +293,12 @@ impl LiveRecordEngine {
             // Segment check
             if let Some(seg_dur) = segment_duration {
                 if segment_start.elapsed().as_secs() >= seg_dur {
-                    let _ = output.write_trailer();
-
-                    log_cb(LiveRecordLogEntry {
-                        task_id: task_id.to_string(),
-                        level: "info".to_string(),
-                        message: format!("分段 {} 完成", segment_index),
-                        timestamp: now_ms(),
-                    });
-
-                    *segment_index += 1;
-                    *output_path = Self::make_output_path(params, *segment_index);
-                    *segment_start = Instant::now();
-
-                    // We need to recreate the output for the new segment.
-                    // Since we can't easily reopen with the same input context,
-                    // we break and let the caller handle it.
-                    // For simplicity in v1, segment recording restarts the whole input.
-                    break;
+                    return Ok(RemuxResult::SegmentComplete);
                 }
             }
         }
 
-        Ok(())
+        Ok(RemuxResult::Done)
     }
 
     fn create_output(
@@ -263,20 +315,22 @@ impl LiveRecordEngine {
         )
         .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
+        // R5: MP4 容器在流复制模式下不支持 faststart，
+        // moov atom 在 write_trailer 时写入，异常中断的文件不可读。
+        // UI 层已添加格式选择提示，推荐 TS/MKV。
+
         for stream in input.streams() {
             let in_idx = stream.index();
-            let out_idx = match stream_mapping.get(in_idx).and_then(|m| *m) {
+            let _out_idx = match stream_mapping.get(in_idx).and_then(|m| *m) {
                 Some(idx) => idx,
                 None => continue,
             };
 
-            let mut out_stream = output.add_stream(None).unwrap();
+            let mut out_stream = output
+                .add_stream(None)
+                .map_err(|e| anyhow!("添加输出流失败: {}", e))?;
             out_stream.set_parameters(stream.parameters());
             out_stream.set_time_base(stream.time_base());
-
-            // Store the intended output index in the stream's metadata
-            // The actual index in the output may differ
-            let _ = out_idx;
         }
 
         output
@@ -308,9 +362,11 @@ impl LiveRecordEngine {
     ) where
         F: FnMut(PreviewFrame),
     {
+        // R3: Capture and report preview errors
         let result = Self::preview_loop_inner(url, task_id, interval_ms, stop_flag, &mut preview_cb);
         if let Err(e) = result {
-            let _ = e;
+            // Preview errors are non-fatal; log to stderr for debugging
+            eprintln!("[live-record] 预览线程错误 (task {}): {}", task_id, e);
         }
     }
 

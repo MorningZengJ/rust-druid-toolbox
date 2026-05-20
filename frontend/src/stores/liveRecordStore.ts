@@ -163,7 +163,7 @@ export const useLiveRecordStore = create<LiveRecordState>((set, get) => ({
                   status: info.status,
                   durationSecs: info.durationSecs,
                   fileSizeBytes: info.fileSizeBytes,
-                  output_path: info.outputPath,
+                  outputPath: info.outputPath,
                   currentSegment: info.currentSegment,
                 },
               },
