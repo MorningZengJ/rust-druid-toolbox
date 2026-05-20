@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,13 +24,22 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Upload,
 } from "lucide-react";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const VIDEO_FORMATS = ["mp4", "mkv", "avi", "webm", "mov", "flv"];
 const AUDIO_FORMATS = ["mp3", "aac", "wav", "flac", "ogg", "opus"];
 const AUDIO_BITRATES = ["128k", "192k", "256k", "320k"];
+
+const VIDEO_EXTENSIONS = ["mp4", "mkv", "avi", "webm", "mov", "flv", "ts"];
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "bmp", "gif", "webp"];
+const MEDIA_EXTENSIONS = [
+  "mp4", "mkv", "avi", "webm", "mov", "flv", "ts",
+  "mp3", "aac", "wav", "flac", "ogg", "opus",
+];
 
 export default function VideoToolPage() {
   const ffmpegAvailable = useVideoToolStore((s) => s.ffmpegAvailable);
@@ -208,6 +217,18 @@ function ProgressPanel() {
   );
 }
 
+function DragOverlay({ isDragOver }: { isDragOver: boolean }) {
+  if (!isDragOver) return null;
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/10">
+      <div className="flex flex-col items-center gap-2 text-primary">
+        <Upload className="h-8 w-8" />
+        <span className="text-sm font-medium">释放文件以添加</span>
+      </div>
+    </div>
+  );
+}
+
 function MergePanel() {
   const mergeInputPaths = useVideoToolStore((s) => s.mergeInputPaths);
   const mergeOutputPath = useVideoToolStore((s) => s.mergeOutputPath);
@@ -219,6 +240,29 @@ function MergePanel() {
   const setMergeOutputFormat = useVideoToolStore((s) => s.setMergeOutputFormat);
   const setMergeReencode = useVideoToolStore((s) => s.setMergeReencode);
   const runMerge = useVideoToolStore((s) => s.runMerge);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onDragDropEvent((event) => {
+      if (event.payload.type === "over") {
+        setIsDragOver(true);
+      } else if (event.payload.type === "leave") {
+        setIsDragOver(false);
+      } else if (event.payload.type === "drop") {
+        setIsDragOver(false);
+        const videoFiles = event.payload.paths.filter((p) => {
+          const ext = p.split(".").pop()?.toLowerCase() ?? "";
+          return VIDEO_EXTENSIONS.includes(ext);
+        });
+        if (videoFiles.length > 0) {
+          setMergeInputs([...mergeInputPaths, ...videoFiles]);
+        }
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [mergeInputPaths, setMergeInputs]);
 
   const addFiles = async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
@@ -227,7 +271,7 @@ function MergePanel() {
       filters: [
         {
           name: "视频文件",
-          extensions: ["mp4", "mkv", "avi", "webm", "mov", "flv", "ts"],
+          extensions: VIDEO_EXTENSIONS,
         },
       ],
     });
@@ -263,7 +307,8 @@ function MergePanel() {
 
   return (
     <>
-      <div className="flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+      <div className="relative flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+        <DragOverlay isDragOver={isDragOver} />
         <div className="border-b border-border px-4 py-2">
           <h3 className="text-sm font-medium">合并视频</h3>
         </div>
@@ -319,7 +364,7 @@ function MergePanel() {
                 ))}
                 {mergeInputPaths.length === 0 && (
                   <div className="rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground">
-                    点击"添加"选择视频文件
+                    拖拽视频文件到此处，或点击"添加"
                   </div>
                 )}
               </div>
@@ -403,6 +448,29 @@ function ImagesPanel() {
   const setImagesResolution = useVideoToolStore((s) => s.setImagesResolution);
   const setImagesAudioPath = useVideoToolStore((s) => s.setImagesAudioPath);
   const runImagesToVideo = useVideoToolStore((s) => s.runImagesToVideo);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onDragDropEvent((event) => {
+      if (event.payload.type === "over") {
+        setIsDragOver(true);
+      } else if (event.payload.type === "leave") {
+        setIsDragOver(false);
+      } else if (event.payload.type === "drop") {
+        setIsDragOver(false);
+        const imageFiles = event.payload.paths.filter((p) => {
+          const ext = p.split(".").pop()?.toLowerCase() ?? "";
+          return IMAGE_EXTENSIONS.includes(ext);
+        });
+        if (imageFiles.length > 0) {
+          setImagesInputPaths([...imagesInputPaths, ...imageFiles]);
+        }
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [imagesInputPaths, setImagesInputPaths]);
 
   const addImages = async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
@@ -411,7 +479,7 @@ function ImagesPanel() {
       filters: [
         {
           name: "图片文件",
-          extensions: ["png", "jpg", "jpeg", "bmp", "gif", "webp"],
+          extensions: IMAGE_EXTENSIONS,
         },
       ],
     });
@@ -455,7 +523,8 @@ function ImagesPanel() {
 
   return (
     <>
-      <div className="flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+      <div className="relative flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+        <DragOverlay isDragOver={isDragOver} />
         <div className="border-b border-border px-4 py-2">
           <h3 className="text-sm font-medium">图片转视频</h3>
         </div>
@@ -490,7 +559,7 @@ function ImagesPanel() {
                 ))}
                 {imagesInputPaths.length === 0 && (
                   <div className="col-span-3 rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground">
-                    点击"添加"选择图片
+                    拖拽图片到此处，或点击"添加"
                   </div>
                 )}
               </div>
@@ -642,6 +711,33 @@ function ConvertPanel() {
   const setConvertAudioBitrate = useVideoToolStore((s) => s.setConvertAudioBitrate);
   const setConvertVideoBitrate = useVideoToolStore((s) => s.setConvertVideoBitrate);
   const runConvert = useVideoToolStore((s) => s.runConvert);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onDragDropEvent((event) => {
+      if (event.payload.type === "over") {
+        setIsDragOver(true);
+      } else if (event.payload.type === "leave") {
+        setIsDragOver(false);
+      } else if (event.payload.type === "drop") {
+        setIsDragOver(false);
+        const mediaFile = event.payload.paths.find((p) => {
+          const ext = p.split(".").pop()?.toLowerCase() ?? "";
+          return MEDIA_EXTENSIONS.includes(ext);
+        });
+        if (mediaFile) {
+          setConvertInputPath(mediaFile);
+          const ext =
+            convertTarget === "video" ? convertVideoFormat : convertAudioFormat;
+          const base = mediaFile.replace(/\.[^.]+$/, "");
+          setConvertOutputPath(`${base}_converted.${ext}`);
+        }
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [convertTarget, convertVideoFormat, convertAudioFormat, setConvertInputPath, setConvertOutputPath]);
 
   const selectInput = async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
@@ -649,27 +745,13 @@ function ConvertPanel() {
       filters: [
         {
           name: "媒体文件",
-          extensions: [
-            "mp4",
-            "mkv",
-            "avi",
-            "webm",
-            "mov",
-            "flv",
-            "ts",
-            "mp3",
-            "aac",
-            "wav",
-            "flac",
-            "ogg",
-          ],
+          extensions: MEDIA_EXTENSIONS,
         },
       ],
     });
     if (selected) {
       const path = Array.isArray(selected) ? selected[0] : selected;
       setConvertInputPath(path);
-      // Auto-set output path
       const ext =
         convertTarget === "video" ? convertVideoFormat : convertAudioFormat;
       const base = path.replace(/\.[^.]+$/, "");
@@ -694,7 +776,8 @@ function ConvertPanel() {
 
   return (
     <>
-      <div className="flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+      <div className="relative flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+        <DragOverlay isDragOver={isDragOver} />
         <div className="border-b border-border px-4 py-2">
           <h3 className="text-sm font-medium">格式转换</h3>
         </div>
@@ -707,7 +790,7 @@ function ConvertPanel() {
                 <Input
                   value={convertInputPath}
                   readOnly
-                  placeholder="选择输入文件"
+                  placeholder="拖拽媒体文件到此处，或点击选择"
                   className="flex-1 text-xs"
                 />
                 <Button size="icon" variant="outline" onClick={selectInput}>
