@@ -66,37 +66,44 @@ function applyColorTheme(theme: ColorTheme, customPrimary?: string) {
 }
 
 async function init() {
-  const [colorMode, colorTheme, customPrimary, windowState] = await Promise.all([
-    store.get<ColorMode>("colorMode"),
-    store.get<ColorTheme>("colorTheme"),
-    store.get<string>("customPrimary"),
-    store.get<WindowState>("windowState"),
-  ]);
-
-  // Apply theme before first paint
-  applyColorMode(colorMode ?? "system");
-  applyColorTheme(colorTheme ?? "default", customPrimary);
-
-  // Restore window state
   const win = getCurrentWindow();
-  if (windowState) {
-    if (windowState.isMaximized) {
-      await win.maximize();
-    } else if (windowState.x < 0 || windowState.y < 0) {
-      await win.center();
-      await win.setSize(
-        new LogicalSize(windowState.width, windowState.height)
-      );
-    } else {
-      await win.setPosition(
-        new LogicalPosition(windowState.x, windowState.y)
-      );
-      await win.setSize(
-        new LogicalSize(windowState.width, windowState.height)
-      );
+
+  try {
+    const [colorMode, colorTheme, customPrimary, windowState] =
+      await Promise.all([
+        store.get<ColorMode>("colorMode"),
+        store.get<ColorTheme>("colorTheme"),
+        store.get<string>("customPrimary"),
+        store.get<WindowState>("windowState"),
+      ]);
+
+    // Apply theme before first paint
+    applyColorMode(colorMode ?? "system");
+    applyColorTheme(colorTheme ?? "default", customPrimary);
+
+    // Restore window state
+    if (windowState) {
+      if (windowState.isMaximized) {
+        await win.maximize();
+      } else if (windowState.x < 0 || windowState.y < 0) {
+        await win.center();
+        await win.setSize(
+          new LogicalSize(windowState.width, windowState.height)
+        );
+      } else {
+        await win.setPosition(
+          new LogicalPosition(windowState.x, windowState.y)
+        );
+        await win.setSize(
+          new LogicalSize(windowState.width, windowState.height)
+        );
+      }
     }
+  } catch (e) {
+    console.error("Failed to load settings:", e);
   }
 
+  // Always show window, even if config loading fails
   await win.show();
 
   // Mount React after window is visible
