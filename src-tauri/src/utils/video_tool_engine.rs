@@ -1134,70 +1134,93 @@ impl VideoToolEngine {
                 .as_millis() as u64
         };
 
+        let is_audio_only = matches!(params.target, ConversionTarget::AudioFormat(_));
+
         log_cb(VideoToolLog {
             task_id: task_id.clone(),
             level: "info".to_string(),
-            message: format!("开始格式转换: {}", params.input_path.display()),
+            message: format!(
+                "开始格式转换: {} → {}",
+                params.input_path.display(),
+                if is_audio_only { "音频" } else { "视频" }
+            ),
             timestamp: now_ms(),
         });
+
+        if is_audio_only {
+            // 音频提取：保持流复制
+            return Self::convert_audio_copy(params, &task_id, start, &mut progress_cb, &mut log_cb);
+        }
+
+        // 视频转换：两阶段策略
+        match Self::convert_video_copy(params, &task_id, start, &mut progress_cb, &mut log_cb) {
+            Ok(result) => Ok(result),
+            Err(e) => {
+                let err_msg = e.to_string();
+                log_cb(VideoToolLog {
+                    task_id: task_id.clone(),
+                    level: "warn".to_string(),
+                    message: format!("快速转换失败 ({}), 自动切换到重编码模式", err_msg),
+                    timestamp: now_ms(),
+                });
+                progress_cb(VideoToolProgress {
+                    task_id: task_id.clone(),
+                    progress: 0.0,
+                    current_step: "reencoding".to_string(),
+                    elapsed_ms: start.elapsed().as_millis() as u64,
+                });
+                Self::convert_video_reencode(params, &task_id, start, &mut progress_cb, &mut log_cb)
+            }
+        }
+    }
+
+    fn convert_audio_copy<P, L>(
+        params: &ConvertFormatParams,
+        task_id: &str,
+        start: Instant,
+        progress_cb: &mut P,
+        log_cb: &mut L,
+    ) -> Result<ConvertFormatResult>
+    where
+        P: FnMut(VideoToolProgress),
+        L: FnMut(VideoToolLog),
+    {
+        let now_ms = || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64
+        };
+
+        let format_str = match &params.target {
+            ConversionTarget::AudioFormat(f) => f.clone(),
+            _ => unreachable!(),
+        };
 
         let mut input = ffmpeg_next::format::input(&params.input_path)
             .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
 
-        let is_audio_only = matches!(params.target, ConversionTarget::AudioFormat(_));
-
-        let format_str = match &params.target {
-            ConversionTarget::VideoFormat(f) => f.clone(),
-            ConversionTarget::AudioFormat(f) => f.clone(),
-        };
-
         let mut output = ffmpeg_next::format::output_as(&params.output_path, &format_str)
             .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
-        // Build stream mapping
         let mut stream_mapping: Vec<Option<usize>> = vec![None; input.nb_streams() as usize];
         let mut out_stream_count: usize = 0;
 
         for stream in input.streams() {
-            let media_type = stream.parameters().medium();
+            if stream.parameters().medium() == ffmpeg_next::media::Type::Audio {
+                stream_mapping[stream.index()] = Some(out_stream_count);
+                out_stream_count += 1;
 
-            if is_audio_only {
-                // Only map audio streams
-                if media_type == ffmpeg_next::media::Type::Audio {
-                    stream_mapping[stream.index()] = Some(out_stream_count);
-                    out_stream_count += 1;
-
-                    let mut out_stream = output
-                        .add_stream(None)
-                        .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
-                    out_stream.set_parameters(stream.parameters());
-                    out_stream.set_time_base(stream.time_base());
-                }
-            } else {
-                // Map video and audio streams
-                if media_type == ffmpeg_next::media::Type::Video
-                    || media_type == ffmpeg_next::media::Type::Audio
-                {
-                    stream_mapping[stream.index()] = Some(out_stream_count);
-                    out_stream_count += 1;
-
-                    let mut out_stream = output
-                        .add_stream(None)
-                        .map_err(|e| anyhow!("添加流失败: {}", e))?;
-                    out_stream.set_parameters(stream.parameters());
-                    out_stream.set_time_base(stream.time_base());
-                }
+                let mut out_stream = output
+                    .add_stream(None)
+                    .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
+                out_stream.set_parameters(stream.parameters());
+                out_stream.set_time_base(stream.time_base());
             }
         }
 
         if out_stream_count == 0 {
-            return Err(anyhow!(
-                if is_audio_only {
-                    "输入文件中未找到音频流"
-                } else {
-                    "输入文件中未找到视频或音频流"
-                }
-            ));
+            return Err(anyhow!("输入文件中未找到音频流"));
         }
 
         output
@@ -1207,8 +1230,7 @@ impl VideoToolEngine {
         let input_duration = input.duration() as f64 / 1_000_000.0;
 
         for (stream, mut packet) in input.packets() {
-            let in_idx = stream.index();
-            let out_idx = match stream_mapping.get(in_idx).and_then(|m| *m) {
+            let out_idx = match stream_mapping.get(stream.index()).and_then(|m| *m) {
                 Some(idx) => idx,
                 None => continue,
             };
@@ -1216,9 +1238,7 @@ impl VideoToolEngine {
             let out_st = output
                 .stream(out_idx)
                 .ok_or_else(|| anyhow!("输出流索引越界"))?;
-            let in_tb = stream.time_base();
-            let out_tb = out_st.time_base();
-            packet.rescale_ts(in_tb, out_tb);
+            packet.rescale_ts(stream.time_base(), out_st.time_base());
             packet.set_stream(out_idx);
             packet.set_position(-1);
 
@@ -1226,14 +1246,12 @@ impl VideoToolEngine {
                 .write_interleaved(&mut output)
                 .map_err(|e| anyhow!("写入 packet 失败: {}", e))?;
 
-            // Progress based on timestamp
             if input_duration > 0.0 {
                 let ts = stream.time_base();
                 let pts = packet.pts().unwrap_or(0) as f64 * ts.0 as f64 / ts.1 as f64;
                 let progress = (pts / input_duration).min(0.95) as f32;
-
                 progress_cb(VideoToolProgress {
-                    task_id: task_id.clone(),
+                    task_id: task_id.to_string(),
                     progress,
                     current_step: "converting".to_string(),
                     elapsed_ms: start.elapsed().as_millis() as u64,
@@ -1250,14 +1268,181 @@ impl VideoToolEngine {
             .unwrap_or(0);
 
         progress_cb(VideoToolProgress {
-            task_id: task_id.clone(),
+            task_id: task_id.to_string(),
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
         });
 
         log_cb(VideoToolLog {
-            task_id: task_id.clone(),
+            task_id: task_id.to_string(),
+            level: "info".to_string(),
+            message: format!(
+                "音频提取完成，文件大小 {}，耗时 {:.1} 秒",
+                Self::format_size(file_size),
+                start.elapsed().as_secs_f64()
+            ),
+            timestamp: now_ms(),
+        });
+
+        Ok(ConvertFormatResult {
+            output_path: params.output_path.to_string_lossy().to_string(),
+            file_size_bytes: file_size,
+        })
+    }
+
+    fn convert_video_copy<P, L>(
+        params: &ConvertFormatParams,
+        task_id: &str,
+        start: Instant,
+        progress_cb: &mut P,
+        log_cb: &mut L,
+    ) -> Result<ConvertFormatResult>
+    where
+        P: FnMut(VideoToolProgress),
+        L: FnMut(VideoToolLog),
+    {
+        let now_ms = || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64
+        };
+
+        let format_str = match &params.target {
+            ConversionTarget::VideoFormat(f) => f.clone(),
+            _ => unreachable!(),
+        };
+
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "info".to_string(),
+            message: "使用流复制快速转换模式".to_string(),
+            timestamp: now_ms(),
+        });
+
+        let mut input = ffmpeg_next::format::input(&params.input_path)
+            .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
+
+        // Check codec/format compatibility before attempting stream copy
+        for stream in input.streams() {
+            if stream.parameters().medium() == ffmpeg_next::media::Type::Video {
+                let codec_id = stream.parameters().id();
+                let incompatible = match format_str.as_str() {
+                    "flv" => !matches!(
+                        codec_id,
+                        ffmpeg_next::codec::Id::FLV1
+                            | ffmpeg_next::codec::Id::H264
+                            | ffmpeg_next::codec::Id::VP6A
+                            | ffmpeg_next::codec::Id::VP6F
+                    ),
+                    "webm" => !matches!(
+                        codec_id,
+                        ffmpeg_next::codec::Id::VP8
+                            | ffmpeg_next::codec::Id::VP9
+                            | ffmpeg_next::codec::Id::AV1
+                    ),
+                    _ => false,
+                };
+                if incompatible {
+                    return Err(anyhow!(
+                        "编码 {:?} 与输出格式 {} 不兼容，需要重编码",
+                        codec_id,
+                        format_str
+                    ));
+                }
+            }
+            if stream.parameters().medium() == ffmpeg_next::media::Type::Audio {
+                let audio_codec_id = stream.parameters().id();
+                if !Self::is_audio_compatible(audio_codec_id, &format_str) {
+                    return Err(anyhow!(
+                        "音频编码 {:?} 与输出格式 {} 不兼容，需要重编码",
+                        audio_codec_id,
+                        format_str
+                    ));
+                }
+            }
+        }
+
+        let mut output = ffmpeg_next::format::output_as(&params.output_path, &format_str)
+            .map_err(|e| anyhow!("创建输出失败: {}", e))?;
+
+        let mut stream_mapping: Vec<Option<usize>> = vec![None; input.nb_streams() as usize];
+        let mut out_stream_count: usize = 0;
+
+        for stream in input.streams() {
+            let media_type = stream.parameters().medium();
+            if media_type == ffmpeg_next::media::Type::Video
+                || media_type == ffmpeg_next::media::Type::Audio
+            {
+                stream_mapping[stream.index()] = Some(out_stream_count);
+                out_stream_count += 1;
+
+                let mut out_stream = output
+                    .add_stream(None)
+                    .map_err(|e| anyhow!("添加流失败: {}", e))?;
+                out_stream.set_parameters(stream.parameters());
+                out_stream.set_time_base(stream.time_base());
+            }
+        }
+
+        if out_stream_count == 0 {
+            return Err(anyhow!("输入文件中未找到视频或音频流"));
+        }
+
+        output
+            .write_header()
+            .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
+
+        let input_duration = input.duration() as f64 / 1_000_000.0;
+
+        for (stream, mut packet) in input.packets() {
+            let out_idx = match stream_mapping.get(stream.index()).and_then(|m| *m) {
+                Some(idx) => idx,
+                None => continue,
+            };
+
+            let out_st = output
+                .stream(out_idx)
+                .ok_or_else(|| anyhow!("输出流索引越界"))?;
+            packet.rescale_ts(stream.time_base(), out_st.time_base());
+            packet.set_stream(out_idx);
+            packet.set_position(-1);
+
+            packet
+                .write_interleaved(&mut output)
+                .map_err(|e| anyhow!("写入 packet 失败: {}", e))?;
+
+            if input_duration > 0.0 {
+                let ts = stream.time_base();
+                let pts = packet.pts().unwrap_or(0) as f64 * ts.0 as f64 / ts.1 as f64;
+                let progress = (pts / input_duration).min(0.95) as f32;
+                progress_cb(VideoToolProgress {
+                    task_id: task_id.to_string(),
+                    progress,
+                    current_step: "converting".to_string(),
+                    elapsed_ms: start.elapsed().as_millis() as u64,
+                });
+            }
+        }
+
+        output
+            .write_trailer()
+            .map_err(|e| anyhow!("写入文件尾失败: {}", e))?;
+
+        let file_size = std::fs::metadata(&params.output_path)
+            .map(|m| m.len())
+            .unwrap_or(0);
+
+        progress_cb(VideoToolProgress {
+            task_id: task_id.to_string(),
+            progress: 1.0,
+            current_step: "done".to_string(),
+            elapsed_ms: start.elapsed().as_millis() as u64,
+        });
+
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
             level: "info".to_string(),
             message: format!(
                 "转换完成，文件大小 {}，耗时 {:.1} 秒",
@@ -1271,6 +1456,474 @@ impl VideoToolEngine {
             output_path: params.output_path.to_string_lossy().to_string(),
             file_size_bytes: file_size,
         })
+    }
+
+    fn convert_video_reencode<P, L>(
+        params: &ConvertFormatParams,
+        task_id: &str,
+        start: Instant,
+        progress_cb: &mut P,
+        log_cb: &mut L,
+    ) -> Result<ConvertFormatResult>
+    where
+        P: FnMut(VideoToolProgress),
+        L: FnMut(VideoToolLog),
+    {
+        let now_ms = || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64
+        };
+
+        let format_str = match &params.target {
+            ConversionTarget::VideoFormat(f) => f.clone(),
+            _ => unreachable!(),
+        };
+
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "info".to_string(),
+            message: "使用重编码转换模式".to_string(),
+            timestamp: now_ms(),
+        });
+
+        // Find a suitable video encoder for the output format
+        let codec_candidates: &[&str] = match format_str.as_str() {
+            "flv" => &["libx264", "libx264rgb", "flv", "mpeg4"],
+            "webm" => &["libvpx", "libvpx-vp9", "libx264"],
+            _ => &["libx264", "libx264rgb", "libx265", "mpeg4"],
+        };
+        let codec_name = codec_candidates
+            .iter()
+            .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
+            .copied()
+            .ok_or_else(|| {
+                anyhow!(
+                    "未找到可用的视频编码器。请确保已安装包含 libx264 的 FFmpeg。\
+                    可以从 https://ffmpeg.org/download.html 下载完整版 FFmpeg。"
+                )
+            })?;
+
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "info".to_string(),
+            message: format!("使用编码器: {}", codec_name),
+            timestamp: now_ms(),
+        });
+
+        // Open input to determine output dimensions
+        let input = ffmpeg_next::format::input(&params.input_path)
+            .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
+
+        let video_stream = input
+            .streams()
+            .best(ffmpeg_next::media::Type::Video)
+            .ok_or_else(|| anyhow!("输入文件未找到视频流"))?;
+
+        let decoder_ctx =
+            ffmpeg_next::codec::context::Context::from_parameters(video_stream.parameters())
+                .map_err(|e| anyhow!("创建解码上下文失败: {}", e))?;
+        let decoder = decoder_ctx
+            .decoder()
+            .video()
+            .map_err(|e| anyhow!("创建视频解码器失败: {}", e))?;
+
+        // Use user-specified resolution or fall back to source dimensions
+        let (target_width, target_height) = if let Some((w, h)) = params.resolution {
+            (w, h)
+        } else {
+            (decoder.width(), decoder.height())
+        };
+        let width = target_width / 2 * 2;
+        let height = target_height / 2 * 2;
+
+        // Parse user-specified video bitrate
+        let bit_rate = params
+            .video_bitrate
+            .as_deref()
+            .and_then(Self::parse_bitrate)
+            .unwrap_or_else(|| decoder.bit_rate().max(2_000_000));
+
+        // Determine audio codec compatibility
+        let mut has_audio = false;
+        let first_audio_codec = input
+            .streams()
+            .best(ffmpeg_next::media::Type::Audio)
+            .map(|s| s.parameters().id());
+        if let Some(audio_codec_id) = first_audio_codec {
+            let audio_compatible = Self::is_audio_compatible(audio_codec_id, &format_str);
+            if audio_compatible {
+                has_audio = true;
+            } else {
+                log_cb(VideoToolLog {
+                    task_id: task_id.to_string(),
+                    level: "warn".to_string(),
+                    message: format!(
+                        "音频编码 {:?} 与输出格式 {} 不兼容，将跳过音频",
+                        audio_codec_id, format_str
+                    ),
+                    timestamp: now_ms(),
+                });
+            }
+        }
+
+        // Create output
+        let mut output = ffmpeg_next::format::output_as(&params.output_path, &format_str)
+            .map_err(|e| anyhow!("创建输出失败: {}", e))?;
+
+        // Add encoded video stream
+        let codec = ffmpeg_next::codec::encoder::find_by_name(codec_name)
+            .ok_or_else(|| anyhow!("未找到编码器: {}", codec_name))?;
+        let mut out_video = output
+            .add_stream(codec)
+            .map_err(|e| anyhow!("添加视频流失败: {}", e))?;
+
+        let mut encoder_ctx =
+            ffmpeg_next::codec::context::Context::from_parameters(out_video.parameters())
+                .map_err(|e| anyhow!("创建编码上下文失败: {}", e))?
+                .encoder()
+                .video()
+                .map_err(|e| anyhow!("创建视频编码器失败: {}", e))?;
+
+        encoder_ctx.set_width(width);
+        encoder_ctx.set_height(height);
+        encoder_ctx.set_time_base(ffmpeg_next::Rational::new(1, 25));
+        encoder_ctx.set_format(ffmpeg_next::format::Pixel::YUV420P);
+        encoder_ctx.set_bit_rate(bit_rate);
+        if codec_name.starts_with("libx264") || codec_name.starts_with("libx265") {
+            encoder_ctx.set_gop(250);
+        }
+        out_video.set_time_base(ffmpeg_next::Rational::new(1, 25));
+
+        let mut encoder = encoder_ctx
+            .open_as(codec)
+            .map_err(|e| anyhow!("打开编码器失败: {}", e))?;
+        out_video.set_parameters(&encoder);
+
+        // Add audio stream if compatible
+        if has_audio {
+            let audio_stream = input
+                .streams()
+                .best(ffmpeg_next::media::Type::Audio)
+                .unwrap();
+            let audio_params = audio_stream.parameters();
+            let audio_tb = audio_stream.time_base();
+            let mut out_audio = output
+                .add_stream(None)
+                .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
+            out_audio.set_parameters(audio_params);
+            out_audio.set_time_base(audio_tb);
+        }
+
+        output
+            .write_header()
+            .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
+
+        // Re-open input for decoding (the previous handle was consumed by stream inspection)
+        let mut input = ffmpeg_next::format::input(&params.input_path)
+            .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
+
+        let video_stream = input
+            .streams()
+            .best(ffmpeg_next::media::Type::Video)
+            .ok_or_else(|| anyhow!("输入文件未找到视频流"))?;
+
+        let decoder_ctx =
+            ffmpeg_next::codec::context::Context::from_parameters(video_stream.parameters())
+                .map_err(|e| anyhow!("创建解码上下文失败: {}", e))?;
+        let mut decoder = decoder_ctx
+            .decoder()
+            .video()
+            .map_err(|e| anyhow!("创建视频解码器失败: {}", e))?;
+
+        // 计算保持宽高比的缩放尺寸
+        let (scaled_width, scaled_height) =
+            Self::calculate_aspect_ratio_resize(decoder.width(), decoder.height(), width, height);
+
+        let needs_padding = scaled_width != width || scaled_height != height;
+        let x_offset = if needs_padding { (width - scaled_width) / 2 } else { 0 };
+        let y_offset = if needs_padding { (height - scaled_height) / 2 } else { 0 };
+
+        let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
+            decoder.format(),
+            decoder.width(),
+            decoder.height(),
+            ffmpeg_next::format::Pixel::YUV420P,
+            scaled_width,
+            scaled_height,
+            ffmpeg_next::software::scaling::Flags::BILINEAR,
+        )
+        .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
+
+        if needs_padding {
+            log_cb(VideoToolLog {
+                task_id: task_id.to_string(),
+                level: "info".to_string(),
+                message: format!(
+                    "视频分辨率 {}x{} 与目标 {}x{} 不同，保持宽高比缩放至 {}x{} 并添加黑边",
+                    decoder.width(),
+                    decoder.height(),
+                    width,
+                    height,
+                    scaled_width,
+                    scaled_height
+                ),
+                timestamp: now_ms(),
+            });
+        }
+
+        let enc_tb = ffmpeg_next::Rational::new(1, 25);
+        let mut frame_count: u64 = 0;
+
+        // Helper: encode a single frame and write packets
+        let encode_and_write =
+            |encoder: &mut ffmpeg_next::codec::encoder::video::Encoder,
+             frame: Option<&ffmpeg_next::frame::Video>,
+             output: &mut ffmpeg_next::format::context::Output|
+             -> Result<()> {
+                if let Some(f) = frame {
+                    encoder
+                        .send_frame(f)
+                        .map_err(|e| anyhow!("发送帧到编码器失败: {}", e))?;
+                } else {
+                    encoder
+                        .send_eof()
+                        .map_err(|e| anyhow!("发送 EOF 到编码器失败: {}", e))?;
+                }
+                let mut encoded_packet = ffmpeg_next::Packet::empty();
+                while encoder.receive_packet(&mut encoded_packet).is_ok() {
+                    encoded_packet.set_stream(0);
+                    encoded_packet.rescale_ts(enc_tb, output.stream(0).unwrap().time_base());
+                    encoded_packet
+                        .write_interleaved(output)
+                        .map_err(|e| anyhow!("写入视频 packet 失败: {}", e))?;
+                }
+                Ok(())
+            };
+
+        // Helper: scale and pad a decoded frame
+        let scale_and_pad =
+            |decoded: &ffmpeg_next::frame::Video,
+             sws_ctx: &mut ffmpeg_next::software::scaling::Context,
+             width: u32,
+             height: u32,
+             scaled_width: u32,
+             scaled_height: u32,
+             x_offset: u32,
+             y_offset: u32,
+             needs_padding: bool|
+             -> Result<ffmpeg_next::util::frame::video::Video> {
+                let mut yuv_frame = ffmpeg_next::util::frame::video::Video::new(
+                    ffmpeg_next::format::Pixel::YUV420P,
+                    width,
+                    height,
+                );
+
+                if needs_padding {
+                    let mut scaled_frame = ffmpeg_next::util::frame::video::Video::new(
+                        ffmpeg_next::format::Pixel::YUV420P,
+                        scaled_width,
+                        scaled_height,
+                    );
+                    sws_ctx
+                        .run(decoded, &mut scaled_frame)
+                        .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+
+                    let src_y_linesize = scaled_frame.stride(0);
+                    let src_u_linesize = scaled_frame.stride(1);
+                    let src_v_linesize = scaled_frame.stride(2);
+                    let dst_y_linesize = yuv_frame.stride(0);
+                    let dst_u_linesize = yuv_frame.stride(1);
+                    let dst_v_linesize = yuv_frame.stride(2);
+
+                    // Fill with black
+                    for row in 0..height as usize {
+                        let dst_start = row * dst_y_linesize;
+                        yuv_frame.data_mut(0)[dst_start..dst_start + width as usize].fill(0);
+                    }
+                    for row in 0..(height / 2) as usize {
+                        let dst_start = row * dst_u_linesize;
+                        yuv_frame.data_mut(1)[dst_start..dst_start + (width / 2) as usize]
+                            .fill(128);
+                    }
+                    for row in 0..(height / 2) as usize {
+                        let dst_start = row * dst_v_linesize;
+                        yuv_frame.data_mut(2)[dst_start..dst_start + (width / 2) as usize]
+                            .fill(128);
+                    }
+
+                    // Copy Y plane
+                    for row in 0..scaled_height as usize {
+                        let src_start = row * src_y_linesize;
+                        let dst_start =
+                            (row + y_offset as usize) * dst_y_linesize + x_offset as usize;
+                        let src_row = &scaled_frame.data(0)
+                            [src_start..src_start + scaled_width as usize];
+                        let dst_row = &mut yuv_frame.data_mut(0)
+                            [dst_start..dst_start + scaled_width as usize];
+                        dst_row.copy_from_slice(src_row);
+                    }
+
+                    // Copy U plane
+                    for row in 0..(scaled_height / 2) as usize {
+                        let src_start = row * src_u_linesize;
+                        let dst_start = (row + (y_offset / 2) as usize) * dst_u_linesize
+                            + (x_offset / 2) as usize;
+                        let src_row = &scaled_frame.data(1)
+                            [src_start..src_start + (scaled_width / 2) as usize];
+                        let dst_row = &mut yuv_frame.data_mut(1)
+                            [dst_start..dst_start + (scaled_width / 2) as usize];
+                        dst_row.copy_from_slice(src_row);
+                    }
+
+                    // Copy V plane
+                    for row in 0..(scaled_height / 2) as usize {
+                        let src_start = row * src_v_linesize;
+                        let dst_start = (row + (y_offset / 2) as usize) * dst_v_linesize
+                            + (x_offset / 2) as usize;
+                        let src_row = &scaled_frame.data(2)
+                            [src_start..src_start + (scaled_width / 2) as usize];
+                        let dst_row = &mut yuv_frame.data_mut(2)
+                            [dst_start..dst_start + (scaled_width / 2) as usize];
+                        dst_row.copy_from_slice(src_row);
+                    }
+                } else {
+                    sws_ctx
+                        .run(decoded, &mut yuv_frame)
+                        .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+                }
+
+                Ok(yuv_frame)
+            };
+
+        // Collect audio packets for remuxing
+        let mut audio_packets: Vec<(ffmpeg_next::Packet, ffmpeg_next::Rational)> = Vec::new();
+
+        for (stream, packet) in input.packets() {
+            let media_type = stream.parameters().medium();
+
+            if media_type == ffmpeg_next::media::Type::Video {
+                decoder
+                    .send_packet(&packet)
+                    .map_err(|e| anyhow!("发送 packet 到解码器失败: {}", e))?;
+
+                let mut decoded = ffmpeg_next::frame::Video::empty();
+                while decoder.receive_frame(&mut decoded).is_ok() {
+                    let yuv_frame = scale_and_pad(
+                        &decoded,
+                        &mut sws_ctx,
+                        width,
+                        height,
+                        scaled_width,
+                        scaled_height,
+                        x_offset,
+                        y_offset,
+                        needs_padding,
+                    )?;
+
+                    let mut frame = yuv_frame;
+                    frame.set_pts(Some(frame_count as i64));
+                    frame_count += 1;
+
+                    encode_and_write(&mut encoder, Some(&frame), &mut output)?;
+                }
+            } else if media_type == ffmpeg_next::media::Type::Audio && has_audio {
+                let audio_compatible =
+                    Self::is_audio_compatible(stream.parameters().id(), &format_str);
+                if audio_compatible {
+                    audio_packets.push((packet, stream.time_base()));
+                }
+            }
+        }
+
+        // Flush decoder
+        decoder.send_eof().ok();
+        let mut decoded = ffmpeg_next::frame::Video::empty();
+        while decoder.receive_frame(&mut decoded).is_ok() {
+            let yuv_frame = scale_and_pad(
+                &decoded,
+                &mut sws_ctx,
+                width,
+                height,
+                scaled_width,
+                scaled_height,
+                x_offset,
+                y_offset,
+                needs_padding,
+            )?;
+
+            let mut frame = yuv_frame;
+            frame.set_pts(Some(frame_count as i64));
+            frame_count += 1;
+
+            encode_and_write(&mut encoder, Some(&frame), &mut output)?;
+        }
+
+        // Flush encoder
+        encode_and_write(&mut encoder, None, &mut output)?;
+
+        // Remux collected audio packets
+        if has_audio {
+            for (mut packet, in_tb) in audio_packets.drain(..) {
+                packet.set_stream(1);
+                let out_tb = output.stream(1).unwrap().time_base();
+                packet.rescale_ts(in_tb, out_tb);
+                packet.set_position(-1);
+                packet
+                    .write_interleaved(&mut output)
+                    .map_err(|e| anyhow!("写入音频 packet 失败: {}", e))?;
+            }
+        }
+
+        output
+            .write_trailer()
+            .map_err(|e| anyhow!("写入文件尾失败: {}", e))?;
+
+        let file_size = std::fs::metadata(&params.output_path)
+            .map(|m| m.len())
+            .unwrap_or(0);
+
+        progress_cb(VideoToolProgress {
+            task_id: task_id.to_string(),
+            progress: 1.0,
+            current_step: "done".to_string(),
+            elapsed_ms: start.elapsed().as_millis() as u64,
+        });
+
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "info".to_string(),
+            message: format!(
+                "转换完成，共编码 {} 帧，文件大小 {}，耗时 {:.1} 秒",
+                frame_count,
+                Self::format_size(file_size),
+                start.elapsed().as_secs_f64()
+            ),
+            timestamp: now_ms(),
+        });
+
+        Ok(ConvertFormatResult {
+            output_path: params.output_path.to_string_lossy().to_string(),
+            file_size_bytes: file_size,
+        })
+    }
+
+    /// Parse a bitrate string like "5M", "2000k", "1500000" to bits/sec
+    fn parse_bitrate(s: &str) -> Option<usize> {
+        let s = s.trim();
+        if s.is_empty() {
+            return None;
+        }
+        let (num_str, multiplier) = if let Some(n) = s.strip_suffix('M').or_else(|| s.strip_suffix('m')) {
+            (n, 1_000_000)
+        } else if let Some(n) = s.strip_suffix('K').or_else(|| s.strip_suffix('k')) {
+            (n, 1_000)
+        } else {
+            (s, 1)
+        };
+        let value: f64 = num_str.parse().ok()?;
+        Some((value * multiplier as f64) as usize)
     }
 
     pub fn check_encoder_availability() -> Vec<(&'static str, bool)> {
