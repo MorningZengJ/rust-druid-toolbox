@@ -75,7 +75,8 @@
       "Bash(curl -L -o \"C:/Users/zengc/Workspace/RustroverProjects/druid-toolbox/src-tauri/fonts/DejaVuSansMono.ttf\" \"https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSansMono.ttf\")",
       "Bash(grep -v -E '^\\\\.$|^\\\\.\\\\.$')",
       "Bash(npx tsc *)",
-      "Bash(ffmpeg -encoders)"
+      "Bash(ffmpeg -encoders)",
+      "Bash(find /c/Users/zengc/.cargo/registry/src -path \"*/ffmpeg-sys*/src/consts.rs\" -o -path \"*/ffmpeg-next*/codec/id.rs\" 2>/dev/null | head -5)"
     ]
   }
 }

@@ -323,51 +323,53 @@ function MergePanel() {
                   添加
                 </Button>
               </div>
-              <div className="space-y-1">
-                {mergeInputPaths.map((path, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs"
-                  >
-                    <span className="flex-1 truncate">
-                      {path.split(/[/\\]/).pop()}
-                    </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-5 w-5 shrink-0"
-                      onClick={() => i > 0 && moveFile(i, i - 1)}
-                      disabled={i === 0}
+              <ScrollArea className="max-h-[240px]">
+                <div className="space-y-1 pr-3">
+                  {mergeInputPaths.map((path, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs"
                     >
-                      ↑
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-5 w-5 shrink-0"
-                      onClick={() =>
-                        i < mergeInputPaths.length - 1 && moveFile(i, i + 1)
-                      }
-                      disabled={i === mergeInputPaths.length - 1}
-                    >
-                      ↓
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-5 w-5 shrink-0 text-destructive"
-                      onClick={() => removeFile(i)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                {mergeInputPaths.length === 0 && (
-                  <div className="rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground">
-                    拖拽视频文件到此处，或点击"添加"
-                  </div>
-                )}
-              </div>
+                      <span className="flex-1 truncate">
+                        {path.split(/[/\\]/).pop()}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5 shrink-0"
+                        onClick={() => i > 0 && moveFile(i, i - 1)}
+                        disabled={i === 0}
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5 shrink-0"
+                        onClick={() =>
+                          i < mergeInputPaths.length - 1 && moveFile(i, i + 1)
+                        }
+                        disabled={i === mergeInputPaths.length - 1}
+                      >
+                        ↓
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5 shrink-0 text-destructive"
+                        onClick={() => removeFile(i)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {mergeInputPaths.length === 0 && (
+                    <div className="rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground">
+                      拖拽视频文件到此处，或点击"添加"
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
 
             <div>
