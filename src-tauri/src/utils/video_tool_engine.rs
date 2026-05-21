@@ -5,6 +5,34 @@ use std::time::Instant;
 pub struct VideoToolEngine;
 
 impl VideoToolEngine {
+    /// 计算保持宽高比的缩放尺寸，返回 (缩放后宽度, 缩放后高度)
+    fn calculate_aspect_ratio_resize(
+        src_width: u32,
+        src_height: u32,
+        target_width: u32,
+        target_height: u32,
+    ) -> (u32, u32) {
+        if src_width == 0 || src_height == 0 {
+            return (target_width, target_height);
+        }
+
+        let src_ratio = src_width as f64 / src_height as f64;
+        let target_ratio = target_width as f64 / target_height as f64;
+
+        let (scaled_width, scaled_height) = if src_ratio > target_ratio {
+            // 源视频更宽，以目标宽度为基准
+            let scaled_height = (target_width as f64 / src_ratio) as u32;
+            (target_width, scaled_height.max(1))
+        } else {
+            // 源视频更高，以目标高度为基准
+            let scaled_width = (target_height as f64 * src_ratio) as u32;
+            (scaled_width.max(1), target_height)
+        };
+
+        // 确保宽高为偶数（视频编码要求）
+        (scaled_width / 2 * 2, scaled_height / 2 * 2)
+    }
+
     pub fn merge_videos<P, L>(
         params: &MergeVideosParams,
         mut progress_cb: P,
@@ -485,17 +513,49 @@ impl VideoToolEngine {
                 .video()
                 .map_err(|e| anyhow!("创建视频解码器失败: {}", e))?;
 
+            // 计算保持宽高比的缩放尺寸
+            let (scaled_width, scaled_height) = Self::calculate_aspect_ratio_resize(
+                decoder.width(),
+                decoder.height(),
+                width,
+                height,
+            );
+
+            // 判断是否需要添加黑边（当缩放后的尺寸与目标尺寸不同时）
+            let needs_padding = scaled_width != width || scaled_height != height;
+            let x_offset = if needs_padding { (width - scaled_width) / 2 } else { 0 };
+            let y_offset = if needs_padding { (height - scaled_height) / 2 } else { 0 };
+
             // Create SwsContext for this file's pixel format
+            // 如果需要添加黑边，先缩放到保持宽高比的尺寸
             let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
                 decoder.format(),
                 decoder.width(),
                 decoder.height(),
                 ffmpeg_next::format::Pixel::YUV420P,
-                width,
-                height,
+                scaled_width,
+                scaled_height,
                 ffmpeg_next::software::scaling::Flags::BILINEAR,
             )
             .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
+
+            if needs_padding {
+                log_cb(VideoToolLog {
+                    task_id: task_id.to_string(),
+                    level: "info".to_string(),
+                    message: format!(
+                        "视频 {} 分辨率 {}x{} 与目标 {}x{} 不同，保持宽高比缩放至 {}x{} 并添加黑边",
+                        input_path.display(),
+                        decoder.width(),
+                        decoder.height(),
+                        width,
+                        height,
+                        scaled_width,
+                        scaled_height
+                    ),
+                    timestamp: now_ms(),
+                });
+            }
 
             // Collect audio packets separately for remuxing
             let mut audio_packets: Vec<(ffmpeg_next::Packet, ffmpeg_next::Rational)> =
@@ -516,9 +576,75 @@ impl VideoToolEngine {
                             width,
                             height,
                         );
-                        sws_ctx
-                            .run(&decoded, &mut yuv_frame)
-                            .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+
+                        if needs_padding {
+                            // 创建中间帧用于缩放（保持宽高比）
+                            let mut scaled_frame = ffmpeg_next::util::frame::video::Video::new(
+                                ffmpeg_next::format::Pixel::YUV420P,
+                                scaled_width,
+                                scaled_height,
+                            );
+                            sws_ctx
+                                .run(&decoded, &mut scaled_frame)
+                                .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+
+                            // 获取行间距（linesize），FFmpeg 可能在每行末尾有填充字节
+                            let src_y_linesize = scaled_frame.stride(0);
+                            let src_u_linesize = scaled_frame.stride(1);
+                            let src_v_linesize = scaled_frame.stride(2);
+                            let dst_y_linesize = yuv_frame.stride(0);
+                            let dst_u_linesize = yuv_frame.stride(1);
+                            let dst_v_linesize = yuv_frame.stride(2);
+
+                            // 填充黑边（YUV420P 中 Y=0 为黑色，U=128, V=128）
+                            // 先将整个帧填充为黑色
+                            for row in 0..height as usize {
+                                let dst_start = row * dst_y_linesize;
+                                yuv_frame.data_mut(0)[dst_start..dst_start + width as usize].fill(0);
+                            }
+                            for row in 0..(height / 2) as usize {
+                                let dst_start = row * dst_u_linesize;
+                                yuv_frame.data_mut(1)[dst_start..dst_start + (width / 2) as usize].fill(128);
+                            }
+                            for row in 0..(height / 2) as usize {
+                                let dst_start = row * dst_v_linesize;
+                                yuv_frame.data_mut(2)[dst_start..dst_start + (width / 2) as usize].fill(128);
+                            }
+
+                            // 将缩放后的帧复制到目标帧的正确位置
+                            // 复制 Y 平面
+                            for row in 0..scaled_height as usize {
+                                let src_start = row * src_y_linesize;
+                                let dst_start = (row + y_offset as usize) * dst_y_linesize + x_offset as usize;
+                                let src_row = &scaled_frame.data(0)[src_start..src_start + scaled_width as usize];
+                                let dst_row = &mut yuv_frame.data_mut(0)[dst_start..dst_start + scaled_width as usize];
+                                dst_row.copy_from_slice(src_row);
+                            }
+
+                            // 复制 U 平面
+                            for row in 0..(scaled_height / 2) as usize {
+                                let src_start = row * src_u_linesize;
+                                let dst_start = (row + (y_offset / 2) as usize) * dst_u_linesize + (x_offset / 2) as usize;
+                                let src_row = &scaled_frame.data(1)[src_start..src_start + (scaled_width / 2) as usize];
+                                let dst_row = &mut yuv_frame.data_mut(1)[dst_start..dst_start + (scaled_width / 2) as usize];
+                                dst_row.copy_from_slice(src_row);
+                            }
+
+                            // 复制 V 平面
+                            for row in 0..(scaled_height / 2) as usize {
+                                let src_start = row * src_v_linesize;
+                                let dst_start = (row + (y_offset / 2) as usize) * dst_v_linesize + (x_offset / 2) as usize;
+                                let src_row = &scaled_frame.data(2)[src_start..src_start + (scaled_width / 2) as usize];
+                                let dst_row = &mut yuv_frame.data_mut(2)[dst_start..dst_start + (scaled_width / 2) as usize];
+                                dst_row.copy_from_slice(src_row);
+                            }
+                        } else {
+                            // 不需要添加黑边，直接缩放
+                            sws_ctx
+                                .run(&decoded, &mut yuv_frame)
+                                .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+                        }
+
                         yuv_frame.set_pts(Some(frame_count as i64));
                         frame_count += 1;
 
@@ -543,9 +669,75 @@ impl VideoToolEngine {
                     width,
                     height,
                 );
-                sws_ctx
-                    .run(&decoded, &mut yuv_frame)
-                    .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+
+                if needs_padding {
+                    // 创建中间帧用于缩放（保持宽高比）
+                    let mut scaled_frame = ffmpeg_next::util::frame::video::Video::new(
+                        ffmpeg_next::format::Pixel::YUV420P,
+                        scaled_width,
+                        scaled_height,
+                    );
+                    sws_ctx
+                        .run(&decoded, &mut scaled_frame)
+                        .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+
+                    // 获取行间距（linesize），FFmpeg 可能在每行末尾有填充字节
+                    let src_y_linesize = scaled_frame.stride(0);
+                    let src_u_linesize = scaled_frame.stride(1);
+                    let src_v_linesize = scaled_frame.stride(2);
+                    let dst_y_linesize = yuv_frame.stride(0);
+                    let dst_u_linesize = yuv_frame.stride(1);
+                    let dst_v_linesize = yuv_frame.stride(2);
+
+                    // 填充黑边（YUV420P 中 Y=0 为黑色，U=128, V=128）
+                    // 先将整个帧填充为黑色
+                    for row in 0..height as usize {
+                        let dst_start = row * dst_y_linesize;
+                        yuv_frame.data_mut(0)[dst_start..dst_start + width as usize].fill(0);
+                    }
+                    for row in 0..(height / 2) as usize {
+                        let dst_start = row * dst_u_linesize;
+                        yuv_frame.data_mut(1)[dst_start..dst_start + (width / 2) as usize].fill(128);
+                    }
+                    for row in 0..(height / 2) as usize {
+                        let dst_start = row * dst_v_linesize;
+                        yuv_frame.data_mut(2)[dst_start..dst_start + (width / 2) as usize].fill(128);
+                    }
+
+                    // 将缩放后的帧复制到目标帧的正确位置
+                    // 复制 Y 平面
+                    for row in 0..scaled_height as usize {
+                        let src_start = row * src_y_linesize;
+                        let dst_start = (row + y_offset as usize) * dst_y_linesize + x_offset as usize;
+                        let src_row = &scaled_frame.data(0)[src_start..src_start + scaled_width as usize];
+                        let dst_row = &mut yuv_frame.data_mut(0)[dst_start..dst_start + scaled_width as usize];
+                        dst_row.copy_from_slice(src_row);
+                    }
+
+                    // 复制 U 平面
+                    for row in 0..(scaled_height / 2) as usize {
+                        let src_start = row * src_u_linesize;
+                        let dst_start = (row + (y_offset / 2) as usize) * dst_u_linesize + (x_offset / 2) as usize;
+                        let src_row = &scaled_frame.data(1)[src_start..src_start + (scaled_width / 2) as usize];
+                        let dst_row = &mut yuv_frame.data_mut(1)[dst_start..dst_start + (scaled_width / 2) as usize];
+                        dst_row.copy_from_slice(src_row);
+                    }
+
+                    // 复制 V 平面
+                    for row in 0..(scaled_height / 2) as usize {
+                        let src_start = row * src_v_linesize;
+                        let dst_start = (row + (y_offset / 2) as usize) * dst_v_linesize + (x_offset / 2) as usize;
+                        let src_row = &scaled_frame.data(2)[src_start..src_start + (scaled_width / 2) as usize];
+                        let dst_row = &mut yuv_frame.data_mut(2)[dst_start..dst_start + (scaled_width / 2) as usize];
+                        dst_row.copy_from_slice(src_row);
+                    }
+                } else {
+                    // 不需要添加黑边，直接缩放
+                    sws_ctx
+                        .run(&decoded, &mut yuv_frame)
+                        .map_err(|e| anyhow!("颜色空间转换失败: {}", e))?;
+                }
+
                 yuv_frame.set_pts(Some(frame_count as i64));
                 frame_count += 1;
 
