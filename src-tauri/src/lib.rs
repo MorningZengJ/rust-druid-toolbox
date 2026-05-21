@@ -58,6 +58,7 @@ pub fn run() {
         commands::video_tool::merge_videos,
         commands::video_tool::images_to_video,
         commands::video_tool::convert_format,
+        commands::video_utils::list_images_in_folder,
     ]);
 
     #[cfg(all(feature = "video-frame", not(feature = "live-record")))]
@@ -88,6 +89,7 @@ pub fn run() {
         commands::video_tool::merge_videos,
         commands::video_tool::images_to_video,
         commands::video_tool::convert_format,
+        commands::video_utils::list_images_in_folder,
     ]);
 
     #[cfg(all(not(feature = "video-frame"), feature = "live-record"))]
@@ -111,6 +113,8 @@ pub fn run() {
         commands::live_record::start_recording,
         commands::live_record::stop_recording,
         commands::live_record::list_recordings,
+        // Video tool commands
+        commands::video_utils::list_images_in_folder,
     ]);
 
     #[cfg(not(any(feature = "video-frame", feature = "live-record")))]
@@ -130,6 +134,8 @@ pub fn run() {
         commands::ascii_art::export_ascii_art,
         commands::ascii_art::write_binary_file,
         commands::ascii_art::cleanup_ascii_art_file,
+        // Video tool commands
+        commands::video_utils::list_images_in_folder,
     ]);
 
     builder

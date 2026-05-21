@@ -6,3 +6,4 @@ pub mod rename;
 pub mod video_frame;
 #[cfg(feature = "video-frame")]
 pub mod video_tool;
+pub mod video_utils;

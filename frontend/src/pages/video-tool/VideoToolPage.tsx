@@ -43,7 +43,6 @@ const AUDIO_FORMATS = ["mp3", "aac", "wav", "flac", "ogg", "opus"];
 const AUDIO_BITRATES = ["128k", "192k", "256k", "320k"];
 
 const VIDEO_EXTENSIONS = ["mp4", "mkv", "avi", "webm", "mov", "flv", "ts"];
-const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "bmp", "gif", "webp"];
 const MEDIA_EXTENSIONS = [
   "mp4", "mkv", "avi", "webm", "mov", "flv", "ts",
   "mp3", "aac", "wav", "flac", "ogg", "opus",
@@ -451,6 +450,7 @@ function MergePanel() {
 }
 
 function ImagesPanel() {
+  const imagesFolderPath = useVideoToolStore((s) => s.imagesFolderPath);
   const imagesInputPaths = useVideoToolStore((s) => s.imagesInputPaths);
   const imagesOutputPath = useVideoToolStore((s) => s.imagesOutputPath);
   const imagesFps = useVideoToolStore((s) => s.imagesFps);
@@ -458,7 +458,7 @@ function ImagesPanel() {
   const imagesResolution = useVideoToolStore((s) => s.imagesResolution);
   const imagesAudioPath = useVideoToolStore((s) => s.imagesAudioPath);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
-  const setImagesInputPaths = useVideoToolStore((s) => s.setImagesInputPaths);
+  const loadImagesFromFolder = useVideoToolStore((s) => s.loadImagesFromFolder);
   const setImagesOutputPath = useVideoToolStore((s) => s.setImagesOutputPath);
   const setImagesFps = useVideoToolStore((s) => s.setImagesFps);
   const setImagesOutputFormat = useVideoToolStore((s) => s.setImagesOutputFormat);
@@ -475,39 +475,20 @@ function ImagesPanel() {
         setIsDragOver(false);
       } else if (event.payload.type === "drop") {
         setIsDragOver(false);
-        const imageFiles = event.payload.paths.filter((p) => {
-          const ext = p.split(".").pop()?.toLowerCase() ?? "";
-          return IMAGE_EXTENSIONS.includes(ext);
-        });
-        if (imageFiles.length > 0) {
-          setImagesInputPaths([...imagesInputPaths, ...imageFiles]);
+        // 拖拽文件夹：取第一个路径
+        const droppedPath = event.payload.paths[0];
+        if (droppedPath) {
+          loadImagesFromFolder(droppedPath);
         }
       }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [imagesInputPaths, setImagesInputPaths]);
+  }, [loadImagesFromFolder]);
 
-  const addImages = async () => {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    const selected = await open({
-      multiple: true,
-      filters: [
-        {
-          name: "图片文件",
-          extensions: IMAGE_EXTENSIONS,
-        },
-      ],
-    });
-    if (selected) {
-      const paths = Array.isArray(selected) ? selected : [selected];
-      setImagesInputPaths([...imagesInputPaths, ...paths]);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImagesInputPaths(imagesInputPaths.filter((_, i) => i !== index));
+  const selectFolder = async () => {
+    await loadImagesFromFolder();
   };
 
   const selectAudio = async () => {
@@ -549,34 +530,34 @@ function ImagesPanel() {
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm font-medium">图片列表 ({imagesInputPaths.length})</label>
-                <Button size="sm" variant="outline" onClick={addImages}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  添加
-                </Button>
-              </div>
-              <div className="grid max-h-[200px] grid-cols-3 gap-1 overflow-auto">
-                {imagesInputPaths.map((path, i) => (
-                  <div key={i} className="group relative">
-                    <img
-                      src={convertFileSrc(path)}
-                      alt=""
-                      className="h-16 w-full rounded object-cover"
-                    />
+              <label className="text-sm font-medium">图片文件夹</label>
+              <div className="mt-1">
+                {imagesFolderPath ? (
+                  <div className="rounded-md border border-border bg-muted/30 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-xs truncate flex-1" title={imagesFolderPath}>
+                        {imagesFolderPath.split(/[/\\]/).pop() || imagesFolderPath}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      已加载 {imagesInputPaths.length} 张图片
+                    </div>
                     <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute right-0 top-0 h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() => removeImage(i)}
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 w-full"
+                      onClick={selectFolder}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      更换文件夹
                     </Button>
                   </div>
-                ))}
-                {imagesInputPaths.length === 0 && (
-                  <div className="col-span-3 rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground">
-                    拖拽图片到此处，或点击"添加"
+                ) : (
+                  <div
+                    className="rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                    onClick={selectFolder}
+                  >
+                    拖拽文件夹到此处，或点击选择
                   </div>
                 )}
               </div>

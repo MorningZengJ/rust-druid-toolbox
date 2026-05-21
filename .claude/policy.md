@@ -29,7 +29,7 @@
 - **IPC 模型**: 所有跨 IPC 结构必须 derive Serialize + Deserialize + `#[serde(rename_all = "camelCase")]`
 - **异步命令**: CPU 密集操作使用 `tokio::task::spawn_blocking`
 - **错误处理**: Tauri 命令返回 `Result<T, String>` 或直接返回值
-- **条件编译**: 视频帧功能通过 `#[cfg(feature = "video-frame")]` 控制，相关模块（commands/video_frame、model/video_frame_state、utils/video_frame_engine）均需 feature gate
+- **条件编译**: 视频帧/视频工具功能通过 `#[cfg(feature = "video-frame")]` 控制，直播录制通过 `#[cfg(feature = "live-record")]` 控制
 
 ### shadcn/ui 组件
 

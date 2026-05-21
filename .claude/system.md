@@ -13,12 +13,14 @@
 
 ## 用途
 
-Windows 桌面工具箱应用，中文界面。包含三个主要功能模块：
+Windows 桌面工具箱应用，中文界面。包含六个主要功能模块：
 
 1. **批量文件重命名**：选择目录、过滤文件、定义替换规则、预览并执行重命名
 2. **字符画生成**：将图片转换为 ASCII 字符画，支持多种颜色模式和参数调节
 3. **视频抽帧**：从视频中提取帧图片，支持多种提取模式和输出格式
 4. **直播录制**：录制直播流（HLS/RTMP/RTSP/HTTP），支持多任务并发、实时预览、流复制、分段录制
+5. **视频工具**：视频合并、图片序列转视频、格式转换（视频/音频），支持流复制和重编码两阶段策略
+6. **设置**：主题切换、自定义主色
 
 ## 项目结构
 
@@ -41,6 +43,7 @@ frontend/                    # React 前端
       asciiArtStore.ts       # 字符画页 Zustand store
       videoFrameStore.ts     # 视频抽帧页 Zustand store
       liveRecordStore.ts     # 直播录制页 Zustand store（多任务管理、事件监听）
+      videoToolStore.ts      # 视频工具页 Zustand store（合并/转视频/格式转换）
     components/
       FileIcon.tsx           # 文件类型图标组件
       ui/                    # shadcn/ui 组件（16 个）
@@ -52,6 +55,8 @@ frontend/                    # React 前端
         VideoFramePage.tsx   # 视频抽帧页面（左侧参数 + 右侧帧网格）
       live-record/
         LiveRecordPage.tsx   # 直播录制页面（左侧表单/任务列表 + 右侧实时预览）
+      video-tool/
+        VideoToolPage.tsx    # 视频工具页面（合并/图片转视频/格式转换三个 Tab）
       settings/
         SettingsPage.tsx     # 设置页（主题切换 + 自定义主色）
 
@@ -60,28 +65,32 @@ src-tauri/                   # Tauri 后端（Rust）
     main.rs                  # Windows subsystem 入口，调用 lib::run()
     lib.rs                   # Tauri Builder，注册插件和所有命令
     commands/
-      mod.rs                 # 模块声明（video_frame 有 feature gate）
+      mod.rs                 # 模块声明（video_frame/video_tool/live_record 有 feature gate）
       rename.rs              # 7 个命令：list_files/preview_renames/detect_conflicts/execute_renames/validate_regex/apply_rule_template/parent_path
       ascii_art.rs           # 6 个命令：convert_ascii_art_from_path/save_temp_image_and_convert/load_image_from_file/write_binary_file/export_ascii_art/cleanup_ascii_art_file
       video_frame.rs         # 5 个命令：check_ffmpeg/probe_video/extract_frames/start_frame_watcher/stop_frame_watcher
       live_record.rs         # 3 个命令：start_recording/stop_recording/list_recordings（feature-gated: live-record）
+      video_tool.rs          # 4 个命令：check_video_encoders/merge_videos/images_to_video/convert_format（feature-gated: video-frame）
+      video_utils.rs         # 1 个命令：list_images_in_folder（无 feature gate）
     model/
-      mod.rs                 # 模块声明（video_frame_state 有 feature gate）
+      mod.rs                 # 模块声明（video_frame_state/video_tool_state/live_record_state 有 feature gate）
       file_info.rs           # FileInfo（name/path/parent_path/is_dir/extension/size/created_time/modified_time）
       replace_info.rs        # ReplaceInfo（id/content/target/enable/is_regex/is_error）
       rename_result.rs       # RenameResult + RenameError
       rule_template.rs       # RuleTemplate 枚举（6 变体）
       ascii_art_state.rs     # AsciiArtParams/AsciiArtOutput/CharsetPreset/ColorMode/Background/RenderMode/CharColor
       video_frame_state.rs   # VideoInfo/ExtractedFrame/ExtractParams/ExtractMode/OutputFormat/ProgressInfo/LogEntry（feature-gated: video-frame）
+      video_tool_state.rs    # MergeVideosParams/Result, ImagesToVideoParams/Result, ConvertFormatParams/Result, VideoToolProgress/Log（feature-gated: video-frame）
       live_record_state.rs   # RecordingStatus/ContainerFormat/RecordParams/RecordProgressInfo/PreviewFrame/RecordingTaskInfo（feature-gated: live-record）
     utils/
-      mod.rs                 # 模块声明（video_frame_engine 有 feature gate）
+      mod.rs                 # 模块声明（video_frame_engine/video_tool_engine/live_record_engine 有 feature gate）
       common_utils.rs        # CommonUtils: parent_path()/join_path()
       font_renderer.rs       # 字体渲染（私有模块，用于 ASCII art PNG 导出，依赖 ab_glyph）
       file_utils.rs          # FileUtils: list_files()/format_size()
       rename_logic.rs        # apply_replace_rules()/validate_regex()，含 8 个单元测试
       ascii_art_engine.rs    # AsciiArtEngine: convert_from_image()，支持 PNG/SVG/Canvas 输出模式
       video_frame_engine.rs  # VideoFrameEngine: check_ffmpeg/probe_video/extract_frames（含进度/日志/帧回调，feature-gated: video-frame）
+      video_tool_engine.rs   # VideoToolEngine: merge_videos/images_to_video/convert_format（含流复制/重编码/宽高比缩放/黑边填充，feature-gated: video-frame）
       live_record_engine.rs  # LiveRecordEngine: start_recording（流复制、分段、预览帧，feature-gated: live-record）
   Cargo.toml                 # 依赖：tauri 2、serde、fancy-regex 0.18、image 0.25、ab_glyph 0.2、ffmpeg-next 8(optional)、uuid、anyhow、notify 7
   tauri.conf.json            # 窗口 800x600，最小 600x400
@@ -102,7 +111,7 @@ src-tauri/                   # Tauri 后端（Rust）
 ### 状态管理
 
 - 前端使用 Zustand store 管理页面状态（zustand ^5.0.13）
-- 每个页面独立 store：renameStore / asciiArtStore / videoFrameStore
+- 每个页面独立 store：renameStore / asciiArtStore / videoFrameStore / liveRecordStore / videoToolStore
 - UI 状态（折叠、选中等）也在 store 中管理
 - 规则撤销：store 内维护 ruleHistory 栈
 
@@ -144,6 +153,16 @@ src-tauri/                   # Tauri 后端（Rust）
 8. 支持多任务并发，左侧任务列表切换，右侧实时预览
 9. 引擎和模型通过 `#[cfg(feature = "live-record")]` 条件编译
 
+### 视频工具流程
+
+1. `invoke("check_ffmpeg")` + `invoke("check_video_encoders")` 检测 FFmpeg 和编码器可用性
+2. **视频合并**：选择多个视频 → `invoke("merge_videos")`，支持流复制（快速）和重编码两种模式，自动检测编解码器兼容性，不兼容时自动降级到重编码
+3. **图片转视频**：选择图片文件夹 → `invoke("list_images_in_folder")` 获取自然排序的图片列表 → `invoke("images_to_video")`，支持自定义 FPS/分辨率/音频/循环次数
+4. **格式转换**：选择文件 → `invoke("convert_format")`，支持视频格式互转和音频提取，两阶段策略（流复制优先，失败自动重编码），支持自定义分辨率/码率
+5. 宽高比保持：重编码时自动计算保持宽高比的缩放尺寸，不足部分填充黑边
+6. 进度通过事件监听：`video-tool://progress`（进度/步骤）、`video-tool://log`（日志）
+7. 视频工具命令通过 `#[cfg(feature = "video-frame")]` 条件编译（与 video-frame 共享 ffmpeg-next 依赖）
+
 ### 主题系统
 
 - shadcn/ui CSS 变量（HSL 色彩空间）
@@ -169,7 +188,7 @@ src-tauri/                   # Tauri 后端（Rust）
 | fancy-regex | 0.18.0 | 正则表达式（支持前瞻/后顾） |
 | image | 0.25 | 图片处理 |
 | ab_glyph | 0.2 | 字体渲染（ASCII art PNG 导出） |
-| ffmpeg-next | 8 (optional, static) | 视频处理（feature = "video-frame"） |
+| ffmpeg-next | 8 (optional, static) | 视频处理（feature = "video-frame" 或 "live-record"） |
 | uuid | 1 (v4) | 替换规则 ID |
 | anyhow | 1 | 错误处理 |
 | notify | 7 | 文件系统监控 |
@@ -199,8 +218,9 @@ src-tauri/                   # Tauri 后端（Rust）
 ## 已知风险
 
 - **测试覆盖不足**：仅 rename_logic.rs 有单元测试，前端无测试
-- **FFmpeg 依赖**：视频抽帧需要系统安装 FFmpeg，feature flag 控制编译
+- **FFmpeg 依赖**：视频抽帧/直播录制/视频工具需要系统安装 FFmpeg，feature flag 控制编译
 - **大图片 IPC**：大图片 Vec<u8> 通过 IPC 传输可能较慢
 - **视频帧数据**：ExtractedFrame.image_data 是大字节数组，建议后端写入临时目录
 - **字符画渲染性能**：大量 HTML span 标签可能影响渲染
 - **Iced 旧代码**：`.backup/` 目录保留了旧的 Iced GUI 代码，仅供参考
+- **视频工具编码器**：需要 FFmpeg 编译时包含 libx264/libx265 等编码器，否则只能使用流复制模式

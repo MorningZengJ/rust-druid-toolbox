@@ -50,6 +50,7 @@ interface VideoToolState {
   runMerge: () => Promise<void>;
 
   // Images state
+  imagesFolderPath: string;
   imagesInputPaths: string[];
   imagesOutputPath: string;
   imagesFps: number;
@@ -57,7 +58,8 @@ interface VideoToolState {
   imagesResolution: [number, number] | null;
   imagesAudioPath: string | null;
   imagesResult: ImagesToVideoResult | null;
-  setImagesInputPaths: (paths: string[]) => void;
+  setImagesFolderPath: (path: string) => void;
+  loadImagesFromFolder: (folderPath?: string) => Promise<void>;
   setImagesOutputPath: (path: string) => void;
   setImagesFps: (fps: number) => void;
   setImagesOutputFormat: (fmt: string) => void;
@@ -192,6 +194,7 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
   },
 
   // Images state
+  imagesFolderPath: "",
   imagesInputPaths: [],
   imagesOutputPath: "",
   imagesFps: 24,
@@ -200,7 +203,31 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
   imagesAudioPath: null,
   imagesResult: null,
 
-  setImagesInputPaths: (paths) => set({ imagesInputPaths: paths }),
+  setImagesFolderPath: (path) => set({ imagesFolderPath: path }),
+  loadImagesFromFolder: async (folderPath?: string) => {
+    const targetPath = folderPath || get().imagesFolderPath;
+    if (!targetPath) {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const selected = await open({ directory: true });
+      if (!selected) return;
+      const selectedPath = selected as string;
+      set({ imagesFolderPath: selectedPath });
+      try {
+        const paths = await invoke<string[]>("list_images_in_folder", { folderPath: selectedPath });
+        set({ imagesInputPaths: paths, errorMessage: null });
+      } catch (e) {
+        set({ errorMessage: `读取文件夹失败: ${e}` });
+      }
+    } else {
+      set({ imagesFolderPath: targetPath });
+      try {
+        const paths = await invoke<string[]>("list_images_in_folder", { folderPath: targetPath });
+        set({ imagesInputPaths: paths, errorMessage: null });
+      } catch (e) {
+        set({ errorMessage: `读取文件夹失败: ${e}` });
+      }
+    }
+  },
   setImagesOutputPath: (path) => set({ imagesOutputPath: path }),
   setImagesFps: (fps) => set({ imagesFps: fps }),
   setImagesOutputFormat: (fmt) => set({ imagesOutputFormat: fmt }),
@@ -209,8 +236,12 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
 
   runImagesToVideo: async () => {
     const state = get();
+    if (!state.imagesFolderPath) {
+      set({ errorMessage: "请先选择图片文件夹" });
+      return;
+    }
     if (state.imagesInputPaths.length === 0) {
-      set({ errorMessage: "至少需要选择一张图片" });
+      set({ errorMessage: "文件夹中未找到图片文件" });
       return;
     }
     if (!state.imagesOutputPath) {
