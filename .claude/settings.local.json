@@ -76,7 +76,10 @@
       "Bash(grep -v -E '^\\\\.$|^\\\\.\\\\.$')",
       "Bash(npx tsc *)",
       "Bash(ffmpeg -encoders)",
-      "Bash(find /c/Users/zengc/.cargo/registry/src -path \"*/ffmpeg-sys*/src/consts.rs\" -o -path \"*/ffmpeg-next*/codec/id.rs\" 2>/dev/null | head -5)"
+      "Bash(find /c/Users/zengc/.cargo/registry/src -path \"*/ffmpeg-sys*/src/consts.rs\" -o -path \"*/ffmpeg-next*/codec/id.rs\" 2>/dev/null | head -5)",
+      "Bash(ls ~/Downloads/wix314-binaries.zip 2>/dev/null && echo \"Found in Downloads\" || echo \"Not in Downloads\")",
+      "Bash(find /c/Users/zengc -name \"wix314-binaries.zip\" 2>/dev/null | head -5)",
+      "Bash(npx tauri *)"
     ]
   }
 }
