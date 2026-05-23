@@ -1,3 +1,4 @@
+修改PowerShell安全策略：`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
 启动项目：`npm run tauri dev`
 安装LLVM：`winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements`
 vcpkg 安装静态库：`C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md`
