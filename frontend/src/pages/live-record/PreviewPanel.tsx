@@ -53,14 +53,14 @@ export function PreviewPanel() {
         flex: 1,
         overflow: "hidden",
         borderRadius: theme.radius.md,
-        border: `1px solid ${theme.colors.gray[3]}`,
+        border: `1px solid ${theme.colors.dark[4]}`,
       }}
     >
       <Flex
         align="center"
         px="sm"
         py="xs"
-        style={{ borderBottom: `1px solid ${theme.colors.gray[3]}` }}
+        style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}
       >
         <Text size="xs" fw={500} c="dimmed">
           {selectedTask

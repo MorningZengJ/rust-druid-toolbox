@@ -1,17 +1,21 @@
 import { useEffect } from "react";
-import { Button, Tabs, Flex, Box, Text, Stack, Group, Center } from "@mantine/core";
+import { Button, Tabs, Box, Text, Stack, Group, Center, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import {
   Merge,
   Images,
   RefreshCw,
   Film,
+  Radio,
   AlertCircle,
 } from "lucide-react";
 import { useVideoToolStore } from "@/stores/videoToolStore";
+import { useLiveRecordStore } from "@/stores/liveRecordStore";
+import type { VideoToolTab } from "@/types";
 import { MergePanel } from "./MergePanel";
 import { ImagesPanel } from "./ImagesPanel";
 import { ConvertPanel } from "./ConvertPanel";
 import { ExtractPanel } from "./ExtractPanel";
+import { LiveRecordPanel } from "./LiveRecordPanel";
 
 export default function VideoToolPage() {
   const ffmpegAvailable = useVideoToolStore((s) => s.ffmpegAvailable);
@@ -20,11 +24,27 @@ export default function VideoToolPage() {
   const checkEncoders = useVideoToolStore((s) => s.checkEncoders);
   const activeTab = useVideoToolStore((s) => s.activeTab);
   const setActiveTab = useVideoToolStore((s) => s.setActiveTab);
+  const registerEventListeners = useLiveRecordStore(
+    (s) => s.registerEventListeners
+  );
+  const unregisterEventListeners = useLiveRecordStore(
+    (s) => s.unregisterEventListeners
+  );
+  const theme = useMantineTheme();
+  const colorScheme = useComputedColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     checkFfmpeg();
     checkEncoders();
   }, [checkFfmpeg, checkEncoders]);
+
+  useEffect(() => {
+    registerEventListeners();
+    return () => {
+      unregisterEventListeners();
+    };
+  }, [registerEventListeners, unregisterEventListeners]);
 
   if (!ffmpegAvailable) {
     return (
@@ -80,50 +100,60 @@ export default function VideoToolPage() {
   }
 
   return (
-    <Flex direction="column" h="100%">
+    <Box
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+        borderRadius: theme.radius.lg,
+        border: `1px solid ${theme.colors.dark[4]}`,
+        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+      }}
+    >
       <Tabs
         value={activeTab}
-        onChange={(v) => setActiveTab(v as "merge" | "images" | "convert" | "extract")}
+        onChange={(v) => setActiveTab(v as VideoToolTab)}
         style={{ display: "flex", flexDirection: "column", height: "100%" }}
       >
-        <Tabs.List>
-          <Tabs.Tab value="merge" leftSection={<Merge size={16} />}>
-            合并视频
-          </Tabs.Tab>
-          <Tabs.Tab value="images" leftSection={<Images size={16} />}>
-            图片转视频
-          </Tabs.Tab>
-          <Tabs.Tab value="convert" leftSection={<RefreshCw size={16} />}>
-            格式转换
-          </Tabs.Tab>
-          <Tabs.Tab value="extract" leftSection={<Film size={16} />}>
-            抽帧
-          </Tabs.Tab>
-        </Tabs.List>
+        <Box px="sm" pt="sm">
+          <Tabs.List>
+            <Tabs.Tab value="merge" leftSection={<Merge size={16} />}>
+              合并视频
+            </Tabs.Tab>
+            <Tabs.Tab value="images" leftSection={<Images size={16} />}>
+              图片转视频
+            </Tabs.Tab>
+            <Tabs.Tab value="convert" leftSection={<RefreshCw size={16} />}>
+              格式转换
+            </Tabs.Tab>
+            <Tabs.Tab value="extract" leftSection={<Film size={16} />}>
+              抽帧
+            </Tabs.Tab>
+            <Tabs.Tab value="live-record" leftSection={<Radio size={16} />}>
+              直播录制
+            </Tabs.Tab>
+          </Tabs.List>
+        </Box>
 
-        <Box mt="sm" style={{ flex: 1, minHeight: 0 }}>
-          <Tabs.Panel value="merge">
-            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
-              <MergePanel />
-            </Flex>
+        <Box p="sm" style={{ flex: 1, minHeight: 0 }}>
+          <Tabs.Panel value="merge" style={{ height: "100%" }}>
+            <MergePanel />
           </Tabs.Panel>
-          <Tabs.Panel value="images">
-            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
-              <ImagesPanel />
-            </Flex>
+          <Tabs.Panel value="images" style={{ height: "100%" }}>
+            <ImagesPanel />
           </Tabs.Panel>
-          <Tabs.Panel value="convert">
-            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
-              <ConvertPanel />
-            </Flex>
+          <Tabs.Panel value="convert" style={{ height: "100%" }}>
+            <ConvertPanel />
           </Tabs.Panel>
-          <Tabs.Panel value="extract">
-            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
-              <ExtractPanel />
-            </Flex>
+          <Tabs.Panel value="extract" style={{ height: "100%" }}>
+            <ExtractPanel />
+          </Tabs.Panel>
+          <Tabs.Panel value="live-record" style={{ height: "100%" }}>
+            <LiveRecordPanel />
           </Tabs.Panel>
         </Box>
       </Tabs>
-    </Flex>
+    </Box>
   );
 }

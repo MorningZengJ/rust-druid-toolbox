@@ -7,23 +7,20 @@ import {
   Settings,
   Sun,
   Moon,
-  Radio,
   Wrench,
 } from "lucide-react";
 import { useWindowState } from "@/hooks/useWindowState";
 import { useTheme } from "@/hooks/useTheme";
 import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
-import LiveRecordPage from "@/pages/live-record/LiveRecordPage";
 import VideoToolPage from "@/pages/video-tool/VideoToolPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 
-type Page = "rename" | "ascii-art" | "live-record" | "video-tool" | "settings";
+type Page = "rename" | "ascii-art" | "video-tool" | "settings";
 
 const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
   { id: "rename", label: "重命名", icon: <PenLine size={20} /> },
   { id: "ascii-art", label: "字符画", icon: <ImageIcon size={20} /> },
-  { id: "live-record", label: "录制", icon: <Radio size={20} /> },
   { id: "video-tool", label: "视频工具", icon: <Wrench size={20} /> },
 ];
 
@@ -106,9 +103,6 @@ function App() {
         </Box>
         <Box h="100%" p="md" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
           <AsciiArtPage />
-        </Box>
-        <Box h="100%" p="md" style={{ display: activePage === "live-record" ? "block" : "none" }}>
-          <LiveRecordPage />
         </Box>
         <Box h="100%" p="md" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
           <VideoToolPage />

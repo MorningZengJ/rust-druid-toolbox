@@ -3,6 +3,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
   ResizableHandle,
+  useDefaultLayout,
 } from "@/components/ui/resizable";
 import Toolbar from "./Toolbar";
 import FilterSection from "./FilterSection";
@@ -14,6 +15,10 @@ export default function RenamePage() {
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "rename-page",
+    storage: localStorage,
+  });
 
   return (
     <Box
@@ -23,7 +28,7 @@ export default function RenamePage() {
         height: "100%",
         overflow: "hidden",
         borderRadius: theme.radius.lg,
-        border: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+        border: `1px solid ${theme.colors.dark[4]}`,
         backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
       }}
     >
@@ -31,10 +36,16 @@ export default function RenamePage() {
       <Toolbar />
 
       {/* Main content: left rules + right preview */}
-      <ResizablePanelGroup orientation="horizontal" style={{ flex: 1 }}>
+      <ResizablePanelGroup
+        id="rename-page"
+        orientation="horizontal"
+        defaultLayout={defaultLayout}
+        onLayoutChanged={onLayoutChanged}
+        style={{ flex: 1, padding: 8 }}
+      >
         {/* Left panel: filters + rules */}
         <ResizablePanel defaultSize={35} minSize={25}>
-          <Box style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+          <Box style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.dark[4]}` }}>
             <FilterSection />
             <RuleList />
           </Box>

@@ -12,6 +12,12 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+  useDefaultLayout,
+} from "@/components/ui/resizable";
+import {
   Play,
   FileVideo,
   Music,
@@ -48,6 +54,10 @@ export function ConvertPanel() {
   const setConvertVideoBitrate = useVideoToolStore((s) => s.setConvertVideoBitrate);
   const runConvert = useVideoToolStore((s) => s.runConvert);
   const [isDragOver, setIsDragOver] = useState(false);
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "video-tool-convert",
+    storage: localStorage,
+  });
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
@@ -111,12 +121,18 @@ export function ConvertPanel() {
   };
 
   return (
-    <>
-      <Box
-        pos="relative"
-        w={320}
-        style={{ display: "flex", flexDirection: "column", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}
-      >
+    <ResizablePanelGroup
+      id="video-tool-convert"
+      orientation="horizontal"
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
+      style={{ height: "100%" }}
+    >
+      <ResizablePanel defaultSize={50} minSize={30}>
+        <Box
+          pos="relative"
+          style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}` }}
+        >
         {isDragOver && (
           <Flex
             pos="absolute"
@@ -282,9 +298,14 @@ export function ConvertPanel() {
             </Button>
           </Stack>
         </ScrollArea>
-      </Box>
+        </Box>
+      </ResizablePanel>
 
-      <ProgressPanel />
-    </>
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={50} minSize={30}>
+        <ProgressPanel />
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

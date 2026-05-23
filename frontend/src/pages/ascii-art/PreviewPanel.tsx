@@ -284,7 +284,7 @@ export function PreviewPanel() {
         flex: 1,
         overflow: "hidden",
         borderRadius: theme.radius.md,
-        border: `1px solid ${theme.colors.gray[3]}`,
+        border: `1px solid ${theme.colors.dark[4]}`,
       }}
     >
       {/* Toolbar */}

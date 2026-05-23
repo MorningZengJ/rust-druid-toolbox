@@ -82,14 +82,14 @@ export function TaskList() {
       <Box
         px="sm"
         py="xs"
-        style={{ borderTop: `1px solid ${theme.colors.gray[3]}` }}
+        style={{ borderTop: `1px solid ${theme.colors.dark[4]}` }}
       >
         <Text size="xs" fw={500} c="dimmed">
           录制任务 ({taskEntries.length})
         </Text>
       </Box>
 
-      <Box h={200} style={{ flexShrink: 0, borderBottom: `1px solid ${theme.colors.gray[3]}` }}>
+      <Box h={200} style={{ flexShrink: 0, borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
         <ScrollArea h="100%">
           <Box p="xs">
             {taskEntries.length > 0 ? (

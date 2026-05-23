@@ -50,16 +50,8 @@ export default function FilePreview() {
     }
   };
 
-  if (filterFileList.length === 0) {
-    return (
-      <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
-        <Text size="sm" c="dimmed">选择目录以加载文件列表</Text>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}>
       <Group
         justify="space-between"
         align="center"
@@ -83,6 +75,11 @@ export default function FilePreview() {
       </Group>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
+        {filterFileList.length === 0 ? (
+          <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
+            <Text size="sm" c="dimmed">选择目录以加载文件列表</Text>
+          </div>
+        ) : (
         <Virtuoso
           style={{ height: "100%" }}
           totalCount={displayedFiles.length}
@@ -156,6 +153,7 @@ export default function FilePreview() {
             );
           }}
         />
+        )}
       </div>
     </div>
   );

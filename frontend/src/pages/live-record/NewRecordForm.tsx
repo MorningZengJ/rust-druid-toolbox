@@ -7,6 +7,7 @@ import {
   Checkbox,
   Button,
   Box,
+  useMantineTheme,
 } from "@mantine/core";
 import { Plus } from "lucide-react";
 import { useLiveRecordStore } from "@/stores/liveRecordStore";
@@ -18,10 +19,11 @@ export function NewRecordForm() {
   const errorMessage = useLiveRecordStore((s) => s.errorMessage);
   const setNewRecordParams = useLiveRecordStore((s) => s.setNewRecordParams);
   const startRecording = useLiveRecordStore((s) => s.startRecording);
+  const theme = useMantineTheme();
   const clearError = useLiveRecordStore((s) => s.clearError);
 
   return (
-    <Box style={{ borderBottom: "1px solid var(--mantine-color-gray-3)" }} px="sm" py="xs">
+    <Box style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }} px="sm" py="xs">
       <Text size="xs" fw={500} c="dimmed" mb="xs">新建录制</Text>
       <Stack gap="sm">
         <Box>

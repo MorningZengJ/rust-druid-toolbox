@@ -25,6 +25,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
   ResizableHandle,
+  useDefaultLayout,
 } from "@/components/ui/resizable";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -53,6 +54,10 @@ export function ExtractPanel() {
 
   const [isDragOver, setIsDragOver] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "video-tool-extract",
+    storage: localStorage,
+  });
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -106,19 +111,24 @@ export function ExtractPanel() {
   const mutedBg = theme.colors.dark[3];
 
   return (
-    <>
-      {/* Left: Controls */}
-      <Box
-        w={280}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: 8,
-          border: `1px solid ${borderColor}`,
-          flexShrink: 0,
-          overflow: "hidden",
-        }}
-      >
+    <ResizablePanelGroup
+      id="video-tool-extract"
+      orientation="horizontal"
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
+      style={{ height: "100%" }}
+    >
+      <ResizablePanel defaultSize={35} minSize={25}>
+        <Box
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            overflow: "hidden",
+            borderRadius: 8,
+            border: `1px solid ${borderColor}`,
+          }}
+        >
         <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
           <Text size="xs" fw={500} c="dimmed">参数设置</Text>
         </Flex>
@@ -313,19 +323,22 @@ export function ExtractPanel() {
             )}
           </Box>
         </Box>
-      </Box>
+        </Box>
+      </ResizablePanel>
 
-      {/* Right: Frame grid */}
-      <Box
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
-          overflow: "hidden",
-          borderRadius: 8,
-          border: `1px solid ${borderColor}`,
-        }}
-      >
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={65} minSize={40}>
+        <Box
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            overflow: "hidden",
+            borderRadius: 8,
+            border: `1px solid ${borderColor}`,
+          }}
+        >
         <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
           <Text size="xs" fw={500} c="dimmed">
             {extractFrames.length > 0 ? `提取的帧 (${extractFrames.length})` : "视频抽帧"}
@@ -463,7 +476,8 @@ export function ExtractPanel() {
             </Flex>
           )}
         </Box>
-      </Box>
-    </>
+        </Box>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

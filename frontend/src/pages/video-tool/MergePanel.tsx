@@ -13,6 +13,12 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+  useDefaultLayout,
+} from "@/components/ui/resizable";
+import {
   Plus,
   Trash2,
   Play,
@@ -38,6 +44,10 @@ export function MergePanel() {
   const setMergeReencode = useVideoToolStore((s) => s.setMergeReencode);
   const runMerge = useVideoToolStore((s) => s.runMerge);
   const [isDragOver, setIsDragOver] = useState(false);
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "video-tool-merge",
+    storage: localStorage,
+  });
 
   useEffect(() => {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
@@ -103,12 +113,18 @@ export function MergePanel() {
   };
 
   return (
-    <>
-      <Box
-        pos="relative"
-        w={320}
-        style={{ display: "flex", flexDirection: "column", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}
-      >
+    <ResizablePanelGroup
+      id="video-tool-merge"
+      orientation="horizontal"
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
+      style={{ height: "100%" }}
+    >
+      <ResizablePanel defaultSize={50} minSize={30}>
+        <Box
+          pos="relative"
+          style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}` }}
+        >
         {isDragOver && (
           <Flex
             pos="absolute"
@@ -252,9 +268,14 @@ export function MergePanel() {
             </Button>
           </Stack>
         </ScrollArea>
-      </Box>
+        </Box>
+      </ResizablePanel>
 
-      <ProgressPanel />
-    </>
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={50} minSize={30}>
+        <ProgressPanel />
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

@@ -1,7 +1,13 @@
 import { useEffect } from "react";
-import { Flex } from "@mantine/core";
+import { Box, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
+import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+  useDefaultLayout,
+} from "@/components/ui/resizable";
 import { ControlPanel } from "./ControlPanel";
 import { PreviewPanel } from "./PreviewPanel";
 
@@ -11,6 +17,13 @@ export default function AsciiArtPage() {
   const loadImageFromPath = useAsciiArtStore((s) => s.loadImageFromPath);
   const loadImageFromPaste = useAsciiArtStore((s) => s.loadImageFromPaste);
   const cleanup = useAsciiArtStore((s) => s.cleanup);
+  const theme = useMantineTheme();
+  const colorScheme = useComputedColorScheme();
+  const isDark = colorScheme === "dark";
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "ascii-art-page",
+    storage: localStorage,
+  });
 
   useEffect(() => {
     return () => {
@@ -58,9 +71,35 @@ export default function AsciiArtPage() {
   }, [loadImageFromPaste]);
 
   return (
-    <Flex h="100%" gap="sm" onPaste={(e) => e.preventDefault()}>
-      <ControlPanel />
-      <PreviewPanel />
-    </Flex>
+    <Box
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+        borderRadius: theme.radius.lg,
+        border: `1px solid ${theme.colors.dark[4]}`,
+        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+      }}
+      onPaste={(e) => e.preventDefault()}
+    >
+      <ResizablePanelGroup
+        id="ascii-art-page"
+        orientation="horizontal"
+        defaultLayout={defaultLayout}
+        onLayoutChanged={onLayoutChanged}
+        style={{ flex: 1, padding: 8 }}
+      >
+        <ResizablePanel defaultSize={35} minSize={25}>
+          <ControlPanel />
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel defaultSize={65} minSize={40}>
+          <PreviewPanel />
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </Box>
   );
 }

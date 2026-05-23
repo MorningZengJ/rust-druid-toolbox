@@ -13,6 +13,12 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ResizableHandle,
+  useDefaultLayout,
+} from "@/components/ui/resizable";
+import {
   Trash2,
   Play,
   FolderOpen,
@@ -26,6 +32,10 @@ import { ProgressPanel } from "./ProgressPanel";
 export function ImagesPanel() {
   const theme = useMantineTheme();
   const imagesFolderPath = useVideoToolStore((s) => s.imagesFolderPath);
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "video-tool-images",
+    storage: localStorage,
+  });
   const imagesInputPaths = useVideoToolStore((s) => s.imagesInputPaths);
   const imagesOutputPath = useVideoToolStore((s) => s.imagesOutputPath);
   const imagesFps = useVideoToolStore((s) => s.imagesFps);
@@ -88,12 +98,18 @@ export function ImagesPanel() {
   };
 
   return (
-    <>
-      <Box
-        pos="relative"
-        w={320}
-        style={{ display: "flex", flexDirection: "column", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}
-      >
+    <ResizablePanelGroup
+      id="video-tool-images"
+      orientation="horizontal"
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
+      style={{ height: "100%" }}
+    >
+      <ResizablePanel defaultSize={50} minSize={30}>
+        <Box
+          pos="relative"
+          style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}` }}
+        >
         <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
           <Text size="sm" fw={500}>图片转视频</Text>
         </Box>
@@ -261,9 +277,14 @@ export function ImagesPanel() {
             </Button>
           </Stack>
         </ScrollArea>
-      </Box>
+        </Box>
+      </ResizablePanel>
 
-      <ProgressPanel />
-    </>
+      <ResizableHandle withHandle />
+
+      <ResizablePanel defaultSize={50} minSize={30}>
+        <ProgressPanel />
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

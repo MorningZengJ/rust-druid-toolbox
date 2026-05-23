@@ -265,4 +265,4 @@ export interface VideoToolLog {
   timestamp: number;
 }
 
-export type VideoToolTab = "merge" | "images" | "convert" | "extract";
+export type VideoToolTab = "merge" | "images" | "convert" | "extract" | "live-record";

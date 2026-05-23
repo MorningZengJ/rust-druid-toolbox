@@ -19,13 +19,13 @@ export function ControlPanel() {
 
   return (
     <Box
-      w={280}
       style={{
-        flexShrink: 0,
-        borderRadius: theme.radius.md,
-        border: `1px solid ${theme.colors.gray[3]}`,
         display: "flex",
         flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+        borderRadius: theme.radius.md,
+        border: `1px solid ${theme.colors.dark[4]}`,
       }}
     >
       <ScrollArea style={{ flex: 1 }}>

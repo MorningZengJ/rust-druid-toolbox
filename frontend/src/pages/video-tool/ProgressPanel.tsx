@@ -10,7 +10,7 @@ export function ProgressPanel() {
   const errorMessage = useVideoToolStore((s) => s.errorMessage);
 
   return (
-    <Flex direction="column" flex={1} style={{ borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}>
+    <Flex direction="column" style={{ height: "100%", overflow: "hidden", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.dark[4]}` }}>
       <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
         <Text size="sm" fw={500}>进度</Text>
       </Box>

@@ -30,13 +30,13 @@ export function LogPanel({ logs, height = 140 }: LogPanelProps) {
       h={height}
       style={{
         flexShrink: 0,
-        borderTop: `1px solid ${theme.colors.gray[3]}`,
+        borderTop: `1px solid ${theme.colors.dark[4]}`,
       }}
     >
       <Box
         px="sm"
         py={6}
-        style={{ borderBottom: `1px solid ${theme.colors.gray[3]}` }}
+        style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}
       >
         <Text size="xs" fw={500} c="dimmed">日志</Text>
       </Box>
