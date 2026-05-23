@@ -70,6 +70,42 @@ pub struct ConvertFormatResult {
     pub file_size_bytes: u64,
 }
 
+// ── Batch Format Conversion ──
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchConvertParams {
+    pub items: Vec<ConvertFormatParams>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchConvertResult {
+    pub results: Vec<BatchConvertItemResult>,
+    pub total_files: u32,
+    pub success_count: u32,
+    pub fail_count: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchConvertItemResult {
+    pub input_path: String,
+    pub output_path: String,
+    pub file_size_bytes: u64,
+    pub success: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchProgress {
+    pub current_index: u32,
+    pub total_count: u32,
+    pub overall_progress: f32,
+    pub current_file_name: String,
+}
+
 // ── Shared progress/log types ──
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -261,6 +261,43 @@ export interface ConvertFormatResult {
   fileSizeBytes: number;
 }
 
+// ── Batch Format Conversion ──
+
+export interface BatchConvertParams {
+  items: ConvertFormatParams[];
+}
+
+export interface BatchConvertResult {
+  results: BatchConvertItemResult[];
+  totalFiles: number;
+  successCount: number;
+  failCount: number;
+}
+
+export interface BatchConvertItemResult {
+  inputPath: string;
+  outputPath: string;
+  fileSizeBytes: number;
+  success: boolean;
+  error: string | null;
+}
+
+export interface BatchProgress {
+  currentIndex: number;
+  totalCount: number;
+  overallProgress: number;
+  currentFileName: string;
+}
+
+export type ConvertFileStatus = "pending" | "converting" | "done" | "error";
+
+export interface ConvertFileItem {
+  inputPath: string;
+  outputPath: string;
+  status: ConvertFileStatus;
+  error?: string;
+}
+
 export interface VideoToolProgress {
   taskId: string;
   progress: number;

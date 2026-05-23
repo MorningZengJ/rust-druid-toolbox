@@ -81,3 +81,31 @@ pub async fn convert_format(
     .map_err(|e| e.to_string())?
     .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn batch_convert_format(
+    params: BatchConvertParams,
+    app_handle: tauri::AppHandle,
+) -> Result<BatchConvertResult, String> {
+    let handle = app_handle.clone();
+    let log_handle = app_handle.clone();
+    let batch_handle = app_handle.clone();
+
+    tokio::task::spawn_blocking(move || {
+        VideoToolEngine::batch_convert_format(
+            &params,
+            |progress| {
+                let _ = handle.emit("video-tool://progress", progress);
+            },
+            |log| {
+                let _ = log_handle.emit("video-tool://log", log);
+            },
+            |batch_progress| {
+                let _ = batch_handle.emit("video-tool://batch-progress", batch_progress);
+            },
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())
+}

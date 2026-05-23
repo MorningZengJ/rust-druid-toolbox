@@ -7,7 +7,10 @@ import type {
   ImagesToVideoParams,
   ImagesToVideoResult,
   ConvertFormatParams,
-  ConvertFormatResult,
+  BatchConvertParams,
+  BatchConvertResult,
+  BatchProgress,
+  ConvertFileItem,
   VideoToolProgress,
   VideoToolLog,
   VideoToolTab,
@@ -67,23 +70,26 @@ interface VideoToolState {
   setImagesAudioPath: (path: string | null) => void;
   runImagesToVideo: () => Promise<void>;
 
-  // Convert state
-  convertInputPath: string;
-  convertOutputPath: string;
+  // Convert state (batch)
+  convertFiles: ConvertFileItem[];
   convertTarget: "video" | "audio";
   convertVideoFormat: string;
   convertAudioFormat: string;
   convertAudioBitrate: string;
   convertVideoBitrate: string;
-  convertResult: ConvertFormatResult | null;
-  setConvertInputPath: (path: string) => void;
-  setConvertOutputPath: (path: string) => void;
+  convertBatchResult: BatchConvertResult | null;
+  convertBatchProgress: BatchProgress | null;
+  convertCurrentFileProgress: number;
+  setConvertInputs: (paths: string[]) => void;
+  addConvertInputs: (paths: string[]) => void;
+  removeConvertInput: (index: number) => void;
+  clearConvertInputs: () => void;
   setConvertTarget: (t: "video" | "audio") => void;
   setConvertVideoFormat: (fmt: string) => void;
   setConvertAudioFormat: (fmt: string) => void;
   setConvertAudioBitrate: (rate: string) => void;
   setConvertVideoBitrate: (rate: string) => void;
-  runConvert: () => Promise<void>;
+  runBatchConvert: () => Promise<void>;
 
   // Extract (抽帧) state
   extractVideoPath: string;
@@ -272,36 +278,106 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
     }
   },
 
-  // Convert state
-  convertInputPath: "",
-  convertOutputPath: "",
+  // Convert state (batch)
+  convertFiles: [],
   convertTarget: "video",
   convertVideoFormat: "mp4",
   convertAudioFormat: "mp3",
   convertAudioBitrate: "192k",
   convertVideoBitrate: "",
-  convertResult: null,
+  convertBatchResult: null,
+  convertBatchProgress: null,
+  convertCurrentFileProgress: 0,
 
-  setConvertInputPath: (path) => set({ convertInputPath: path }),
-  setConvertOutputPath: (path) => set({ convertOutputPath: path }),
-  setConvertTarget: (t) => set({ convertTarget: t }),
-  setConvertVideoFormat: (fmt) => set({ convertVideoFormat: fmt }),
-  setConvertAudioFormat: (fmt) => set({ convertAudioFormat: fmt }),
+  setConvertInputs: (paths) => {
+    const state = get();
+    const ext = state.convertTarget === "video" ? state.convertVideoFormat : state.convertAudioFormat;
+    const files: ConvertFileItem[] = paths.map((p) => ({
+      inputPath: p,
+      outputPath: `${p.replace(/\.[^.]+$/, "")}_converted.${ext}`,
+      status: "pending" as const,
+    }));
+    set({ convertFiles: files });
+  },
+
+  addConvertInputs: (paths) => {
+    const state = get();
+    const existing = new Set(state.convertFiles.map((f) => f.inputPath));
+    const ext = state.convertTarget === "video" ? state.convertVideoFormat : state.convertAudioFormat;
+    const newFiles: ConvertFileItem[] = paths
+      .filter((p) => !existing.has(p))
+      .map((p) => ({
+        inputPath: p,
+        outputPath: `${p.replace(/\.[^.]+$/, "")}_converted.${ext}`,
+        status: "pending" as const,
+      }));
+    set({ convertFiles: [...state.convertFiles, ...newFiles] });
+  },
+
+  removeConvertInput: (index) => {
+    set((s) => ({ convertFiles: s.convertFiles.filter((_, i) => i !== index) }));
+  },
+
+  clearConvertInputs: () => set({ convertFiles: [], convertBatchResult: null, convertBatchProgress: null, convertCurrentFileProgress: 0 }),
+
+  setConvertTarget: (t) => {
+    set({ convertTarget: t });
+    const state = get();
+    const ext = t === "video" ? state.convertVideoFormat : state.convertAudioFormat;
+    set({
+      convertFiles: state.convertFiles.map((f) => ({
+        ...f,
+        outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${ext}`,
+      })),
+    });
+  },
+
+  setConvertVideoFormat: (fmt) => {
+    set({ convertVideoFormat: fmt });
+    const state = get();
+    if (state.convertTarget === "video") {
+      set({
+        convertFiles: state.convertFiles.map((f) => ({
+          ...f,
+          outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${fmt}`,
+        })),
+      });
+    }
+  },
+
+  setConvertAudioFormat: (fmt) => {
+    set({ convertAudioFormat: fmt });
+    const state = get();
+    if (state.convertTarget === "audio") {
+      set({
+        convertFiles: state.convertFiles.map((f) => ({
+          ...f,
+          outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${fmt}`,
+        })),
+      });
+    }
+  },
+
   setConvertAudioBitrate: (rate) => set({ convertAudioBitrate: rate }),
   setConvertVideoBitrate: (rate) => set({ convertVideoBitrate: rate }),
 
-  runConvert: async () => {
+  runBatchConvert: async () => {
     const state = get();
-    if (!state.convertInputPath) {
-      set({ errorMessage: "请选择输入文件" });
-      return;
-    }
-    if (!state.convertOutputPath) {
-      set({ errorMessage: "请设置输出路径" });
+    if (state.convertFiles.length === 0) {
+      set({ errorMessage: "请添加需要转换的文件" });
       return;
     }
 
-    set({ isProcessing: true, progress: 0, logs: [], errorMessage: null, convertResult: null });
+    set({
+      isProcessing: true,
+      progress: 0,
+      logs: [],
+      errorMessage: null,
+      convertBatchResult: null,
+      convertBatchProgress: null,
+      convertCurrentFileProgress: 0,
+      convertFiles: state.convertFiles.map((f) => ({ ...f, status: "pending" as const, error: undefined })),
+    });
     await get().registerEventListeners();
 
     try {
@@ -310,9 +386,9 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
           ? { videoFormat: state.convertVideoFormat }
           : { audioFormat: state.convertAudioFormat };
 
-      const params: ConvertFormatParams = {
-        inputPath: state.convertInputPath,
-        outputPath: state.convertOutputPath,
+      const items: ConvertFormatParams[] = state.convertFiles.map((f) => ({
+        inputPath: f.inputPath,
+        outputPath: f.outputPath,
         target,
         audioBitrate: state.convertTarget === "audio" ? state.convertAudioBitrate : null,
         videoBitrate:
@@ -320,11 +396,13 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
             ? state.convertVideoBitrate
             : null,
         resolution: null,
-      };
-      const result = await invoke<ConvertFormatResult>("convert_format", { params });
-      set({ convertResult: result });
+      }));
+
+      const params: BatchConvertParams = { items };
+      const result = await invoke<BatchConvertResult>("batch_convert_format", { params });
+      set({ convertBatchResult: result });
     } catch (e) {
-      set({ errorMessage: `转换失败: ${e}` });
+      set({ errorMessage: `批量转换失败: ${e}` });
     } finally {
       set({ isProcessing: false });
       get().unregisterEventListeners();
@@ -483,7 +561,11 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
     const unlistenProgress = await listen<VideoToolProgress>(
       "video-tool://progress",
       (event) => {
-        set({ progress: event.payload.progress });
+        const p = event.payload;
+        set({
+          progress: p.progress,
+          ...(p.taskId.startsWith("batch-") ? { convertCurrentFileProgress: p.progress } : {}),
+        });
       }
     );
     unlisteners.push(unlistenProgress);
@@ -491,10 +573,45 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
     const unlistenLog = await listen<VideoToolLog>(
       "video-tool://log",
       (event) => {
-        set((s) => ({ logs: [...s.logs, event.payload] }));
+        const log = event.payload;
+        set((s) => {
+          const updates: Partial<VideoToolState> = { logs: [...s.logs, log] };
+          if (log.taskId.startsWith("batch-") && log.level === "error") {
+            const index = parseInt(log.taskId.replace("batch-", ""), 10);
+            if (!isNaN(index) && index < s.convertFiles.length) {
+              const newFiles = [...s.convertFiles];
+              newFiles[index] = { ...newFiles[index], status: "error", error: log.message };
+              updates.convertFiles = newFiles;
+            }
+          }
+          return updates;
+        });
       }
     );
     unlisteners.push(unlistenLog);
+
+    const unlistenBatchProgress = await listen<BatchProgress>(
+      "video-tool://batch-progress",
+      (event) => {
+        const bp = event.payload;
+        set((s) => {
+          const newFiles = [...s.convertFiles];
+          for (let i = 0; i < bp.currentIndex && i < newFiles.length; i++) {
+            if (newFiles[i].status === "pending") {
+              newFiles[i] = { ...newFiles[i], status: "done" };
+            }
+          }
+          if (bp.currentIndex < newFiles.length && newFiles[bp.currentIndex].status !== "error") {
+            newFiles[bp.currentIndex] = { ...newFiles[bp.currentIndex], status: "converting" };
+          }
+          return {
+            convertBatchProgress: bp,
+            convertFiles: newFiles,
+          };
+        });
+      }
+    );
+    unlisteners.push(unlistenBatchProgress);
 
     set({ _unlisteners: unlisteners });
   },

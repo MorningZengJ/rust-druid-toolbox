@@ -1217,6 +1217,109 @@ impl VideoToolEngine {
         }
     }
 
+    pub fn batch_convert_format<P, L, BP>(
+        params: &BatchConvertParams,
+        mut progress_cb: P,
+        mut log_cb: L,
+        mut batch_progress_cb: BP,
+    ) -> Result<BatchConvertResult>
+    where
+        P: FnMut(VideoToolProgress),
+        L: FnMut(VideoToolLog),
+        BP: FnMut(BatchProgress),
+    {
+        let total = params.items.len();
+        let mut results = Vec::with_capacity(total);
+        let mut success_count = 0u32;
+        let mut fail_count = 0u32;
+
+        let now_ms = || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64
+        };
+
+        for (index, item) in params.items.iter().enumerate() {
+            let file_name = item
+                .input_path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+
+            batch_progress_cb(BatchProgress {
+                current_index: index as u32,
+                total_count: total as u32,
+                overall_progress: index as f32 / total as f32,
+                current_file_name: file_name.clone(),
+            });
+
+            log_cb(VideoToolLog {
+                task_id: format!("batch-{}", index),
+                level: "info".to_string(),
+                message: format!("开始转换第 {}/{} 个文件: {}", index + 1, total, file_name),
+                timestamp: now_ms(),
+            });
+
+            let file_index = index;
+            let mut file_progress = |p: VideoToolProgress| {
+                progress_cb(VideoToolProgress {
+                    task_id: format!("batch-{}", file_index),
+                    ..p
+                });
+            };
+            let mut file_log = |l: VideoToolLog| {
+                log_cb(VideoToolLog {
+                    task_id: format!("batch-{}", file_index),
+                    ..l
+                });
+            };
+
+            match Self::convert_format(item, &mut file_progress, &mut file_log) {
+                Ok(result) => {
+                    success_count += 1;
+                    results.push(BatchConvertItemResult {
+                        input_path: item.input_path.to_string_lossy().to_string(),
+                        output_path: result.output_path,
+                        file_size_bytes: result.file_size_bytes,
+                        success: true,
+                        error: None,
+                    });
+                }
+                Err(e) => {
+                    fail_count += 1;
+                    log_cb(VideoToolLog {
+                        task_id: format!("batch-{}", index),
+                        level: "error".to_string(),
+                        message: format!("转换失败: {}", e),
+                        timestamp: now_ms(),
+                    });
+                    results.push(BatchConvertItemResult {
+                        input_path: item.input_path.to_string_lossy().to_string(),
+                        output_path: item.output_path.to_string_lossy().to_string(),
+                        file_size_bytes: 0,
+                        success: false,
+                        error: Some(e.to_string()),
+                    });
+                }
+            }
+
+            batch_progress_cb(BatchProgress {
+                current_index: index as u32 + 1,
+                total_count: total as u32,
+                overall_progress: (index + 1) as f32 / total as f32,
+                current_file_name: file_name,
+            });
+        }
+
+        Ok(BatchConvertResult {
+            results,
+            total_files: total as u32,
+            success_count,
+            fail_count,
+        })
+    }
+
     fn convert_audio_copy<P, L>(
         params: &ConvertFormatParams,
         task_id: &str,
