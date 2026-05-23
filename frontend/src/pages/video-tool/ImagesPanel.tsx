@@ -1,15 +1,17 @@
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
+  Button,
+  TextInput,
+  NumberInput,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  Checkbox,
+  ScrollArea,
+  Box,
+  Text,
+  Stack,
+  Group,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   Trash2,
   Play,
@@ -22,6 +24,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ProgressPanel } from "./ProgressPanel";
 
 export function ImagesPanel() {
+  const theme = useMantineTheme();
   const imagesFolderPath = useVideoToolStore((s) => s.imagesFolderPath);
   const imagesInputPaths = useVideoToolStore((s) => s.imagesInputPaths);
   const imagesOutputPath = useVideoToolStore((s) => s.imagesOutputPath);
@@ -37,6 +40,7 @@ export function ImagesPanel() {
   const setImagesResolution = useVideoToolStore((s) => s.setImagesResolution);
   const setImagesAudioPath = useVideoToolStore((s) => s.setImagesAudioPath);
   const runImagesToVideo = useVideoToolStore((s) => s.runImagesToVideo);
+
   useEffect(() => {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
       if (event.payload.type === "drop") {
@@ -85,170 +89,179 @@ export function ImagesPanel() {
 
   return (
     <>
-      <div className="relative flex w-[320px] flex-col rounded-lg border border-border bg-panel">
-        <div className="border-b border-border px-4 py-2">
-          <h3 className="text-sm font-medium">图片转视频</h3>
-        </div>
+      <Box
+        pos="relative"
+        w={320}
+        style={{ display: "flex", flexDirection: "column", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}
+      >
+        <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
+          <Text size="sm" fw={500}>图片转视频</Text>
+        </Box>
 
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">图片文件夹</label>
-              <div className="mt-1">
+        <ScrollArea style={{ flex: 1 }} p="md">
+          <Stack gap="md">
+            <Box>
+              <Text size="sm" fw={500}>图片文件夹</Text>
+              <Box mt={4}>
                 {imagesFolderPath ? (
-                  <div className="rounded-md border border-border bg-muted/30 p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-xs truncate flex-1" title={imagesFolderPath}>
+                  <Box p="sm" style={{ borderRadius: 6, border: `1px solid ${theme.colors.dark[4]}`, background: theme.colors.dark[3] }}>
+                    <Group gap="xs" mb="xs">
+                      <FolderOpen size={16} color={theme.colors.dark[2]} style={{ flexShrink: 0 }} />
+                      <Text
+                        size="xs"
+                        style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        title={imagesFolderPath}
+                      >
                         {imagesFolderPath.split(/[/\\]/).pop() || imagesFolderPath}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
+                      </Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">
                       已加载 {imagesInputPaths.length} 张图片
-                    </div>
+                    </Text>
                     <Button
-                      size="sm"
+                      size="compact-sm"
                       variant="outline"
-                      className="mt-2 w-full"
+                      mt="xs"
+                      fullWidth
                       onClick={selectFolder}
                     >
                       更换文件夹
                     </Button>
-                  </div>
+                  </Box>
                 ) : (
-                  <div
-                    className="rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                  <Box
+                    px="md"
+                    py="xl"
+                    ta="center"
+                    style={{
+                      borderRadius: 4,
+                      border: `1px dashed ${theme.colors.dark[3]}`,
+                      cursor: "pointer",
+                    }}
                     onClick={selectFolder}
                   >
-                    拖拽文件夹到此处，或点击选择
-                  </div>
+                    <Text size="xs" c="dimmed">拖拽文件夹到此处，或点击选择</Text>
+                  </Box>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div>
-              <label className="text-sm font-medium">FPS</label>
-              <Input
-                type="number"
+            <Box>
+              <Text size="sm" fw={500}>FPS</Text>
+              <NumberInput
+                mt={4}
                 value={imagesFps}
-                onChange={(e) => setImagesFps(Number(e.target.value) || 24)}
+                onChange={(v) => setImagesFps(typeof v === "number" ? v : 24)}
                 min={1}
                 max={60}
-                className="mt-1"
               />
-            </div>
+            </Box>
 
-            <div>
-              <label className="text-sm font-medium">输出格式</label>
+            <Box>
+              <Text size="sm" fw={500}>输出格式</Text>
               <Select
+                mt={4}
                 value={imagesOutputFormat}
-                onValueChange={setImagesOutputFormat}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mp4">MP4</SelectItem>
-                  <SelectItem value="mkv">MKV</SelectItem>
-                  <SelectItem value="gif">GIF</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                onChange={(v) => v && setImagesOutputFormat(v)}
+                data={[
+                  { value: "mp4", label: "MP4" },
+                  { value: "mkv", label: "MKV" },
+                  { value: "gif", label: "GIF" },
+                ]}
+              />
+            </Box>
 
-            <div>
-              <div className="mb-2 flex items-center gap-2">
+            <Box>
+              <Group gap="xs" mb="xs">
                 <Checkbox
                   checked={imagesResolution !== null}
-                  onCheckedChange={(v) =>
-                    setImagesResolution(v ? [1920, 1080] : null)
+                  onChange={(e) =>
+                    setImagesResolution(e.currentTarget.checked ? [1920, 1080] : null)
                   }
                 />
-                <label className="text-sm font-medium">自定义分辨率</label>
-              </div>
+                <Text size="sm" fw={500}>自定义分辨率</Text>
+              </Group>
               {imagesResolution && (
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
+                <Group gap="xs">
+                  <NumberInput
                     value={imagesResolution[0]}
-                    onChange={(e) =>
+                    onChange={(v) =>
                       setImagesResolution([
-                        Number(e.target.value) || 1920,
+                        typeof v === "number" ? v : 1920,
                         imagesResolution[1],
                       ])
                     }
                     placeholder="宽"
-                    className="flex-1"
+                    style={{ flex: 1 }}
                   />
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={imagesResolution[1]}
-                    onChange={(e) =>
+                    onChange={(v) =>
                       setImagesResolution([
                         imagesResolution[0],
-                        Number(e.target.value) || 1080,
+                        typeof v === "number" ? v : 1080,
                       ])
                     }
                     placeholder="高"
-                    className="flex-1"
+                    style={{ flex: 1 }}
                   />
-                </div>
+                </Group>
               )}
-            </div>
+            </Box>
 
-            <div>
-              <label className="text-sm font-medium">背景音频（可选）</label>
-              <div className="mt-1 flex gap-2">
-                <Input
+            <Box>
+              <Text size="sm" fw={500}>背景音频（可选）</Text>
+              <Group mt={4} gap="xs">
+                <TextInput
                   value={imagesAudioPath || ""}
                   readOnly
                   placeholder="选择音频文件"
-                  className="flex-1 text-xs"
+                  style={{ flex: 1 }}
+                  size="xs"
                 />
-                <Button size="icon" variant="outline" onClick={selectAudio}>
-                  <Music className="h-4 w-4" />
+                <Button variant="outline" onClick={selectAudio} style={{ padding: "0 8px" }}>
+                  <Music size={16} />
                 </Button>
                 {imagesAudioPath && (
                   <Button
-                    size="icon"
                     variant="outline"
+                    color="red"
                     onClick={() => setImagesAudioPath(null)}
+                    style={{ padding: "0 8px" }}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 size={16} />
                   </Button>
                 )}
-              </div>
-            </div>
+              </Group>
+            </Box>
 
-            <div>
-              <label className="text-sm font-medium">输出路径</label>
-              <div className="mt-1 flex gap-2">
-                <Input
+            <Box>
+              <Text size="sm" fw={500}>输出路径</Text>
+              <Group mt={4} gap="xs">
+                <TextInput
                   value={imagesOutputPath}
-                  onChange={(e) => setImagesOutputPath(e.target.value)}
+                  onChange={(e) => setImagesOutputPath(e.currentTarget.value)}
                   placeholder="选择输出文件路径"
-                  className="flex-1 text-xs"
+                  style={{ flex: 1 }}
+                  size="xs"
                 />
-                <Button size="icon" variant="outline" onClick={selectOutput}>
-                  <FolderOpen className="h-4 w-4" />
+                <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }}>
+                  <FolderOpen size={16} />
                 </Button>
-              </div>
-            </div>
+              </Group>
+            </Box>
 
             <Button
-              className="w-full"
+              fullWidth
               onClick={runImagesToVideo}
               disabled={isProcessing || imagesInputPaths.length === 0}
+              leftSection={isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
             >
-              {isProcessing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="mr-2 h-4 w-4" />
-              )}
               生成视频
             </Button>
-          </div>
+          </Stack>
         </ScrollArea>
-      </div>
+      </Box>
 
       <ProgressPanel />
     </>

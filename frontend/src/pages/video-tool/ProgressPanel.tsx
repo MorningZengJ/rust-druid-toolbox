@@ -1,75 +1,80 @@
+import { Box, Flex, Text, ScrollArea, Stack, Progress, useMantineTheme } from "@mantine/core";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 
 export function ProgressPanel() {
+  const theme = useMantineTheme();
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const progress = useVideoToolStore((s) => s.progress);
   const logs = useVideoToolStore((s) => s.logs);
   const errorMessage = useVideoToolStore((s) => s.errorMessage);
 
   return (
-    <div className="flex flex-1 flex-col rounded-lg border border-border bg-panel">
-      <div className="border-b border-border px-4 py-2">
-        <h3 className="text-sm font-medium">进度</h3>
-      </div>
-      <div className="p-4">
+    <Flex direction="column" flex={1} style={{ borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}>
+      <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
+        <Text size="sm" fw={500}>进度</Text>
+      </Box>
+      <Box p="md">
         {isProcessing && (
-          <div className="mb-4">
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span>处理中...</span>
-              <span>{Math.round(progress * 100)}%</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-          </div>
+          <Box mb="md">
+            <Flex justify="space-between" mb={4}>
+              <Text size="xs">处理中...</Text>
+              <Text size="xs">{Math.round(progress * 100)}%</Text>
+            </Flex>
+            <Progress value={progress * 100} size="sm" radius="xl" />
+          </Box>
         )}
 
         {errorMessage && (
-          <div className="mb-4 flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            {errorMessage}
-          </div>
+          <Flex
+            align="center"
+            gap="xs"
+            mb="md"
+            px="sm"
+            py="xs"
+            style={{ borderRadius: 6, background: `${theme.colors.red[0]}` }}
+          >
+            <AlertCircle size={16} color={theme.colors.red[6]} style={{ flexShrink: 0 }} />
+            <Text size="sm" c="red">{errorMessage}</Text>
+          </Flex>
         )}
 
         {!isProcessing && progress >= 1 && !errorMessage && (
-          <div className="mb-4 flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-600">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            处理完成
-          </div>
+          <Flex
+            align="center"
+            gap="xs"
+            mb="md"
+            px="sm"
+            py="xs"
+            style={{ borderRadius: 6, background: `${theme.colors.green[0]}` }}
+          >
+            <CheckCircle2 size={16} color={theme.colors.green[6]} style={{ flexShrink: 0 }} />
+            <Text size="sm" c="green">处理完成</Text>
+          </Flex>
         )}
-      </div>
+      </Box>
 
-      <div className="flex min-h-0 flex-1 flex-col border-t border-border">
-        <div className="px-4 py-2">
-          <h3 className="text-sm font-medium">日志</h3>
-        </div>
-        <ScrollArea className="flex-1 px-4 pb-4">
-          <div className="space-y-1 font-mono text-xs">
+      <Flex direction="column" flex={1} style={{ minHeight: 0, borderTop: `1px solid ${theme.colors.dark[4]}` }}>
+        <Box px="md" py="xs">
+          <Text size="sm" fw={500}>日志</Text>
+        </Box>
+        <ScrollArea style={{ flex: 1 }} px="md" pb="md">
+          <Stack gap={2} style={{ fontFamily: "monospace", fontSize: 12 }}>
             {logs.map((log, i) => (
-              <div
+              <Text
                 key={i}
-                className={
-                  log.level === "error"
-                    ? "text-destructive"
-                    : log.level === "warn"
-                      ? "text-yellow-500"
-                      : "text-muted-foreground"
-                }
+                size="xs"
+                c={log.level === "error" ? "red" : log.level === "warn" ? "yellow" : "dimmed"}
               >
                 {log.message}
-              </div>
+              </Text>
             ))}
             {logs.length === 0 && (
-              <div className="text-muted-foreground">等待操作...</div>
+              <Text size="xs" c="dimmed">等待操作...</Text>
             )}
-          </div>
+          </Stack>
         </ScrollArea>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

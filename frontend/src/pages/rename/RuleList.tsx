@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button, Group, Text, Stack, useMantineTheme, useMantineColorScheme } from "@mantine/core";
 import { Plus, Trash } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import RuleCard from "./RuleCard";
@@ -8,45 +8,55 @@ export default function RuleList() {
   const addReplaceInfo = useRenameStore((s) => s.addReplaceInfo);
   const clearAllRules = useRenameStore((s) => s.clearAllRules);
 
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
-        <span className="text-xs font-medium text-muted-foreground">
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Group
+        justify="space-between"
+        align="center"
+        px="sm"
+        py={6}
+        style={{ borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}` }}
+      >
+        <Text size="xs" fw={500} c="dimmed">
           替换规则 ({replaceInfos.length})
-        </span>
-        <div className="flex items-center gap-1">
+        </Text>
+        <Group gap={4}>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
+            variant="subtle"
+            size="compact-xs"
+            leftSection={<Trash size={12} />}
             onClick={clearAllRules}
             disabled={replaceInfos.length === 0}
           >
-            <Trash size={12} className="mr-1" />
             清空
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
+            variant="subtle"
+            size="compact-xs"
+            leftSection={<Plus size={12} />}
             onClick={addReplaceInfo}
           >
-            <Plus size={12} className="mr-1" />
             添加
           </Button>
-        </div>
-      </div>
+        </Group>
+      </Group>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
-        {replaceInfos.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            点击"添加"创建替换规则
-          </div>
-        ) : (
-          replaceInfos.map((rule, index) => (
-            <RuleCard key={rule.id} rule={rule} index={index} />
-          ))
-        )}
+      <div style={{ flex: 1, overflowY: "auto", padding: 8 }}>
+        <Stack gap="xs">
+          {replaceInfos.length === 0 ? (
+            <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
+              <Text size="sm" c="dimmed">点击"添加"创建替换规则</Text>
+            </div>
+          ) : (
+            replaceInfos.map((rule, index) => (
+              <RuleCard key={rule.id} rule={rule} index={index} />
+            ))
+          )}
+        </Stack>
       </div>
     </div>
   );

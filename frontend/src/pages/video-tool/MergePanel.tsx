@@ -1,29 +1,32 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
+  Button,
+  TextInput,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  Checkbox,
+  ScrollArea,
+  Box,
+  Flex,
+  Text,
+  Stack,
+  Group,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   Plus,
   Trash2,
   Play,
   FolderOpen,
   Loader2,
+  Upload,
 } from "lucide-react";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { VIDEO_EXTENSIONS, VIDEO_FORMATS } from "./constants";
 import { ProgressPanel } from "./ProgressPanel";
-import { Upload } from "lucide-react";
 
 export function MergePanel() {
+  const theme = useMantineTheme();
   const mergeInputPaths = useVideoToolStore((s) => s.mergeInputPaths);
   const mergeOutputPath = useVideoToolStore((s) => s.mergeOutputPath);
   const mergeOutputFormat = useVideoToolStore((s) => s.mergeOutputFormat);
@@ -101,52 +104,73 @@ export function MergePanel() {
 
   return (
     <>
-      <div className="relative flex w-[320px] flex-col rounded-lg border border-border bg-panel">
+      <Box
+        pos="relative"
+        w={320}
+        style={{ display: "flex", flexDirection: "column", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}`, overflow: "hidden" }}
+      >
         {isDragOver && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/10">
-            <div className="flex flex-col items-center gap-2 text-primary">
-              <Upload className="h-8 w-8" />
-              <span className="text-sm font-medium">释放文件以添加</span>
-            </div>
-          </div>
+          <Flex
+            pos="absolute"
+            inset={0}
+            align="center"
+            justify="center"
+            style={{
+              zIndex: 50,
+              borderRadius: 8,
+              border: `2px dashed ${theme.colors.blue[6]}`,
+              background: `${theme.colors.blue[0]}`,
+            }}
+          >
+            <Stack align="center" gap="xs" c="blue">
+              <Upload size={32} />
+              <Text size="sm" fw={500}>释放文件以添加</Text>
+            </Stack>
+          </Flex>
         )}
-        <div className="border-b border-border px-4 py-2">
-          <h3 className="text-sm font-medium">合并视频</h3>
-        </div>
+        <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
+          <Text size="sm" fw={500}>合并视频</Text>
+        </Box>
 
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm font-medium">输入文件 ({mergeInputPaths.length})</label>
-                <Button size="sm" variant="outline" onClick={addFiles}>
-                  <Plus className="mr-1 h-3 w-3" />
-                  添加
+        <ScrollArea style={{ flex: 1 }} p="md">
+          <Stack gap="md">
+            <Box>
+              <Group justify="space-between" mb="xs">
+                <Text size="sm" fw={500}>输入文件 ({mergeInputPaths.length})</Text>
+                <Button size="compact-sm" variant="outline" onClick={addFiles}>
+                  <Group gap={4}>
+                    <Plus size={12} />
+                    <Text size="xs">添加</Text>
+                  </Group>
                 </Button>
-              </div>
-              <ScrollArea className="max-h-[240px]">
-                <div className="space-y-1 pr-3">
+              </Group>
+              <ScrollArea.Autosize maw="100%" mah={240}>
+                <Stack gap={4} pr="sm">
                   {mergeInputPaths.map((path, i) => (
-                    <div
+                    <Flex
                       key={i}
-                      className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs"
+                      align="center"
+                      gap={4}
+                      px="xs"
+                      py={4}
+                      style={{ borderRadius: 4, background: theme.colors.dark[3] }}
                     >
-                      <span className="flex-1 truncate">
+                      <Text size="xs" style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {path.split(/[/\\]/).pop()}
-                      </span>
+                      </Text>
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 shrink-0"
+                        size="compact-xs"
+                        variant="subtle"
+                        style={{ width: 20, height: 20, padding: 0, minWidth: 20 }}
                         onClick={() => i > 0 && moveFile(i, i - 1)}
                         disabled={i === 0}
                       >
                         ↑
                       </Button>
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 shrink-0"
+                        size="compact-xs"
+                        variant="subtle"
+                        style={{ width: 20, height: 20, padding: 0, minWidth: 20 }}
                         onClick={() =>
                           i < mergeInputPaths.length - 1 && moveFile(i, i + 1)
                         }
@@ -155,81 +179,80 @@ export function MergePanel() {
                         ↓
                       </Button>
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 shrink-0 text-destructive"
+                        size="compact-xs"
+                        variant="subtle"
+                        color="red"
+                        style={{ width: 20, height: 20, padding: 0, minWidth: 20 }}
                         onClick={() => removeFile(i)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 size={12} />
                       </Button>
-                    </div>
+                    </Flex>
                   ))}
                   {mergeInputPaths.length === 0 && (
-                    <div className="rounded border border-dashed border-muted-foreground/30 px-4 py-8 text-center text-xs text-muted-foreground">
-                      拖拽视频文件到此处，或点击"添加"
-                    </div>
+                    <Box
+                      px="md"
+                      py="xl"
+                      ta="center"
+                      style={{
+                        borderRadius: 4,
+                        border: `1px dashed ${theme.colors.dark[3]}`,
+                      }}
+                    >
+                      <Text size="xs" c="dimmed">
+                        拖拽视频文件到此处，或点击"添加"
+                      </Text>
+                    </Box>
                   )}
-                </div>
-              </ScrollArea>
-            </div>
+                </Stack>
+              </ScrollArea.Autosize>
+            </Box>
 
-            <div>
-              <label className="text-sm font-medium">输出格式</label>
+            <Box>
+              <Text size="sm" fw={500}>输出格式</Text>
               <Select
+                mt={4}
                 value={mergeOutputFormat}
-                onValueChange={setMergeOutputFormat}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VIDEO_FORMATS.map((fmt) => (
-                    <SelectItem key={fmt} value={fmt}>
-                      {fmt.toUpperCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                onChange={(v) => v && setMergeOutputFormat(v)}
+                data={VIDEO_FORMATS.map((fmt) => ({ value: fmt, label: fmt.toUpperCase() }))}
+              />
+            </Box>
 
-            <div className="flex items-center gap-2">
+            <Group gap="xs">
               <Checkbox
                 checked={mergeReencode}
-                onCheckedChange={(v) => setMergeReencode(v === true)}
+                onChange={(e) => setMergeReencode(e.currentTarget.checked)}
               />
-              <label className="text-xs">重编码模式（处理不同编码格式，速度较慢）</label>
-            </div>
+              <Text size="xs">重编码模式（处理不同编码格式，速度较慢）</Text>
+            </Group>
 
-            <div>
-              <label className="text-sm font-medium">输出路径</label>
-              <div className="mt-1 flex gap-2">
-                <Input
+            <Box>
+              <Text size="sm" fw={500}>输出路径</Text>
+              <Group mt={4} gap="xs">
+                <TextInput
                   value={mergeOutputPath}
-                  onChange={(e) => setMergeOutputPath(e.target.value)}
+                  onChange={(e) => setMergeOutputPath(e.currentTarget.value)}
                   placeholder="选择输出文件路径"
-                  className="flex-1 text-xs"
+                  style={{ flex: 1 }}
+                  size="xs"
                 />
-                <Button size="icon" variant="outline" onClick={selectOutput}>
-                  <FolderOpen className="h-4 w-4" />
+                <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }}>
+                  <FolderOpen size={16} />
                 </Button>
-              </div>
-            </div>
+              </Group>
+            </Box>
 
             <Button
-              className="w-full"
+              fullWidth
               onClick={runMerge}
               disabled={isProcessing || mergeInputPaths.length < 2}
+              leftSection={isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
             >
-              {isProcessing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="mr-2 h-4 w-4" />
-              )}
               合并
             </Button>
-          </div>
+          </Stack>
         </ScrollArea>
-      </div>
+      </Box>
 
       <ProgressPanel />
     </>

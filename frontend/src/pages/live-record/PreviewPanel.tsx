@@ -1,4 +1,10 @@
-import { Button } from "@/components/ui/button";
+import {
+  Flex,
+  Box,
+  Text,
+  Button,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   Radio,
   Loader2,
@@ -29,6 +35,7 @@ export function PreviewPanel() {
   const tasks = useLiveRecordStore((s) => s.tasks);
   const selectedTaskId = useLiveRecordStore((s) => s.selectedTaskId);
   const stopRecording = useLiveRecordStore((s) => s.stopRecording);
+  const theme = useMantineTheme();
 
   const selectedTask =
     selectedTaskId ? tasks[selectedTaskId] ?? null : null;
@@ -40,104 +47,116 @@ export function PreviewPanel() {
   );
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-panel">
-      <div className="flex items-center border-b border-border px-3 py-2">
-        <span className="text-xs font-medium text-muted-foreground">
+    <Flex
+      direction="column"
+      style={{
+        flex: 1,
+        overflow: "hidden",
+        borderRadius: theme.radius.md,
+        border: `1px solid ${theme.colors.gray[3]}`,
+      }}
+    >
+      <Flex
+        align="center"
+        px="sm"
+        py="xs"
+        style={{ borderBottom: `1px solid ${theme.colors.gray[3]}` }}
+      >
+        <Text size="xs" fw={500} c="dimmed">
           {selectedTask
             ? `实时预览 - ${selectedTask.info.url}`
             : "实时预览"}
-        </span>
+        </Text>
         {selectedTask &&
           (selectedTask.info.status === "recording" ||
             selectedTask.info.status === "connecting") && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-6 text-destructive hover:text-destructive"
+              variant="subtle"
+              size="compact-xs"
+              color="red"
+              ml="auto"
+              leftSection={<StopCircle size={12} />}
               onClick={() => stopRecording(selectedTaskId!)}
             >
-              <StopCircle size={12} className="mr-1" />
               停止
             </Button>
           )}
-      </div>
+      </Flex>
 
-      <div className="relative flex-1 overflow-hidden">
+      <Box style={{ position: "relative", flex: 1, overflow: "hidden" }}>
         {selectedTask ? (
           <>
             {selectedTask.previewObjectUrl ? (
               <img
                 src={selectedTask.previewObjectUrl}
                 alt="Live preview"
-                className="h-full w-full object-contain"
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
               />
             ) : (
-              <div className="flex h-full items-center justify-center">
+              <Flex h="100%" align="center" justify="center">
                 {selectedTask.info.status === "connecting" ? (
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Loader2
-                      size={32}
-                      className="animate-spin text-primary"
-                    />
-                    <span className="text-sm">正在连接...</span>
-                  </div>
+                  <Flex direction="column" align="center" gap="xs" c="dimmed">
+                    <Loader2 size={32} style={{ animation: "spin 1s linear infinite", color: theme.colors[theme.primaryColor][6] }} />
+                    <Text size="sm">正在连接...</Text>
+                  </Flex>
                 ) : selectedTask.info.status === "recording" ? (
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Radio
-                      size={32}
-                      className="text-red-500 animate-pulse"
-                    />
-                    <span className="text-sm">
-                      录制中，等待预览画面...
-                    </span>
-                  </div>
+                  <Flex direction="column" align="center" gap="xs" c="dimmed">
+                    <Radio size={32} color="red" style={{ animation: "pulse 1.5s ease-in-out infinite" }} />
+                    <Text size="sm">录制中，等待预览画面...</Text>
+                  </Flex>
                 ) : (
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <Flex direction="column" align="center" gap="xs" c="dimmed">
                     <MonitorPlay size={32} />
-                    <span className="text-sm">
+                    <Text size="sm">
                       {selectedTask.info.status === "stopped"
                         ? "录制已停止"
                         : "录制出错"}
-                    </span>
-                  </div>
+                    </Text>
+                  </Flex>
                 )}
-              </div>
+              </Flex>
             )}
 
             {selectedTask.progress && (
-              <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-3 py-1.5 text-xs text-white flex items-center gap-4">
-                <span>
-                  时长: {formatDuration(selectedTask.progress.durationSecs)}
-                </span>
-                <span>
-                  大小:{" "}
-                  {formatSize(selectedTask.progress.fileSizeBytes)}
-                </span>
+              <Flex
+                gap="md"
+                align="center"
+                px="sm"
+                py={6}
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  backgroundColor: "rgba(0,0,0,0.6)",
+                  color: "white",
+                  fontSize: "var(--mantine-font-size-xs)",
+                }}
+              >
+                <span>时长: {formatDuration(selectedTask.progress.durationSecs)}</span>
+                <span>大小: {formatSize(selectedTask.progress.fileSizeBytes)}</span>
                 {selectedTask.progress.bitrateKbps > 0 && (
-                  <span>
-                    码率: {selectedTask.progress.bitrateKbps.toFixed(0)}{" "}
-                    kbps
-                  </span>
+                  <span>码率: {selectedTask.progress.bitrateKbps.toFixed(0)} kbps</span>
                 )}
                 {selectedTask.progress.currentSegment > 1 && (
-                  <span>
-                    分段: {selectedTask.progress.currentSegment}
-                  </span>
+                  <span>分段: {selectedTask.progress.currentSegment}</span>
                 )}
-                <span className="ml-auto truncate max-w-[300px]">
+                <span style={{ marginLeft: "auto", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {selectedTask.progress.outputPath.split(/[/\\]/).pop()}
                 </span>
-              </div>
+              </Flex>
             )}
           </>
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            {hasActiveTasks
-              ? "从左侧选择任务查看预览"
-              : "配置参数后点击「开始录制」"}
-          </div>
+          <Flex h="100%" align="center" justify="center">
+            <Text size="sm" c="dimmed">
+              {hasActiveTasks
+                ? "从左侧选择任务查看预览"
+                : "配置参数后点击「开始录制」"}
+            </Text>
+          </Flex>
         )}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }

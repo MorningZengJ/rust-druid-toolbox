@@ -1,3 +1,4 @@
+import { Box, useMantineTheme, useMantineColorScheme } from "@mantine/core";
 import {
   ResizablePanel,
   ResizablePanelGroup,
@@ -8,22 +9,35 @@ import FilterSection from "./FilterSection";
 import RuleList from "./RuleList";
 import FilePreview from "./FilePreview";
 import StatusBar from "./StatusBar";
-import ConfirmDialog from "./ConfirmDialog";
 
 export default function RenamePage() {
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-panel">
+    <Box
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+        borderRadius: theme.radius.lg,
+        border: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+      }}
+    >
       {/* Top toolbar */}
       <Toolbar />
 
       {/* Main content: left rules + right preview */}
-      <ResizablePanelGroup orientation="horizontal" className="flex-1">
+      <ResizablePanelGroup orientation="horizontal" style={{ flex: 1 }}>
         {/* Left panel: filters + rules */}
         <ResizablePanel defaultSize={35} minSize={25}>
-          <div className="flex h-full flex-col overflow-hidden">
+          <Box style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
             <FilterSection />
             <RuleList />
-          </div>
+          </Box>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
@@ -37,8 +51,6 @@ export default function RenamePage() {
       {/* Bottom status bar */}
       <StatusBar />
 
-      {/* Confirmation dialog */}
-      <ConfirmDialog />
-    </div>
+    </Box>
   );
 }

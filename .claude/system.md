@@ -4,9 +4,9 @@
 
 - **名称**: druid-toolbox
 - **版本**: 0.1.0
-- **架构**: Tauri v2 + React 19 + TypeScript + Vite + shadcn/ui
+- **架构**: Tauri v2 + React 19 + TypeScript + Vite + Mantine UI
 - **后端**: Rust (edition 2021)，Tauri IPC 命令
-- **前端**: React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui (Radix UI)
+- **前端**: React 19 + TypeScript + Mantine UI v9
 - **状态管理**: Zustand
 - **作者**: MorningZeng (zengchennihon@gmail.com)
 - **远程仓库**: git@github.com:MorningZengJ/rust-druid-toolbox.git
@@ -27,11 +27,11 @@ Windows 桌面工具箱应用，中文界面。包含六个主要功能模块：
 ```
 frontend/                    # React 前端
   src/
-    main.tsx                 # 入口，StrictMode + TooltipProvider 包裹
+    main.tsx                 # 入口，StrictMode + MantineProvider 包裹
     App.tsx                  # 主布局：左侧 90px 导航栏 + 右侧内容区（display 切换，非路由，5 个页面）
-    globals.css              # Tailwind CSS + shadcn/ui 主题变量（亮/暗 + 6 色彩主题）
+    globals.css              # 全局基础样式（Mantine 主题通过 MantineProvider 管理）
+    mantine-theme.ts         # Mantine 主题定义（6 色彩主题 + 自定义主色生成）
     lib/
-      utils.ts               # cn() 工具函数（clsx + tailwind-merge）
       renameLogic.ts         # 客户端重命名预览逻辑（镜像 Rust 后端）
     types/
       index.ts               # TypeScript 类型定义（匹配 Rust serde 结构）
@@ -46,7 +46,7 @@ frontend/                    # React 前端
       videoToolStore.ts      # 视频工具页 Zustand store（合并/转视频/格式转换）
     components/
       FileIcon.tsx           # 文件类型图标组件
-      ui/                    # shadcn/ui 组件（16 个）
+      ui/                    # 保留的包装组件（resizable.tsx 包装 react-resizable-panels）
     pages/
       rename/                # 重命名页面（8 个子组件）
       ascii-art/
@@ -165,12 +165,12 @@ src-tauri/                   # Tauri 后端（Rust）
 
 ### 主题系统
 
-- shadcn/ui CSS 变量（HSL 色彩空间）
-- 亮色/暗色主题通过 `.dark` class 切换
-- 6 种预设色彩主题：default/blue/green/purple/orange/rose，通过 CSS class 切换
-- 支持自定义主色（HSL 值），直接设置 CSS 变量 --primary/--accent/--ring
+- MantineProvider 管理主题配置（colors、primaryColor、defaultColorScheme）
+- 亮色/暗色主题通过 `useMantineColorScheme()` 切换
+- 6 种预设色彩主题：default/blue/green/purple/orange/rose，通过动态切换 theme.primaryColor
+- 支持自定义主色（hex 值），通过 `getThemeWithPrimary()` 生成自定义色阶
 - `useTheme` hook 管理主题状态，通过 `@tauri-apps/plugin-store` 的 `LazyStore` 持久化到 `settings.json`
-- 支持跟随系统主题（system mode）
+- 支持跟随系统主题（auto colorScheme）
 
 ## 依赖关系
 
@@ -203,11 +203,12 @@ src-tauri/                   # Tauri 后端（Rust）
 | @tauri-apps/plugin-clipboard-manager | ^2.3.2 | 剪贴板 |
 | @tauri-apps/plugin-opener | ^2.0.0 | 打开 URL/文件 |
 | @tauri-apps/plugin-store | ^2 | 持久化存储 |
+| @mantine/core | ^9.2.1 | Mantine UI 组件库 |
+| @mantine/hooks | ^9.2.1 | Mantine hooks |
+| @mantine/notifications | ^9.2.1 | Mantine 通知组件 |
 | zustand | ^5.0.13 | 状态管理 |
 | react-virtuoso | ^4.18.7 | 虚拟滚动 |
 | lucide-react | ^1.16.0 | 图标 |
-| tailwindcss | ^4.3.0 | 样式 |
-| radix-ui | ^1.4.3 | UI 基础（shadcn/ui 依赖） |
 | react-resizable-panels | ^4.11.1 | 可调整面板布局 |
 
 ## 测试
@@ -218,6 +219,7 @@ src-tauri/                   # Tauri 后端（Rust）
 ## 已知风险
 
 - **测试覆盖不足**：仅 rename_logic.rs 有单元测试，前端无测试
+- **Mantine 主题 FOUC**：MantineProvider 在 main.tsx 中配置，需确保主题在 React 挂载前正确设置
 - **FFmpeg 依赖**：视频抽帧/直播录制/视频工具需要系统安装 FFmpeg，feature flag 控制编译
 - **大图片 IPC**：大图片 Vec<u8> 通过 IPC 传输可能较慢
 - **视频帧数据**：ExtractedFrame.image_data 是大字节数组，建议后端写入临时目录

@@ -1,6 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button, TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useMantineColorScheme } from "@mantine/core";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import QuickFilters from "./QuickFilters";
@@ -11,6 +9,10 @@ export default function FilterSection() {
   const setFilterCollapsed = useRenameStore((s) => s.setFilterCollapsed);
   const filterItems = useRenameStore((s) => s.filterItems);
   const setFilterItems = useRenameStore((s) => s.setFilterItems);
+
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
 
   const addFilter = () => {
     setFilterItems([...filterItems, { keyword: "", isRegex: false }]);
@@ -30,9 +32,21 @@ export default function FilterSection() {
   };
 
   return (
-    <div className="border-b border-border">
+    <div style={{ borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}` }}>
       <button
-        className="flex w-full items-center gap-1 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50"
+        style={{
+          display: "flex",
+          width: "100%",
+          alignItems: "center",
+          gap: 4,
+          padding: "6px 12px",
+          fontSize: 12,
+          fontWeight: 500,
+          color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+        }}
         onClick={() => setFilterCollapsed(!filterCollapsed)}
       >
         {filterCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
@@ -40,48 +54,46 @@ export default function FilterSection() {
       </button>
 
       {!filterCollapsed && (
-        <div className="space-y-2 px-3 pb-2">
+        <Stack gap="xs" px="sm" pb="xs">
           <QuickFilters />
 
           {filterItems.map((filter, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                className="h-7 flex-1 text-sm"
+            <Group key={index} gap="xs" align="center">
+              <TextInput
+                style={{ flex: 1 }}
+                size="xs"
                 placeholder="关键词筛选..."
                 value={filter.keyword}
-                onChange={(e) => updateFilter(index, { keyword: e.target.value })}
+                onChange={(e) => updateFilter(index, { keyword: e.currentTarget.value })}
               />
-              <div className="flex items-center gap-1">
+              <Group gap={4} align="center">
                 <Checkbox
                   checked={filter.isRegex}
-                  onCheckedChange={(checked) =>
-                    updateFilter(index, { isRegex: !!checked })
-                  }
-                  className="h-4 w-4"
+                  onChange={(e) => updateFilter(index, { isRegex: e.currentTarget.checked })}
+                  size="xs"
                 />
-                <span className="text-xs text-muted-foreground">正则</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0"
+                <Text size="xs" c="dimmed">正则</Text>
+              </Group>
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                color="gray"
                 onClick={() => removeFilter(index)}
               >
                 <Trash2 size={14} />
-              </Button>
-            </div>
+              </ActionIcon>
+            </Group>
           ))}
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-xs"
+            variant="subtle"
+            size="compact-xs"
+            leftSection={<Plus size={12} />}
             onClick={addFilter}
           >
-            <Plus size={12} className="mr-1" />
             添加筛选
           </Button>
-        </div>
+        </Stack>
       )}
     </div>
   );

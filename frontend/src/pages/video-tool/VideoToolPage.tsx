@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button, Tabs, Flex, Box, Text, Stack, Group, Center } from "@mantine/core";
 import {
   Merge,
   Images,
@@ -29,18 +28,18 @@ export default function VideoToolPage() {
 
   if (!ffmpegAvailable) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h2 className="mb-2 text-lg font-semibold">FFmpeg 未安装</h2>
-          <p className="text-sm text-muted-foreground">
+      <Center h="100%">
+        <Stack align="center" gap="md">
+          <AlertCircle size={48} color="gray" />
+          <Text size="lg" fw={600}>FFmpeg 未安装</Text>
+          <Text size="sm" c="dimmed">
             视频工具需要 FFmpeg 支持，请先安装 FFmpeg 并确保其在系统 PATH 中。
-          </p>
-          <Button className="mt-4" onClick={checkFfmpeg}>
+          </Text>
+          <Button mt="md" onClick={checkFfmpeg}>
             重新检测
           </Button>
-        </div>
-      </div>
+        </Stack>
+      </Center>
     );
   }
 
@@ -52,75 +51,79 @@ export default function VideoToolPage() {
 
   if (!hasAnyVideoEncoder) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h2 className="mb-2 text-lg font-semibold">缺少视频编码器</h2>
-          <p className="text-sm text-muted-foreground">
+      <Center h="100%">
+        <Stack align="center" gap="md">
+          <AlertCircle size={48} color="gray" />
+          <Text size="lg" fw={600}>缺少视频编码器</Text>
+          <Text size="sm" c="dimmed">
             FFmpeg 已安装，但未找到可用的视频编码器（libx264/libx265/mpeg4）。
             <br />
             请安装包含完整编码器的 FFmpeg 版本。
-          </p>
-          <div className="mt-4 space-y-2 text-left text-xs">
-            <p className="font-medium">编码器状态：</p>
+          </Text>
+          <Box ta="left" mt="md">
+            <Text size="xs" fw={500}>编码器状态：</Text>
             {Object.entries(encoderStatus).map(([name, available]) => (
-              <div key={name} className="flex items-center gap-2">
-                <span className={available ? "text-green-500" : "text-destructive"}>
+              <Group key={name} gap="xs">
+                <Text size="xs" c={available ? "green" : "red"}>
                   {available ? "✓" : "✗"}
-                </span>
-                <span>{name}</span>
-              </div>
+                </Text>
+                <Text size="xs">{name}</Text>
+              </Group>
             ))}
-          </div>
-          <Button className="mt-4" onClick={checkEncoders}>
+          </Box>
+          <Button mt="md" onClick={checkEncoders}>
             重新检测
           </Button>
-        </div>
-      </div>
+        </Stack>
+      </Center>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <Flex direction="column" h="100%">
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "merge" | "images" | "convert" | "extract")}
-        className="flex h-full flex-col"
+        onChange={(v) => setActiveTab(v as "merge" | "images" | "convert" | "extract")}
+        style={{ display: "flex", flexDirection: "column", height: "100%" }}
       >
-        <TabsList variant="line">
-          <TabsTrigger value="merge">
-            <Merge className="h-4 w-4" />
+        <Tabs.List>
+          <Tabs.Tab value="merge" leftSection={<Merge size={16} />}>
             合并视频
-          </TabsTrigger>
-          <TabsTrigger value="images">
-            <Images className="h-4 w-4" />
+          </Tabs.Tab>
+          <Tabs.Tab value="images" leftSection={<Images size={16} />}>
             图片转视频
-          </TabsTrigger>
-          <TabsTrigger value="convert">
-            <RefreshCw className="h-4 w-4" />
+          </Tabs.Tab>
+          <Tabs.Tab value="convert" leftSection={<RefreshCw size={16} />}>
             格式转换
-          </TabsTrigger>
-          <TabsTrigger value="extract">
-            <Film className="h-4 w-4" />
+          </Tabs.Tab>
+          <Tabs.Tab value="extract" leftSection={<Film size={16} />}>
             抽帧
-          </TabsTrigger>
-        </TabsList>
+          </Tabs.Tab>
+        </Tabs.List>
 
-        <div className="mt-2 flex min-h-0 flex-1 gap-4">
-          <TabsContent value="merge" className="mt-0 flex min-h-0 flex-1 gap-4">
-            <MergePanel />
-          </TabsContent>
-          <TabsContent value="images" className="mt-0 flex min-h-0 flex-1 gap-4">
-            <ImagesPanel />
-          </TabsContent>
-          <TabsContent value="convert" className="mt-0 flex min-h-0 flex-1 gap-4">
-            <ConvertPanel />
-          </TabsContent>
-          <TabsContent value="extract" className="mt-0 flex min-h-0 flex-1 gap-4">
-            <ExtractPanel />
-          </TabsContent>
-        </div>
+        <Box mt="sm" style={{ flex: 1, minHeight: 0 }}>
+          <Tabs.Panel value="merge">
+            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
+              <MergePanel />
+            </Flex>
+          </Tabs.Panel>
+          <Tabs.Panel value="images">
+            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
+              <ImagesPanel />
+            </Flex>
+          </Tabs.Panel>
+          <Tabs.Panel value="convert">
+            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
+              <ConvertPanel />
+            </Flex>
+          </Tabs.Panel>
+          <Tabs.Panel value="extract">
+            <Flex gap="md" style={{ minHeight: 0, flex: 1 }}>
+              <ExtractPanel />
+            </Flex>
+          </Tabs.Panel>
+        </Box>
       </Tabs>
-    </div>
+    </Flex>
   );
 }

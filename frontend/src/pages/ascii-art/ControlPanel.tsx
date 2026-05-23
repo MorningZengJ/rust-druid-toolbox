@@ -1,192 +1,195 @@
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Stack,
+  Box,
+  Text,
+  Slider,
+  TextInput,
+  Checkbox,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  ScrollArea,
+  useMantineTheme,
+} from "@mantine/core";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
 import type { CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 export function ControlPanel() {
   const params = useAsciiArtStore((s) => s.params);
   const setParams = useAsciiArtStore((s) => s.setParams);
+  const theme = useMantineTheme();
 
   return (
-    <div className="flex w-[280px] shrink-0 flex-col rounded-lg border border-border bg-panel">
-      <ScrollArea className="flex-1">
-        <div className="space-y-4 p-3">
+    <Box
+      w={280}
+      style={{
+        flexShrink: 0,
+        borderRadius: theme.radius.md,
+        border: `1px solid ${theme.colors.gray[3]}`,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <ScrollArea style={{ flex: 1 }}>
+        <Stack gap="md" p="sm">
           {/* Render Mode */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">渲染模式</label>
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>渲染模式</Text>
             <Select
+              size="xs"
               value={params.renderMode}
-              onValueChange={(v) => setParams({ renderMode: v as RenderMode })}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="png">PNG - 快速，适合大图</SelectItem>
-                <SelectItem value="svg">SVG - 矢量，缩放不失真</SelectItem>
-                <SelectItem value="canvas">Canvas - 灵活，支持交互</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              onChange={(v) => setParams({ renderMode: (v ?? "png") as RenderMode })}
+              data={[
+                { value: "png", label: "PNG - 快速，适合大图" },
+                { value: "svg", label: "SVG - 矢量，缩放不失真" },
+                { value: "canvas", label: "Canvas - 灵活，支持交互" },
+              ]}
+            />
+          </Box>
 
           {/* Width */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>
               宽度: {params.width} 字符
-            </label>
+            </Text>
             <Slider
-              value={[params.width]}
-              onValueChange={([v]) => setParams({ width: v })}
+              size="xs"
+              value={params.width}
+              onChange={(v) => setParams({ width: v })}
               min={300}
               max={2000}
               step={10}
             />
-          </div>
+          </Box>
 
           {/* Charset */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">字符集</label>
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>字符集</Text>
             <Select
+              size="xs"
               value={params.charset}
-              onValueChange={(v) => setParams({ charset: v as CharsetPreset })}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="simple">简单</SelectItem>
-                <SelectItem value="standard">标准</SelectItem>
-                <SelectItem value="complex">复杂</SelectItem>
-                <SelectItem value="custom">自定义</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              onChange={(v) => setParams({ charset: (v ?? "standard") as CharsetPreset })}
+              data={[
+                { value: "simple", label: "简单" },
+                { value: "standard", label: "标准" },
+                { value: "complex", label: "复杂" },
+                { value: "custom", label: "自定义" },
+              ]}
+            />
+          </Box>
 
           {/* Custom charset */}
           {params.charset === "custom" && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">自定义字符</label>
-              <Input
-                className="h-8 font-mono text-sm"
+            <Box>
+              <Text size="xs" fw={500} c="dimmed" mb={4}>自定义字符</Text>
+              <TextInput
+                size="xs"
+                style={{ fontFamily: "monospace" }}
                 value={params.customCharset}
-                onChange={(e) => setParams({ customCharset: e.target.value })}
+                onChange={(e) => setParams({ customCharset: e.currentTarget.value })}
                 placeholder="从暗到亮排列字符"
               />
-            </div>
+            </Box>
           )}
 
           {/* Contrast */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>
               对比度: {params.contrast.toFixed(1)}
-            </label>
+            </Text>
             <Slider
-              value={[params.contrast]}
-              onValueChange={([v]) => setParams({ contrast: v })}
+              size="xs"
+              value={params.contrast}
+              onChange={(v) => setParams({ contrast: v })}
               min={0.1}
               max={3.0}
               step={0.1}
             />
-          </div>
+          </Box>
 
           {/* Brightness */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>
               亮度: {params.brightness.toFixed(1)}
-            </label>
+            </Text>
             <Slider
-              value={[params.brightness]}
-              onValueChange={([v]) => setParams({ brightness: v })}
+              size="xs"
+              value={params.brightness}
+              onChange={(v) => setParams({ brightness: v })}
               min={-1.0}
               max={1.0}
               step={0.1}
             />
-          </div>
+          </Box>
 
           {/* Saturation */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>
               饱和度: {params.saturation.toFixed(1)}
-            </label>
+            </Text>
             <Slider
-              value={[params.saturation]}
-              onValueChange={([v]) => setParams({ saturation: v })}
+              size="xs"
+              value={params.saturation}
+              onChange={(v) => setParams({ saturation: v })}
               min={0.0}
               max={2.0}
               step={0.1}
             />
-          </div>
+          </Box>
 
           {/* Char aspect ratio */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>
               字符宽高比: {params.charAspectRatio.toFixed(2)}
-            </label>
+            </Text>
             <Slider
-              value={[params.charAspectRatio]}
-              onValueChange={([v]) => setParams({ charAspectRatio: v })}
+              size="xs"
+              value={params.charAspectRatio}
+              onChange={(v) => setParams({ charAspectRatio: v })}
               min={0.3}
               max={1.0}
               step={0.05}
             />
-          </div>
+          </Box>
 
           {/* Invert */}
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={params.invert}
-              onCheckedChange={(checked) => setParams({ invert: !!checked })}
-            />
-            <span className="text-muted-foreground">反转明暗</span>
-          </label>
+          <Checkbox
+            size="xs"
+            label="反转明暗"
+            checked={params.invert}
+            onChange={(e) => setParams({ invert: e.currentTarget.checked })}
+          />
 
           {/* Color mode */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">颜色模式</label>
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>颜色模式</Text>
             <Select
+              size="xs"
               value={params.colorMode}
-              onValueChange={(v) => setParams({ colorMode: v as ColorMode })}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monochrome">单色</SelectItem>
-                <SelectItem value="ansi256">ANSI 256色</SelectItem>
-                <SelectItem value="trueColor">真彩色</SelectItem>
-                <SelectItem value="html">HTML</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              onChange={(v) => setParams({ colorMode: (v ?? "monochrome") as ColorMode })}
+              data={[
+                { value: "monochrome", label: "单色" },
+                { value: "ansi256", label: "ANSI 256色" },
+                { value: "trueColor", label: "真彩色" },
+                { value: "html", label: "HTML" },
+              ]}
+            />
+          </Box>
 
           {/* Background */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">背景</label>
+          <Box>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>背景</Text>
             <Select
+              size="xs"
               value={params.background}
-              onValueChange={(v) => setParams({ background: v as Background })}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="black">黑色</SelectItem>
-                <SelectItem value="white">白色</SelectItem>
-                <SelectItem value="transparent">透明</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+              onChange={(v) => setParams({ background: (v ?? "black") as Background })}
+              data={[
+                { value: "black", label: "黑色" },
+                { value: "white", label: "白色" },
+                { value: "transparent", label: "透明" },
+              ]}
+            />
+          </Box>
+        </Stack>
       </ScrollArea>
-    </div>
+    </Box>
   );
 }

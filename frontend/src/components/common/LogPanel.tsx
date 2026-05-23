@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Box, Flex, Text, ScrollArea, useMantineTheme } from "@mantine/core";
 
 interface LogEntry {
   level: string;
@@ -7,47 +8,54 @@ interface LogEntry {
 
 interface LogPanelProps {
   logs: LogEntry[];
-  height?: string;
+  height?: number;
 }
 
-export function LogPanel({ logs, height = "h-[140px]" }: LogPanelProps) {
+export function LogPanel({ logs, height = 140 }: LogPanelProps) {
   const logEndRef = useRef<HTMLDivElement>(null);
+  const theme = useMantineTheme();
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
+  const getLogColor = (level: string) => {
+    if (level === "error") return theme.colors.red[6];
+    if (level === "warn") return theme.colors.yellow[6];
+    return theme.colors.gray[6];
+  };
+
   return (
-    <div className={`${height} shrink-0 border-t border-border`}>
-      <div className="flex items-center border-b border-border px-3 py-1.5">
-        <span className="text-xs font-medium text-muted-foreground">日志</span>
-      </div>
-      <div className="h-[calc(100%-28px)] overflow-y-auto p-2">
+    <Box
+      h={height}
+      style={{
+        flexShrink: 0,
+        borderTop: `1px solid ${theme.colors.gray[3]}`,
+      }}
+    >
+      <Box
+        px="sm"
+        py={6}
+        style={{ borderBottom: `1px solid ${theme.colors.gray[3]}` }}
+      >
+        <Text size="xs" fw={500} c="dimmed">日志</Text>
+      </Box>
+      <ScrollArea h={height - 28} p="xs">
         {logs.length > 0 ? (
           <>
             {logs.map((log, i) => (
-              <div key={i} className="text-xs py-0.5">
-                <span
-                  className={
-                    log.level === "error"
-                      ? "text-destructive"
-                      : log.level === "warn"
-                        ? "text-yellow-500"
-                        : "text-muted-foreground"
-                  }
-                >
-                  {log.message}
-                </span>
-              </div>
+              <Text key={i} size="xs" py={2} c={getLogColor(log.level)}>
+                {log.message}
+              </Text>
             ))}
             <div ref={logEndRef} />
           </>
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-            暂无日志
-          </div>
+          <Flex h="100%" align="center" justify="center">
+            <Text size="xs" c="dimmed">暂无日志</Text>
+          </Flex>
         )}
-      </div>
-    </div>
+      </ScrollArea>
+    </Box>
   );
 }

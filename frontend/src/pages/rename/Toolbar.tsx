@@ -1,6 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TextInput, Group, Tooltip, ActionIcon, useMantineTheme, useMantineColorScheme } from "@mantine/core";
 import { FolderOpen, ArrowUp, Undo2 } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 
@@ -13,55 +11,59 @@ export default function Toolbar() {
   const undoRuleChange = useRenameStore((s) => s.undoRuleChange);
   const ruleHistory = useRenameStore((s) => s.ruleHistory);
 
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
+
   const handlePathKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const val = (e.target as HTMLInputElement).value.trim();
+      const val = e.currentTarget.value.trim();
       if (val) loadFiles(val);
     }
   };
 
   return (
-    <div className="flex items-center gap-2 border-b border-border bg-toolbar px-3 py-2">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={chooseDirectory}>
-            <FolderOpen size={16} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>选择目录</TooltipContent>
+    <Group
+      gap="xs"
+      px="sm"
+      py={6}
+      style={{
+        borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+        backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
+      }}
+    >
+      <Tooltip label="选择目录">
+        <ActionIcon variant="outline" size="sm" onClick={chooseDirectory}>
+          <FolderOpen size={16} />
+        </ActionIcon>
       </Tooltip>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={parentDirectory}>
-            <ArrowUp size={16} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>上级目录</TooltipContent>
+      <Tooltip label="上级目录">
+        <ActionIcon variant="outline" size="sm" onClick={parentDirectory}>
+          <ArrowUp size={16} />
+        </ActionIcon>
       </Tooltip>
 
-      <Input
-        className="h-8 flex-1 bg-background font-mono text-sm"
+      <TextInput
+        style={{ flex: 1 }}
+        size="xs"
         value={dirPath}
-        onChange={(e) => setDirPath(e.target.value)}
+        onChange={(e) => setDirPath(e.currentTarget.value)}
         onKeyDown={handlePathKeyDown}
         placeholder="输入目录路径，按 Enter 加载"
+        styles={{ input: { fontFamily: "monospace" } }}
       />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={undoRuleChange}
-            disabled={ruleHistory.length === 0}
-          >
-            <Undo2 size={16} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>撤销规则修改</TooltipContent>
+      <Tooltip label="撤销规则修改">
+        <ActionIcon
+          variant="outline"
+          size="sm"
+          onClick={undoRuleChange}
+          disabled={ruleHistory.length === 0}
+        >
+          <Undo2 size={16} />
+        </ActionIcon>
       </Tooltip>
-    </div>
+    </Group>
   );
 }

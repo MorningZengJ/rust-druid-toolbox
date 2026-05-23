@@ -1,5 +1,12 @@
 import { useCallback } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Flex,
+  Stack,
+  Box,
+  Text,
+  ScrollArea,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   ResizablePanel,
   ResizablePanelGroup,
@@ -15,35 +22,53 @@ export function FrameGrid() {
   const selectedFrame = useVideoFrameStore((s) => s.selectedFrame);
   const setSelectedFrame = useVideoFrameStore((s) => s.setSelectedFrame);
   const loadVideo = useVideoFrameStore((s) => s.loadVideo);
+  const theme = useMantineTheme();
 
   const handleDoubleClick = useCallback(async () => {
     await loadVideo();
   }, [loadVideo]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-panel">
-      <div className="flex items-center border-b border-border px-3 py-2">
-        <span className="text-xs font-medium text-muted-foreground">
+    <Flex
+      direction="column"
+      style={{
+        flex: 1,
+        overflow: "hidden",
+        borderRadius: theme.radius.md,
+        border: `1px solid ${theme.colors.gray[3]}`,
+      }}
+    >
+      <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${theme.colors.gray[3]}` }}>
+        <Text size="xs" fw={500} c="dimmed">
           {frames.length > 0 ? `提取的帧 (${frames.length})` : "视频抽帧"}
-        </span>
-      </div>
+        </Text>
+      </Flex>
 
-      <div
-        className="relative flex-1 overflow-hidden"
+      <Box
+        style={{ position: "relative", flex: 1, overflow: "hidden" }}
         onDoubleClick={handleDoubleClick}
       >
         {errorMessage && (
-          <div className="m-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {errorMessage}
-          </div>
+          <Box
+            m="sm"
+            p="xs"
+            style={{
+              border: `1px solid ${theme.colors.red[5]}`,
+              borderRadius: theme.radius.sm,
+              backgroundColor: theme.colors.red[0],
+              color: theme.colors.red[7],
+            }}
+          >
+            <Text size="sm">{errorMessage}</Text>
+          </Box>
         )}
 
         {frames.length > 0 ? (
           selectedFrame !== null && frames[selectedFrame] ? (
-            <ResizablePanelGroup orientation="horizontal" className="h-full">
+            <ResizablePanelGroup orientation="horizontal" style={{ height: "100%" }}>
               <ResizablePanel defaultSize={60} minSize={30}>
-                <ScrollArea className="h-full">
-                  <div className="flex flex-wrap justify-center gap-2 p-3">
+                <ScrollArea h="100%">
+                  <Flex wrap="wrap" justify="center" gap="xs" p="sm">
                     {frames.map((frame, i) => (
                       <FrameThumbnail
                         key={frame.index}
@@ -52,32 +77,32 @@ export function FrameGrid() {
                         onClick={() => setSelectedFrame(i)}
                       />
                     ))}
-                  </div>
+                  </Flex>
                 </ScrollArea>
               </ResizablePanel>
 
-              <ResizableHandle withHandle />
+              <ResizableHandle />
 
               <ResizablePanel defaultSize={40} minSize={20}>
-                <ScrollArea className="h-full">
-                  <div className="p-3">
+                <ScrollArea h="100%">
+                  <Box p="sm">
                     <img
                       src={convertFileSrc(frames[selectedFrame].filePath)}
                       alt={`Frame ${frames[selectedFrame].index}`}
-                      className="w-full rounded border border-border"
+                      style={{ width: "100%", borderRadius: theme.radius.sm, border: `1px solid ${theme.colors.gray[3]}` }}
                     />
-                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <div>帧索引: {frames[selectedFrame].index}</div>
-                      <div>时间戳: {frames[selectedFrame].timestamp.toFixed(3)}s</div>
-                      <div>文件名: {frames[selectedFrame].filename}</div>
-                    </div>
-                  </div>
+                    <Stack gap={4} mt="xs">
+                      <Text size="xs" c="dimmed">帧索引: {frames[selectedFrame].index}</Text>
+                      <Text size="xs" c="dimmed">时间戳: {frames[selectedFrame].timestamp.toFixed(3)}s</Text>
+                      <Text size="xs" c="dimmed">文件名: {frames[selectedFrame].filename}</Text>
+                    </Stack>
+                  </Box>
                 </ScrollArea>
               </ResizablePanel>
             </ResizablePanelGroup>
           ) : (
-            <ScrollArea className="h-full">
-              <div className="flex flex-wrap gap-2 p-3">
+            <ScrollArea h="100%">
+              <Flex wrap="wrap" gap="xs" p="sm">
                 {frames.map((frame, i) => (
                   <FrameThumbnail
                     key={frame.index}
@@ -86,16 +111,18 @@ export function FrameGrid() {
                     onClick={() => setSelectedFrame(i)}
                   />
                 ))}
-              </div>
+              </Flex>
             </ScrollArea>
           )
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            {videoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
-          </div>
+          <Flex h="100%" align="center" justify="center">
+            <Text size="sm" c="dimmed">
+              {videoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
+            </Text>
+          </Flex>
         )}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }
 
@@ -106,23 +133,39 @@ interface FrameThumbnailProps {
 }
 
 function FrameThumbnail({ frame, isSelected, onClick }: FrameThumbnailProps) {
+  const theme = useMantineTheme();
+
   return (
-    <div
-      className={`w-[100px] shrink-0 cursor-pointer overflow-hidden rounded border-2 transition-colors ${
-        isSelected
-          ? "border-primary"
-          : "border-transparent hover:border-muted-foreground/30"
-      }`}
+    <Box
+      w={100}
+      style={{
+        flexShrink: 0,
+        cursor: "pointer",
+        overflow: "hidden",
+        borderRadius: theme.radius.sm,
+        border: isSelected
+          ? `2px solid ${theme.colors[theme.primaryColor][6]}`
+          : "2px solid transparent",
+        transition: "border-color 150ms ease",
+      }}
       onClick={onClick}
     >
       <img
         src={convertFileSrc(frame.filePath)}
         alt={`Frame ${frame.index}`}
-        className="aspect-video w-full object-cover"
+        style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover" }}
       />
-      <div className="bg-muted px-1 py-0.5 text-center text-[10px] text-muted-foreground">
+      <Box
+        py={2}
+        style={{
+          textAlign: "center",
+          backgroundColor: theme.colors.gray[2],
+          fontSize: 10,
+          color: theme.colors.gray[6],
+        }}
+      >
         {frame.timestamp.toFixed(2)}s
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

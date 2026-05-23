@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Stack,
+  Text,
+  TextInput,
+  NumberInput,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Checkbox,
+  Button,
+  Box,
+} from "@mantine/core";
 import { Plus } from "lucide-react";
 import { useLiveRecordStore } from "@/stores/liveRecordStore";
 import { DirectoryPicker } from "@/components/common/DirectoryPicker";
@@ -21,146 +21,120 @@ export function NewRecordForm() {
   const clearError = useLiveRecordStore((s) => s.clearError);
 
   return (
-    <div className="border-b border-border px-3 py-2">
-      <span className="text-xs font-medium text-muted-foreground">
-        新建录制
-      </span>
-      <div className="flex-1 overflow-y-auto">
-        <div className="space-y-3 p-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              直播源 URL
-            </label>
-            <Input
-              className="h-8 text-sm"
-              placeholder="https://... / rtmp://... / rtsp://..."
-              value={newRecordParams.url}
-              onChange={(e) => {
-                clearError();
-                setNewRecordParams({ url: e.target.value });
-              }}
-            />
-          </div>
+    <Box style={{ borderBottom: "1px solid var(--mantine-color-gray-3)" }} px="sm" py="xs">
+      <Text size="xs" fw={500} c="dimmed" mb="xs">新建录制</Text>
+      <Stack gap="sm">
+        <Box>
+          <Text size="xs" fw={500} c="dimmed" mb={4}>直播源 URL</Text>
+          <TextInput
+            size="xs"
+            placeholder="https://... / rtmp://... / rtsp://..."
+            value={newRecordParams.url}
+            onChange={(e) => {
+              clearError();
+              setNewRecordParams({ url: e.currentTarget.value });
+            }}
+          />
+        </Box>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              输出目录
-            </label>
-            <DirectoryPicker
-              value={newRecordParams.outputDir}
-              onChange={(dir) => setNewRecordParams({ outputDir: dir })}
-            />
-          </div>
+        <Box>
+          <Text size="xs" fw={500} c="dimmed" mb={4}>输出目录</Text>
+          <DirectoryPicker
+            value={newRecordParams.outputDir}
+            onChange={(dir) => setNewRecordParams({ outputDir: dir })}
+          />
+        </Box>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              文件名前缀
-            </label>
-            <Input
-              className="h-8 text-sm"
-              value={newRecordParams.filenamePrefix}
-              onChange={(e) =>
-                setNewRecordParams({ filenamePrefix: e.target.value })
-              }
-              placeholder="recording"
-            />
-          </div>
+        <Box>
+          <Text size="xs" fw={500} c="dimmed" mb={4}>文件名前缀</Text>
+          <TextInput
+            size="xs"
+            value={newRecordParams.filenamePrefix}
+            onChange={(e) =>
+              setNewRecordParams({ filenamePrefix: e.currentTarget.value })
+            }
+            placeholder="recording"
+          />
+        </Box>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              容器格式
-            </label>
-            <Select
-              value={newRecordParams.containerFormat}
-              onValueChange={(v) =>
-                setNewRecordParams({ containerFormat: v as ContainerFormat })
-              }
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ts">TS（推荐）</SelectItem>
-                <SelectItem value="mkv">MKV</SelectItem>
-                <SelectItem value="mp4">MP4</SelectItem>
-                <SelectItem value="flv">FLV</SelectItem>
-              </SelectContent>
-            </Select>
-            {newRecordParams.containerFormat === "mp4" && (
-              <p className="text-[10px] text-amber-500">
-                MP4 格式在异常中断时文件可能不可用，推荐 TS 或 MKV
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="stream-copy"
-              checked={newRecordParams.streamCopy}
-              onCheckedChange={(checked) =>
-                setNewRecordParams({ streamCopy: !!checked })
-              }
-            />
-            <label
-              htmlFor="stream-copy"
-              className="text-xs font-medium text-muted-foreground cursor-pointer"
-            >
-              流复制（不重新编码）
-            </label>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              分段时长（秒，留空不分段）
-            </label>
-            <Input
-              type="number"
-              className="h-8 text-sm"
-              placeholder="300 = 5分钟"
-              value={newRecordParams.segmentDurationSecs ?? ""}
-              onChange={(e) => {
-                const val = e.target.value
-                  ? parseInt(e.target.value)
-                  : null;
-                setNewRecordParams({
-                  segmentDurationSecs: val && val > 0 ? val : null,
-                });
-              }}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="preview-enabled"
-              checked={newRecordParams.previewEnabled}
-              onCheckedChange={(checked) =>
-                setNewRecordParams({ previewEnabled: !!checked })
-              }
-            />
-            <label
-              htmlFor="preview-enabled"
-              className="text-xs font-medium text-muted-foreground cursor-pointer"
-            >
-              实时预览
-            </label>
-          </div>
-
-          {errorMessage && (
-            <div className="rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {errorMessage}
-            </div>
+        <Box>
+          <Text size="xs" fw={500} c="dimmed" mb={4}>容器格式</Text>
+          <Select
+            size="xs"
+            value={newRecordParams.containerFormat}
+            onChange={(v) =>
+              setNewRecordParams({ containerFormat: (v ?? "ts") as ContainerFormat })
+            }
+            data={[
+              { value: "ts", label: "TS（推荐）" },
+              { value: "mkv", label: "MKV" },
+              { value: "mp4", label: "MP4" },
+              { value: "flv", label: "FLV" },
+            ]}
+          />
+          {newRecordParams.containerFormat === "mp4" && (
+            <Text size="xs" c="orange">MP4 格式在异常中断时文件可能不可用，推荐 TS 或 MKV</Text>
           )}
+        </Box>
 
-          <Button
-            className="w-full"
-            onClick={startRecording}
-            disabled={!newRecordParams.url || !newRecordParams.outputDir}
+        <Checkbox
+          size="xs"
+          label="流复制（不重新编码）"
+          checked={newRecordParams.streamCopy}
+          onChange={(e) =>
+            setNewRecordParams({ streamCopy: e.currentTarget.checked })
+          }
+        />
+
+        <Box>
+          <Text size="xs" fw={500} c="dimmed" mb={4}>分段时长（秒，留空不分段）</Text>
+          <NumberInput
+            size="xs"
+            placeholder="300 = 5分钟"
+            value={newRecordParams.segmentDurationSecs ?? undefined}
+            onChange={(v) => {
+              const val = typeof v === "number" ? v : null;
+              setNewRecordParams({
+                segmentDurationSecs: val && val > 0 ? val : null,
+              });
+            }}
+            min={0}
+          />
+        </Box>
+
+        <Checkbox
+          size="xs"
+          label="实时预览"
+          checked={newRecordParams.previewEnabled}
+          onChange={(e) =>
+            setNewRecordParams({ previewEnabled: e.currentTarget.checked })
+          }
+        />
+
+        {errorMessage && (
+          <Box
+            px="sm"
+            py="xs"
+            style={{
+              border: "1px solid var(--mantine-color-red-5)",
+              borderRadius: "var(--mantine-radius-sm)",
+              backgroundColor: "var(--mantine-color-red-0)",
+            }}
           >
-            <Plus size={14} className="mr-1" />
-            开始录制
-          </Button>
-        </div>
-      </div>
-    </div>
+            <Text size="xs" c="red">{errorMessage}</Text>
+          </Box>
+        )}
+
+        <Button
+          fullWidth
+          size="compact-sm"
+          leftSection={<Plus size={14} />}
+          onClick={startRecording}
+          disabled={!newRecordParams.url || !newRecordParams.outputDir}
+        >
+          开始录制
+        </Button>
+      </Stack>
+    </Box>
   );
 }

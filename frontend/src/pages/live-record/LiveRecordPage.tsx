@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Flex, useMantineTheme } from "@mantine/core";
 import { useLiveRecordStore } from "@/stores/liveRecordStore";
 import { LogPanel } from "@/components/common/LogPanel";
 import { NewRecordForm } from "./NewRecordForm";
@@ -14,6 +15,7 @@ export default function LiveRecordPage() {
   const unregisterEventListeners = useLiveRecordStore(
     (s) => s.unregisterEventListeners
   );
+  const theme = useMantineTheme();
 
   useEffect(() => {
     registerEventListeners();
@@ -26,16 +28,21 @@ export default function LiveRecordPage() {
     selectedTaskId ? tasks[selectedTaskId] ?? null : null;
 
   return (
-    <div className="flex h-full gap-3">
-      <div className="flex w-[320px] shrink-0 flex-col rounded-lg border border-border bg-panel">
+    <Flex h="100%" gap="sm">
+      <Flex
+        direction="column"
+        w={320}
+        style={{
+          flexShrink: 0,
+          borderRadius: theme.radius.md,
+          border: `1px solid ${theme.colors.gray[3]}`,
+        }}
+      >
         <NewRecordForm />
         <TaskList />
-        <LogPanel
-          logs={selectedTask?.logs ?? []}
-          height="h-[140px]"
-        />
-      </div>
+        <LogPanel logs={selectedTask?.logs ?? []} height={140} />
+      </Flex>
       <PreviewPanel />
-    </div>
+    </Flex>
   );
 }

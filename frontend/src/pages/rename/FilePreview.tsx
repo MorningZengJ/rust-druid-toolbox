@@ -1,6 +1,6 @@
+import { Badge, Text, Group, useMantineTheme, useMantineColorScheme } from "@mantine/core";
 import { useRenameStore } from "@/stores/renameStore";
 import { renameLogic } from "@/lib/renameLogic";
-import { Badge } from "@/components/ui/badge";
 import { Virtuoso } from "react-virtuoso";
 import FileIcon from "@/components/FileIcon";
 import type { FileInfo } from "@/types";
@@ -14,6 +14,10 @@ export default function FilePreview() {
   const selectedFile = useRenameStore((s) => s.selectedFile);
   const setSelectedFile = useRenameStore((s) => s.setSelectedFile);
   const loadFiles = useRenameStore((s) => s.loadFiles);
+
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
 
   const activeRules = replaceInfos.filter((r) => r.enable);
   const displayedFiles = filterFileList.slice(0, displayLimit);
@@ -48,29 +52,37 @@ export default function FilePreview() {
 
   if (filterFileList.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        选择目录以加载文件列表
+      <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
+        <Text size="sm" c="dimmed">选择目录以加载文件列表</Text>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
-        <span className="text-xs font-medium text-muted-foreground">
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Group
+        justify="space-between"
+        align="center"
+        px="sm"
+        py={6}
+        style={{ borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}` }}
+      >
+        <Text size="xs" fw={500} c="dimmed">
           文件预览 ({filterFileList.length})
-        </span>
+        </Text>
         {hasMore && (
-          <button
-            className="text-xs text-primary hover:underline"
+          <Text
+            size="xs"
+            c="primary"
+            style={{ cursor: "pointer", textDecoration: "underline" }}
             onClick={loadMore}
           >
             加载更多 (显示 {displayLimit}/{filterFileList.length})
-          </button>
+          </Text>
         )}
-      </div>
+      </Group>
 
-      <div className="flex-1 overflow-hidden">
+      <div style={{ flex: 1, overflow: "hidden" }}>
         <Virtuoso
           style={{ height: "100%" }}
           totalCount={displayedFiles.length}
@@ -82,32 +94,61 @@ export default function FilePreview() {
             const hasConflict = conflictIndices.has(index);
             const isSelected = selectedFile?.path === file.path;
 
+            const rowBg = hasConflict
+              ? (isDark ? "rgba(239, 68, 68, 0.1)" : "rgba(239, 68, 68, 0.08)")
+              : isSelected
+                ? (isDark ? theme.colors.dark[5] : theme.colors.gray[1])
+                : "transparent";
+
+            const newTextColor = changed
+              ? hasConflict
+                ? theme.colors.red[isDark ? 4 : 7]
+                : theme.colors.green[isDark ? 4 : 8]
+              : (isDark ? theme.colors.dark[2] : theme.colors.gray[6]);
+
             return (
               <div
-                className={`flex cursor-pointer items-center gap-2 border-b border-border px-3 py-1.5 text-sm hover:bg-muted/50 ${
-                  isSelected ? "bg-muted" : ""
-                } ${hasConflict ? "bg-conflict/10" : ""}`}
+                style={{
+                  display: "flex",
+                  cursor: "pointer",
+                  alignItems: "center",
+                  gap: 8,
+                  borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+                  padding: "6px 12px",
+                  fontSize: 14,
+                  backgroundColor: rowBg,
+                }}
                 onClick={() => setSelectedFile(isSelected ? null : file)}
                 onDoubleClick={() => handleDoubleClick(file)}
               >
                 <FileIcon isDir={file.isDir} extension={file.extension} />
-                <span className="min-w-0 flex-1 truncate font-mono text-sm">
+                <Text
+                  size="sm"
+                  truncate
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontFamily: "monospace",
+                  }}
+                >
                   {file.name}
-                </span>
-                <span className="shrink-0 text-muted-foreground">→</span>
-                <span
-                  className={`min-w-0 flex-1 truncate font-mono text-sm ${
-                    changed
-                      ? hasConflict
-                        ? "text-destructive font-medium"
-                        : "text-diff-added"
-                      : "text-muted-foreground"
-                  }`}
+                </Text>
+                <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>→</Text>
+                <Text
+                  size="sm"
+                  truncate
+                  fw={changed && hasConflict ? 600 : undefined}
+                  c={newTextColor}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontFamily: "monospace",
+                  }}
                 >
                   {newName}
-                </span>
+                </Text>
                 {hasConflict && (
-                  <Badge variant="destructive" className="shrink-0 text-xs">
+                  <Badge color="red" variant="filled" size="sm" style={{ flexShrink: 0 }}>
                     冲突
                   </Badge>
                 )}

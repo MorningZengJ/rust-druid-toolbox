@@ -16,7 +16,7 @@
 
 - **组件**: 函数组件 + hooks，文件名 PascalCase（RenamePage.tsx）
 - **状态管理**: Zustand store（v5），每个页面独立 store，不使用 React Context
-- **样式**: Tailwind CSS v4 + shadcn/ui，不写自定义 CSS
+- **样式**: Mantine UI 组件 + 内联样式，优先使用 Mantine 的 Flex/Box/Stack/Text 等布局组件和 style props，不写自定义 CSS
 - **类型**: 所有 IPC 数据结构必须在 `types/index.ts` 中定义，匹配 Rust serde 结构
 - **路径别名**: `@/` 指向 `frontend/src/`
 - **图标**: 使用 lucide-react，不使用自定义 SVG
@@ -31,12 +31,14 @@
 - **错误处理**: Tauri 命令返回 `Result<T, String>` 或直接返回值
 - **条件编译**: 视频帧/视频工具功能通过 `#[cfg(feature = "video-frame")]` 控制，直播录制通过 `#[cfg(feature = "live-record")]` 控制
 
-### shadcn/ui 组件
+### Mantine UI 组件
 
-- 组件放在 `frontend/src/components/ui/`
-- 使用 `npx shadcn@latest add <component>` 添加新组件
-- 不修改 shadcn/ui 生成的组件源码
-- 自定义组件放在 `frontend/src/components/`（非 ui/ 子目录）
+- 使用 `@mantine/core` 提供的组件（Button, TextInput, Select, Checkbox, Slider, Badge, Modal, Tabs, Tooltip, Menu, ScrollArea 等）
+- 布局使用 Flex/Box/Stack/Group/Text 等 Mantine 组件，不使用 Tailwind 工具类
+- 主题通过 `MantineProvider` 和 `useMantineTheme()` 管理
+- 暗色模式通过 `useMantineColorScheme()` 管理
+- 保留 `react-resizable-panels`（Mantine 无可调整面板组件）
+- 保留 `react-virtuoso`（Mantine 无虚拟滚动组件）
 
 ## 文件操作安全
 
@@ -58,8 +60,8 @@
 
 ## 禁止事项
 
-- 禁止在前端写自定义 CSS（使用 Tailwind + shadcn/ui）
-- 禁止修改 shadcn/ui 生成的组件源码
+- 禁止在前端写自定义 CSS 文件（使用 Mantine 组件和 style props）
+- 禁止引入 Tailwind CSS 工具类（项目已完全迁移到 Mantine）
 - 禁止在 Rust 中使用 `unwrap()`（Tauri 命令中）
 - 禁止引入与现有功能重复的依赖
 - 禁止静默忽略文件系统错误（如 `let _ = fs::rename(...)`）

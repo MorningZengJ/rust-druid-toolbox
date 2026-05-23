@@ -27,7 +27,6 @@ interface RenameState {
   // UI state
   filterCollapsed: boolean;
   rulesCollapsed: boolean[];
-  showConfirm: boolean;
   selectedFile: FileInfo | null;
 
   // Actions
@@ -47,7 +46,6 @@ interface RenameState {
   setDisplayLimit: (limit: number) => void;
   loadMore: () => void;
   setSelectedFile: (file: FileInfo | null) => void;
-  setShowConfirm: (show: boolean) => void;
   setFilterCollapsed: (collapsed: boolean) => void;
   toggleRuleCollapse: (index: number) => void;
   clearStatus: () => void;
@@ -72,7 +70,6 @@ export const useRenameStore = create<RenameState>((set, get) => ({
 
   filterCollapsed: false,
   rulesCollapsed: [],
-  showConfirm: false,
   selectedFile: null,
 
   // Actions
@@ -240,7 +237,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         files: filterFileList,
         rules: replaceInfos,
       });
-      set({ status: result, showConfirm: false });
+      set({ status: result });
       // Reload files after rename
       get().loadFiles(dirPath);
     } catch (e) {
@@ -256,7 +253,6 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   },
 
   setSelectedFile: (file) => set({ selectedFile: file }),
-  setShowConfirm: (show) => set({ showConfirm: show }),
   setFilterCollapsed: (collapsed) => set({ filterCollapsed: collapsed }),
 
   toggleRuleCollapse: (index) => {

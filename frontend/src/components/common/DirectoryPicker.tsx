@@ -1,5 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Group, TextInput, ActionIcon } from "@mantine/core";
 import { FolderOpen } from "lucide-react";
 
 interface DirectoryPickerProps {
@@ -22,21 +21,17 @@ export function DirectoryPicker({
   };
 
   return (
-    <div className="flex gap-1">
-      <Input
-        className="h-8 text-sm flex-1"
+    <Group gap={4} wrap="nowrap">
+      <TextInput
+        size="xs"
+        style={{ flex: 1 }}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.currentTarget.value)}
         placeholder={placeholder}
       />
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 w-8 p-0 shrink-0"
-        onClick={handleBrowse}
-      >
+      <ActionIcon variant="outline" size="md" onClick={handleBrowse}>
         <FolderOpen size={14} />
-      </Button>
-    </div>
+      </ActionIcon>
+    </Group>
   );
 }

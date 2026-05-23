@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Flex } from "@mantine/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useVideoFrameStore } from "@/stores/videoFrameStore";
 import { FfmpegWarning } from "@/components/common/FfmpegWarning";
@@ -23,7 +24,6 @@ export default function VideoFramePage() {
     };
   }, [stopWatcher]);
 
-  // Tauri native file drag & drop
   useEffect(() => {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
       if (event.payload.type === "drop") {
@@ -46,9 +46,9 @@ export default function VideoFramePage() {
   }
 
   return (
-    <div className="flex h-full gap-3">
+    <Flex h="100%" gap="sm">
       <ParamsPanel />
       <FrameGrid />
-    </div>
+    </Flex>
   );
 }

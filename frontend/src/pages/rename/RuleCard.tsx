@@ -1,6 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useMantineColorScheme } from "@mantine/core";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import type { ReplaceInfo } from "@/types";
@@ -16,81 +14,96 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
   const updateReplaceInfo = useRenameStore((s) => s.updateReplaceInfo);
   const removeReplaceInfo = useRenameStore((s) => s.removeReplaceInfo);
 
+  const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
+
   const collapsed = rulesCollapsed[index] ?? false;
 
   return (
-    <div className="rounded-md border border-border bg-card">
-      <div className="flex items-center gap-1 px-2 py-1.5">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 shrink-0"
+    <div
+      style={{
+        borderRadius: theme.radius.md,
+        border: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+      }}
+    >
+      <Group gap={4} px="xs" py={6} align="center">
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          color="gray"
           onClick={() => toggleRuleCollapse(index)}
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-        </Button>
+        </ActionIcon>
 
-        <span className="flex-1 truncate text-xs font-medium text-muted-foreground">
+        <Text size="xs" fw={500} c="dimmed" style={{ flex: 1 }} truncate>
           规则 {index + 1}
           {!collapsed && (
-            <span className="ml-2 text-muted-foreground/60">
+            <Text span size="xs" c="dimmed" opacity={0.6} ml="xs">
               {rule.content || "(空)"} → {rule.target || "(空)"}
-            </span>
+            </Text>
           )}
-        </span>
+        </Text>
 
-        <div className="flex items-center gap-1">
+        <Group gap={4} align="center">
           <Checkbox
             checked={rule.enable}
-            onCheckedChange={(checked) =>
-              updateReplaceInfo(index, { enable: !!checked })
-            }
-            className="h-4 w-4"
+            onChange={(e) => updateReplaceInfo(index, { enable: e.currentTarget.checked })}
+            size="xs"
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
+          <ActionIcon
+            variant="subtle"
+            size="sm"
+            color="gray"
             onClick={() => removeReplaceInfo(index)}
           >
             <Trash2 size={14} />
-          </Button>
-        </div>
-      </div>
+          </ActionIcon>
+        </Group>
+      </Group>
 
       {!collapsed && (
-        <div className="space-y-2 border-t border-border px-3 py-2">
-          <div className="flex items-center gap-2">
-            <label className="w-12 shrink-0 text-xs text-muted-foreground">查找</label>
-            <Input
-              className="h-7 flex-1 font-mono text-sm"
+        <Stack
+          gap="xs"
+          px="sm"
+          py="xs"
+          style={{ borderTop: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}` }}
+        >
+          <Group gap="xs" align="center">
+            <Text size="xs" c="dimmed" w={48} style={{ flexShrink: 0 }}>查找</Text>
+            <TextInput
+              style={{ flex: 1 }}
+              size="xs"
               placeholder="查找内容"
               value={rule.content}
-              onChange={(e) => updateReplaceInfo(index, { content: e.target.value })}
+              onChange={(e) => updateReplaceInfo(index, { content: e.currentTarget.value })}
+              styles={{ input: { fontFamily: "monospace" } }}
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="w-12 shrink-0 text-xs text-muted-foreground">替换</label>
-            <Input
-              className="h-7 flex-1 font-mono text-sm"
+          </Group>
+          <Group gap="xs" align="center">
+            <Text size="xs" c="dimmed" w={48} style={{ flexShrink: 0 }}>替换</Text>
+            <TextInput
+              style={{ flex: 1 }}
+              size="xs"
               placeholder="替换为"
               value={rule.target}
-              onChange={(e) => updateReplaceInfo(index, { target: e.target.value })}
+              onChange={(e) => updateReplaceInfo(index, { target: e.currentTarget.value })}
+              styles={{ input: { fontFamily: "monospace" } }}
             />
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          </Group>
+          <Group gap="sm">
+            <Group gap={6} align="center">
               <Checkbox
                 checked={rule.isRegex}
-                onCheckedChange={(checked) =>
-                  updateReplaceInfo(index, { isRegex: !!checked })
-                }
-                className="h-4 w-4"
+                onChange={(e) => updateReplaceInfo(index, { isRegex: e.currentTarget.checked })}
+                size="xs"
               />
-              正则表达式
-            </label>
-          </div>
-        </div>
+              <Text size="xs" c="dimmed">正则表达式</Text>
+            </Group>
+          </Group>
+        </Stack>
       )}
     </div>
   );

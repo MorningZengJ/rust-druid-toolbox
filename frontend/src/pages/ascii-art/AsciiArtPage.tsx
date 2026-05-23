@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Flex } from "@mantine/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
 import { ControlPanel } from "./ControlPanel";
@@ -17,7 +18,6 @@ export default function AsciiArtPage() {
     };
   }, [cleanup]);
 
-  // Tauri native file drag & drop
   useEffect(() => {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
       if (event.payload.type === "drop") {
@@ -35,7 +35,6 @@ export default function AsciiArtPage() {
     };
   }, [loadImageFromPath]);
 
-  // Paste handler
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -59,9 +58,9 @@ export default function AsciiArtPage() {
   }, [loadImageFromPaste]);
 
   return (
-    <div className="flex h-full gap-3" onPaste={(e) => e.preventDefault()}>
+    <Flex h="100%" gap="sm" onPaste={(e) => e.preventDefault()}>
       <ControlPanel />
       <PreviewPanel />
-    </div>
+    </Flex>
   );
 }

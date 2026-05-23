@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import {
+  Button,
+  TextInput,
+  NumberInput,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  Slider,
+  ScrollArea,
+  Box,
+  Flex,
+  Text,
+  Stack,
+  Group,
+  Progress,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   Play,
   FolderOpen,
@@ -28,6 +32,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ExtractMode, OutputFormat } from "@/types";
 
 export function ExtractPanel() {
+  const theme = useMantineTheme();
   const extractVideoPath = useVideoToolStore((s) => s.extractVideoPath);
   const extractVideoInfo = useVideoToolStore((s) => s.extractVideoInfo);
   const extractParams = useVideoToolStore((s) => s.extractParams);
@@ -97,326 +102,368 @@ export function ExtractPanel() {
     return secs > 0 ? `${mins}分${secs}秒` : `${mins}分`;
   }
 
+  const borderColor = theme.colors.dark[4];
+  const mutedBg = theme.colors.dark[3];
+
   return (
     <>
       {/* Left: Controls */}
-      <div className="flex w-[280px] shrink-0 flex-col rounded-lg border border-border bg-panel">
-        <div className="flex items-center border-b border-border px-3 py-2">
-          <span className="text-xs font-medium text-muted-foreground">参数设置</span>
-        </div>
+      <Box
+        w={280}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: 8,
+          border: `1px solid ${borderColor}`,
+          flexShrink: 0,
+          overflow: "hidden",
+        }}
+      >
+        <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
+          <Text size="xs" fw={500} c="dimmed">参数设置</Text>
+        </Flex>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-4 p-3">
+        <Box style={{ flex: 1, overflowY: "auto" }}>
+          <Stack gap="md" p="sm">
             {extractVideoInfo && (
-              <div className="rounded border border-border bg-muted/30 p-2 text-xs">
-                <div className="flex items-center gap-1 mb-1">
-                  <Film size={12} className="text-muted-foreground" />
-                  <span className="font-medium truncate">{extractVideoPath.split(/[/\\]/).pop()}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1 text-muted-foreground">
-                  <span>分辨率: {extractVideoInfo.width}x{extractVideoInfo.height}</span>
-                  <span>帧率: {extractVideoInfo.fps.toFixed(1)} fps</span>
-                  <span>时长: {extractVideoInfo.duration.toFixed(1)}s</span>
-                  <span>总帧数: {extractVideoInfo.totalFrames}</span>
-                </div>
-              </div>
+              <Box p="xs" style={{ borderRadius: 4, border: `1px solid ${borderColor}`, background: mutedBg }}>
+                <Group gap={4} mb={4}>
+                  <Film size={12} color={theme.colors.dark[2]} />
+                  <Text size="xs" fw={500} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {extractVideoPath.split(/[/\\]/).pop()}
+                  </Text>
+                </Group>
+                <Box style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                  <Text size="xs" c="dimmed">分辨率: {extractVideoInfo.width}x{extractVideoInfo.height}</Text>
+                  <Text size="xs" c="dimmed">帧率: {extractVideoInfo.fps.toFixed(1)} fps</Text>
+                  <Text size="xs" c="dimmed">时长: {extractVideoInfo.duration.toFixed(1)}s</Text>
+                  <Text size="xs" c="dimmed">总帧数: {extractVideoInfo.totalFrames}</Text>
+                </Box>
+              </Box>
             )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">帧图存放路径</label>
-              <div className="flex gap-1">
-                <Input
-                  className="h-8 text-sm flex-1"
+            <Stack gap={4}>
+              <Text size="xs" fw={500} c="dimmed">帧图存放路径</Text>
+              <Group gap={4}>
+                <TextInput
+                  size="xs"
+                  style={{ flex: 1 }}
                   value={extractOutputDir}
-                  onChange={(e) => setExtractOutputDir(e.target.value)}
+                  onChange={(e) => setExtractOutputDir(e.currentTarget.value)}
                   placeholder="选择或输入路径"
                 />
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={handleBrowseOutputDir}>
+                <Button variant="outline" size="compact-sm" style={{ width: 32, height: 32, padding: 0 }} onClick={handleBrowseOutputDir}>
                   <FolderOpen size={14} />
                 </Button>
-              </div>
-            </div>
+              </Group>
+            </Stack>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">提取模式</label>
+            <Stack gap={4}>
+              <Text size="xs" fw={500} c="dimmed">提取模式</Text>
               <Select
+                size="xs"
                 value={extractParams.mode}
-                onValueChange={(v) => setExtractParams({ mode: v as ExtractMode })}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="allFrames">全部帧</SelectItem>
-                  <SelectItem value="byInterval">按间隔</SelectItem>
-                  <SelectItem value="byCount">按数量</SelectItem>
-                  <SelectItem value="byTimePoints">按时间点</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                onChange={(v) => v && setExtractParams({ mode: v as ExtractMode })}
+                data={[
+                  { value: "allFrames", label: "全部帧" },
+                  { value: "byInterval", label: "按间隔" },
+                  { value: "byCount", label: "按数量" },
+                  { value: "byTimePoints", label: "按时间点" },
+                ]}
+              />
+            </Stack>
 
             {extractParams.mode === "byInterval" && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
+              <Stack gap={4}>
+                <Text size="xs" fw={500} c="dimmed">
                   间隔: {extractParams.intervalSecs.toFixed(1)} 秒
-                </label>
+                </Text>
                 <Slider
-                  value={[extractParams.intervalSecs]}
-                  onValueChange={([v]) => setExtractParams({ intervalSecs: v })}
+                  value={extractParams.intervalSecs}
+                  onChange={(v) => setExtractParams({ intervalSecs: v })}
                   min={0.1}
                   max={30}
                   step={0.1}
                 />
-              </div>
+              </Stack>
             )}
 
             {extractParams.mode === "byCount" && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">帧数量</label>
-                <Input
-                  type="number"
-                  className="h-8 text-sm"
+              <Stack gap={4}>
+                <Text size="xs" fw={500} c="dimmed">帧数量</Text>
+                <NumberInput
+                  size="xs"
                   value={extractParams.frameCount}
-                  onChange={(e) => setExtractParams({ frameCount: parseInt(e.target.value) || 10 })}
+                  onChange={(v) => setExtractParams({ frameCount: typeof v === "number" ? v : 10 })}
                   min={1}
                   max={1000}
                 />
-              </div>
+              </Stack>
             )}
 
             {extractParams.mode === "byTimePoints" && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
+              <Stack gap={4}>
+                <Text size="xs" fw={500} c="dimmed">
                   时间点（秒，逗号分隔）
-                </label>
-                <Input
-                  className="h-8 text-sm"
+                </Text>
+                <TextInput
+                  size="xs"
                   placeholder="1.0, 5.0, 10.0"
                   onChange={(e) => {
-                    const points = e.target.value
+                    const points = e.currentTarget.value
                       .split(",")
                       .map((s) => parseFloat(s.trim()))
                       .filter((n) => !isNaN(n));
                     setExtractParams({ timePoints: points });
                   }}
                 />
-              </div>
+              </Stack>
             )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">输出格式</label>
+            <Stack gap={4}>
+              <Text size="xs" fw={500} c="dimmed">输出格式</Text>
               <Select
+                size="xs"
                 value={extractParams.outputFormat}
-                onValueChange={(v) => setExtractParams({ outputFormat: v as OutputFormat })}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="png">PNG</SelectItem>
-                  <SelectItem value="jpeg">JPEG</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                onChange={(v) => v && setExtractParams({ outputFormat: v as OutputFormat })}
+                data={[
+                  { value: "png", label: "PNG" },
+                  { value: "jpeg", label: "JPEG" },
+                ]}
+              />
+            </Stack>
 
             {extractParams.outputFormat === "jpeg" && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
+              <Stack gap={4}>
+                <Text size="xs" fw={500} c="dimmed">
                   JPEG 质量: {extractParams.jpegQuality}
-                </label>
+                </Text>
                 <Slider
-                  value={[extractParams.jpegQuality]}
-                  onValueChange={([v]) => setExtractParams({ jpegQuality: v })}
+                  value={extractParams.jpegQuality}
+                  onChange={(v) => setExtractParams({ jpegQuality: v })}
                   min={1}
                   max={100}
                   step={1}
                 />
-              </div>
+              </Stack>
             )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+            <Stack gap={4}>
+              <Text size="xs" fw={500} c="dimmed">
                 缩放宽度（留空不缩放）
-              </label>
-              <Input
-                type="number"
-                className="h-8 text-sm"
+              </Text>
+              <NumberInput
+                size="xs"
                 placeholder="原始宽度"
-                value={extractParams.resizeWidth ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value ? parseInt(e.target.value) : undefined;
-                  setExtractParams({ resizeWidth: val });
+                value={extractParams.resizeWidth ?? undefined}
+                onChange={(v) => {
+                  setExtractParams({ resizeWidth: typeof v === "number" ? v : undefined });
                 }}
               />
-            </div>
+            </Stack>
 
             <Button
-              className="w-full"
+              fullWidth
               disabled={!extractVideoPath || isExtracting}
               onClick={runExtractFrames}
+              leftSection={isExtracting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
             >
               {isExtracting ? (
                 <>
-                  <Loader2 size={14} className="mr-1 animate-spin" />
                   提取中 {extractProgress.toFixed(0)}%
                   {extractEstimatedTimeRemaining !== null && extractEstimatedTimeRemaining > 0 && (
-                    <span className="ml-1">· 剩余 {formatTime(extractEstimatedTimeRemaining)}</span>
+                    <Text span ml={4}>· 剩余 {formatTime(extractEstimatedTimeRemaining)}</Text>
                   )}
                 </>
               ) : (
-                <>
-                  <Play size={14} className="mr-1" />
-                  提取帧
-                </>
+                "提取帧"
               )}
             </Button>
 
             {isExtracting && (
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${extractProgress}%` }}
-                />
-              </div>
+              <Progress value={extractProgress} size="sm" radius="xl" />
             )}
-          </div>
-        </div>
+          </Stack>
+        </Box>
 
         {/* Logs */}
-        <div className="h-[140px] shrink-0 border-t border-border">
-          <div className="flex items-center border-b border-border px-3 py-1.5">
-            <span className="text-xs font-medium text-muted-foreground">日志</span>
-          </div>
-          <div className="h-[calc(100%-28px)] overflow-y-auto p-2">
+        <Box style={{ height: 140, flexShrink: 0, borderTop: `1px solid ${borderColor}` }}>
+          <Flex align="center" px="sm" py={6} style={{ borderBottom: `1px solid ${borderColor}` }}>
+            <Text size="xs" fw={500} c="dimmed">日志</Text>
+          </Flex>
+          <Box style={{ height: "calc(100% - 28px)", overflowY: "auto" }} p="xs">
             {extractLogs.length > 0 ? (
               <>
                 {extractLogs.map((log, i) => (
-                  <div key={i} className="text-xs py-0.5">
-                    <span className={log.level === 'error' ? 'text-destructive' : log.level === 'warn' ? 'text-yellow-500' : 'text-muted-foreground'}>
-                      {log.message}
-                    </span>
-                  </div>
+                  <Text
+                    key={i}
+                    size="xs"
+                    py={2}
+                    c={log.level === "error" ? "red" : log.level === "warn" ? "yellow" : "dimmed"}
+                  >
+                    {log.message}
+                  </Text>
                 ))}
                 <div ref={logEndRef} />
               </>
             ) : (
-              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                暂无日志
-              </div>
+              <Flex h="100%" align="center" justify="center">
+                <Text size="xs" c="dimmed">暂无日志</Text>
+              </Flex>
             )}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Right: Frame grid */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-panel">
-        <div className="flex items-center border-b border-border px-3 py-2">
-          <span className="text-xs font-medium text-muted-foreground">
+      <Box
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          overflow: "hidden",
+          borderRadius: 8,
+          border: `1px solid ${borderColor}`,
+        }}
+      >
+        <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
+          <Text size="xs" fw={500} c="dimmed">
             {extractFrames.length > 0 ? `提取的帧 (${extractFrames.length})` : "视频抽帧"}
-          </span>
-        </div>
+          </Text>
+        </Flex>
 
-        <div
-          className="relative flex-1 overflow-hidden"
+        <Box
+          pos="relative"
+          style={{ flex: 1, overflow: "hidden" }}
           onDoubleClick={() => loadVideo()}
         >
           {errorMessage && (
-            <div className="m-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </div>
+            <Box
+              m="sm"
+              px="sm"
+              py="xs"
+              style={{
+                borderRadius: 4,
+                border: `1px solid ${theme.colors.red[4]}`,
+                background: `${theme.colors.red[0]}`,
+              }}
+            >
+              <Text size="sm" c="red">{errorMessage}</Text>
+            </Box>
           )}
 
           {isDragOver && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded-lg">
-              <div className="flex flex-col items-center gap-2 text-primary">
+            <Flex
+              pos="absolute"
+              inset={0}
+              align="center"
+              justify="center"
+              style={{
+                zIndex: 10,
+                borderRadius: 8,
+                border: `2px dashed ${theme.colors.blue[6]}`,
+                background: `${theme.colors.blue[0]}`,
+              }}
+            >
+              <Stack align="center" gap="xs" c="blue">
                 <Upload size={48} />
-                <span className="text-sm font-medium">松开以加载视频</span>
-              </div>
-            </div>
+                <Text size="sm" fw={500}>松开以加载视频</Text>
+              </Stack>
+            </Flex>
           )}
 
           {extractFrames.length > 0 ? (
             extractSelectedFrame !== null && extractFrames[extractSelectedFrame] ? (
               <ResizablePanelGroup orientation="horizontal" className="h-full">
                 <ResizablePanel defaultSize={60} minSize={30}>
-                  <ScrollArea className="h-full">
-                    <div className="flex flex-wrap justify-center gap-2 p-3">
+                  <ScrollArea style={{ height: "100%" }}>
+                    <Flex wrap="wrap" justify="center" gap="xs" p="sm">
                       {extractFrames.map((frame, i) => (
-                        <div
+                        <Box
                           key={frame.index}
-                          className={`w-[100px] shrink-0 cursor-pointer overflow-hidden rounded border-2 transition-colors ${
-                            extractSelectedFrame === i
-                              ? "border-primary"
-                              : "border-transparent hover:border-muted-foreground/30"
-                          }`}
+                          w={100}
+                          style={{
+                            flexShrink: 0,
+                            cursor: "pointer",
+                            overflow: "hidden",
+                            borderRadius: 4,
+                            border: `2px solid ${extractSelectedFrame === i ? theme.colors.blue[6] : "transparent"}`,
+                            transition: "border-color 0.15s",
+                          }}
                           onClick={() => setExtractSelectedFrame(i)}
                         >
                           <img
                             src={convertFileSrc(frame.filePath)}
                             alt={`Frame ${frame.index}`}
-                            className="aspect-video w-full object-cover"
+                            style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }}
                           />
-                          <div className="bg-muted px-1 py-0.5 text-center text-[10px] text-muted-foreground">
-                            {frame.timestamp.toFixed(2)}s
-                          </div>
-                        </div>
+                          <Box px={4} py={2} ta="center" style={{ background: mutedBg }}>
+                            <Text size="xs" c="dimmed">{frame.timestamp.toFixed(2)}s</Text>
+                          </Box>
+                        </Box>
                       ))}
-                    </div>
+                    </Flex>
                   </ScrollArea>
                 </ResizablePanel>
 
                 <ResizableHandle withHandle />
 
                 <ResizablePanel defaultSize={40} minSize={20}>
-                  <ScrollArea className="h-full">
-                    <div className="p-3">
+                  <ScrollArea style={{ height: "100%" }}>
+                    <Box p="sm">
                       <img
                         src={convertFileSrc(extractFrames[extractSelectedFrame].filePath)}
                         alt={`Frame ${extractFrames[extractSelectedFrame].index}`}
-                        className="w-full rounded border border-border"
+                        style={{ width: "100%", borderRadius: 4, border: `1px solid ${borderColor}`, display: "block" }}
                       />
-                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                        <div>帧索引: {extractFrames[extractSelectedFrame].index}</div>
-                        <div>时间戳: {extractFrames[extractSelectedFrame].timestamp.toFixed(3)}s</div>
-                        <div>文件名: {extractFrames[extractSelectedFrame].filename}</div>
-                      </div>
-                    </div>
+                      <Stack gap={2} mt="xs">
+                        <Text size="xs" c="dimmed">帧索引: {extractFrames[extractSelectedFrame].index}</Text>
+                        <Text size="xs" c="dimmed">时间戳: {extractFrames[extractSelectedFrame].timestamp.toFixed(3)}s</Text>
+                        <Text size="xs" c="dimmed">文件名: {extractFrames[extractSelectedFrame].filename}</Text>
+                      </Stack>
+                    </Box>
                   </ScrollArea>
                 </ResizablePanel>
               </ResizablePanelGroup>
             ) : (
-              <ScrollArea className="h-full">
-                <div className="flex flex-wrap gap-2 p-3">
+              <ScrollArea style={{ height: "100%" }}>
+                <Flex wrap="wrap" gap="xs" p="sm">
                   {extractFrames.map((frame, i) => (
-                    <div
+                    <Box
                       key={frame.index}
-                      className={`w-[100px] shrink-0 cursor-pointer overflow-hidden rounded border-2 transition-colors ${
-                        extractSelectedFrame === i
-                          ? "border-primary"
-                          : "border-transparent hover:border-muted-foreground/30"
-                      }`}
+                      w={100}
+                      style={{
+                        flexShrink: 0,
+                        cursor: "pointer",
+                        overflow: "hidden",
+                        borderRadius: 4,
+                        border: `2px solid ${extractSelectedFrame === i ? theme.colors.blue[6] : "transparent"}`,
+                        transition: "border-color 0.15s",
+                      }}
                       onClick={() => setExtractSelectedFrame(i)}
                     >
                       <img
                         src={convertFileSrc(frame.filePath)}
                         alt={`Frame ${frame.index}`}
-                        className="aspect-video w-full object-cover"
+                        style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }}
                       />
-                      <div className="bg-muted px-1 py-0.5 text-center text-[10px] text-muted-foreground">
-                        {frame.timestamp.toFixed(2)}s
-                      </div>
-                    </div>
+                      <Box px={4} py={2} ta="center" style={{ background: mutedBg }}>
+                        <Text size="xs" c="dimmed">{frame.timestamp.toFixed(2)}s</Text>
+                      </Box>
+                    </Box>
                   ))}
-                </div>
+                </Flex>
               </ScrollArea>
             )
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {extractVideoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
-            </div>
+            <Flex h="100%" align="center" justify="center">
+              <Text size="sm" c="dimmed">
+                {extractVideoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
+              </Text>
+            </Flex>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
     </>
   );
 }

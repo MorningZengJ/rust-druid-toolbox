@@ -1,17 +1,16 @@
 import { useRef, useCallback, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { Button } from "@/components/ui/button";
 import {
+  Flex,
+  Box,
+  Text,
+  Button,
+  ActionIcon,
   Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Progress,
+  Menu,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   Copy,
   Download,
@@ -49,6 +48,7 @@ export function PreviewPanel() {
   const resetView = useAsciiArtStore((s) => s.resetView);
   const activeTab = useAsciiArtStore((s) => s.activeTab);
   const setActiveTab = useAsciiArtStore((s) => s.setActiveTab);
+  const theme = useMantineTheme();
 
   const displayRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -73,7 +73,6 @@ export function PreviewPanel() {
     return () => { cancelAnimationFrame(rafId.current); };
   }, []);
 
-  // Draw canvas when output changes
   useEffect(() => {
     if (params.renderMode !== "canvas" || !output || !canvasRef.current) return;
 
@@ -236,7 +235,7 @@ export function PreviewPanel() {
             <img
               src={`data:image/svg+xml;base64,${svgBase64}`}
               alt="ASCII Art"
-              className="block"
+              style={{ display: "block" }}
             />
           );
 
@@ -246,7 +245,7 @@ export function PreviewPanel() {
             <img
               src={convertFileSrc(output.outputPath)}
               alt="ASCII Art"
-              className="block"
+              style={{ display: "block" }}
             />
           );
 
@@ -254,7 +253,7 @@ export function PreviewPanel() {
           return (
             <canvas
               ref={canvasRef}
-              className="block"
+              style={{ display: "block" }}
             />
           );
 
@@ -279,125 +278,118 @@ export function PreviewPanel() {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-panel">
+    <Flex
+      direction="column"
+      style={{
+        flex: 1,
+        overflow: "hidden",
+        borderRadius: theme.radius.md,
+        border: `1px solid ${theme.colors.gray[3]}`,
+      }}
+    >
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "original" | "ascii")}>
-            <TabsList className="h-7">
-              <TabsTrigger value="original" className="h-5 px-2 text-xs">
-                <ImageIcon size={12} className="mr-1" />
-                原图
-              </TabsTrigger>
-              <TabsTrigger value="ascii" className="h-5 px-2 text-xs" disabled={!output}>
-                字符画
-              </TabsTrigger>
-            </TabsList>
+      <Flex
+        align="center"
+        justify="space-between"
+        px="sm"
+        py="xs"
+        style={{ borderBottom: `1px solid ${theme.colors.gray[3]}` }}
+      >
+        <Flex align="center" gap="xs">
+          <Tabs value={activeTab} onChange={(v) => setActiveTab((v ?? "original") as "original" | "ascii")}>
+            <Tabs.List>
+              <Tabs.Tab value="original" leftSection={<ImageIcon size={12} />}>
+                <Text size="xs">原图</Text>
+              </Tabs.Tab>
+              <Tabs.Tab value="ascii" disabled={!output}>
+                <Text size="xs">字符画</Text>
+              </Tabs.Tab>
+            </Tabs.List>
           </Tabs>
 
-          <div className="flex items-center gap-1 ml-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setZoom(zoom * 1.2)}
-            >
+          <Flex align="center" gap={4} ml="xs">
+            <ActionIcon variant="subtle" size="sm" onClick={() => setZoom(zoom * 1.2)}>
               <ZoomIn size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setZoom(zoom / 1.2)}
-            >
+            </ActionIcon>
+            <ActionIcon variant="subtle" size="sm" onClick={() => setZoom(zoom / 1.2)}>
               <ZoomOut size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={resetView}
-            >
+            </ActionIcon>
+            <ActionIcon variant="subtle" size="sm" onClick={resetView}>
               <RotateCcw size={14} />
-            </Button>
-            <span className="text-xs text-muted-foreground">
+            </ActionIcon>
+            <Text size="xs" c="dimmed">
               {Math.round(zoom * 100)}%
-            </span>
-          </div>
-        </div>
+            </Text>
+          </Flex>
+        </Flex>
 
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="xs">
           {isConverting && (
-            <div className="flex items-center gap-2">
-              <Loader2 size={14} className="animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
+            <Flex align="center" gap="xs">
+              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+              <Text size="xs" c="dimmed">
                 {progress.toFixed(0)}%
                 {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 && (
                   <span> · 剩余 {formatTime(estimatedTimeRemaining)}</span>
                 )}
-              </span>
-            </div>
+              </Text>
+            </Flex>
           )}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7"
+            variant="subtle"
+            size="compact-xs"
             disabled={!output}
+            leftSection={<Copy size={14} />}
             onClick={copyToClipboard}
           >
-            <Copy size={14} className="mr-1" />
             复制
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Menu position="bottom-end">
+            <Menu.Target>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7"
+                variant="subtle"
+                size="compact-xs"
                 disabled={!output}
+                leftSection={<Download size={14} />}
               >
-                <Download size={14} className="mr-1" />
                 导出
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportPng}>
-                <FileDown size={14} className="mr-2" />
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<FileDown size={14} />} onClick={handleExportPng}>
                 导出为 PNG
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportOutput("svg")}>
-                <FileDown size={14} className="mr-2" />
+              </Menu.Item>
+              <Menu.Item leftSection={<FileDown size={14} />} onClick={() => exportOutput("svg")}>
                 导出为 SVG
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportOutput("txt")}>
-                <FileDown size={14} className="mr-2" />
+              </Menu.Item>
+              <Menu.Item leftSection={<FileDown size={14} />} onClick={() => exportOutput("txt")}>
                 导出为 TXT
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportOutput("html")}>
-                <FileDown size={14} className="mr-2" />
+              </Menu.Item>
+              <Menu.Item leftSection={<FileDown size={14} />} onClick={() => exportOutput("html")}>
                 导出为 HTML
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Flex>
+      </Flex>
 
       {/* Progress bar */}
       {isConverting && (
-        <div className="h-1.5 w-full bg-muted">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <Progress value={progress} size="xs" radius={0} />
       )}
 
       {/* Display area */}
-      <div
+      <Box
         ref={displayRef}
-        className={`flex-1 overflow-hidden relative`}
         style={{
-          background: params.background === "white" ? "#fff" : params.background === "transparent" ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px" : "#000",
+          flex: 1,
+          overflow: "hidden",
+          position: "relative",
+          background: params.background === "white"
+            ? "#fff"
+            : params.background === "transparent"
+              ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px"
+              : "#000",
         }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -406,13 +398,26 @@ export function PreviewPanel() {
         onContextMenu={handleContextMenu}
       >
         {errorMessage && (
-          <div className="absolute top-2 left-2 right-2 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive z-10">
-            {errorMessage}
-          </div>
+          <Box
+            p="xs"
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 8,
+              right: 8,
+              border: `1px solid ${theme.colors.red[5]}`,
+              borderRadius: theme.radius.sm,
+              backgroundColor: `${theme.colors.red[0]}`,
+              color: theme.colors.red[7],
+              zIndex: 10,
+            }}
+          >
+            <Text size="sm">{errorMessage}</Text>
+          </Box>
         )}
 
         {activeTab === "original" ? (
-          <div className="flex h-full items-center justify-center">
+          <Flex h="100%" align="center" justify="center">
             {imagePreviewUrl ? (
               <img
                 src={imagePreviewUrl}
@@ -426,30 +431,30 @@ export function PreviewPanel() {
                 }}
               />
             ) : (
-              <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+              <Flex direction="column" align="center" gap="xs" c="dimmed">
                 <ImageIcon size={48} />
-                <p>双击选择图片</p>
-                <p className="text-xs">支持拖拽或 Ctrl+V 粘贴</p>
-              </div>
+                <Text size="sm">双击选择图片</Text>
+                <Text size="xs">支持拖拽或 Ctrl+V 粘贴</Text>
+              </Flex>
             )}
-          </div>
+          </Flex>
         ) : (
-          <div className="h-full overflow-hidden p-4">
+          <Box h="100%" style={{ overflow: "hidden" }} p="md">
             {isConverting ? (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                <Loader2 size={24} className="animate-spin mr-2" />
-                正在转换...
-              </div>
+              <Flex h="100%" align="center" justify="center" c="dimmed">
+                <Loader2 size={24} style={{ animation: "spin 1s linear infinite", marginRight: 8 }} />
+                <Text size="sm">正在转换...</Text>
+              </Flex>
             ) : output ? (
               renderAsciiContent()
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                请先加载图片
-              </div>
+              <Flex h="100%" align="center" justify="center" c="dimmed">
+                <Text size="sm">请先加载图片</Text>
+              </Flex>
             )}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }

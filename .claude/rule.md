@@ -20,8 +20,8 @@
 ### 修改时
 
 **前端：**
-- 遵循 React 19 + TypeScript + Tailwind CSS v4 规范
-- 使用 shadcn/ui 组件，不写自定义 CSS
+- 遵循 React 19 + TypeScript + Mantine UI 规范
+- 使用 Mantine 组件（Flex/Box/Stack/Text/Button/TextInput/Select 等），不写自定义 CSS
 - 使用 Zustand store（v5）管理状态，不使用 React Context
 - 使用 lucide-react 图标
 - 新页面创建独立的 store 和页面组件，并在 App.tsx 中注册

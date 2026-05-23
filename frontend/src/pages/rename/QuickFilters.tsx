@@ -1,5 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button, Badge, Group, Text } from "@mantine/core";
 import { Folder, File, Layers } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import type { QuickFilter } from "@/types";
@@ -25,45 +24,42 @@ export default function QuickFilters() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs font-medium text-muted-foreground mr-1">筛选:</span>
+    <Group gap={6} align="center">
+      <Text size="xs" fw={500} c="dimmed" mr={4}>筛选:</Text>
       <Button
-        variant={isActive("all") ? "default" : "outline"}
-        size="sm"
-        className="h-6 px-2 text-xs"
+        variant={isActive("all") ? "filled" : "outline"}
+        size="compact-xs"
+        leftSection={<Layers size={12} />}
         onClick={() => toggleQuickFilter("all")}
       >
-        <Layers size={12} className="mr-1" />
         全部
       </Button>
       <Button
-        variant={isActive("folder") ? "default" : "outline"}
-        size="sm"
-        className="h-6 px-2 text-xs"
+        variant={isActive("folder") ? "filled" : "outline"}
+        size="compact-xs"
+        leftSection={<Folder size={12} />}
         onClick={() => toggleQuickFilter("folder")}
       >
-        <Folder size={12} className="mr-1" />
         文件夹
       </Button>
       <Button
-        variant={isActive("file") ? "default" : "outline"}
-        size="sm"
-        className="h-6 px-2 text-xs"
+        variant={isActive("file") ? "filled" : "outline"}
+        size="compact-xs"
+        leftSection={<File size={12} />}
         onClick={() => toggleQuickFilter("file")}
       >
-        <File size={12} className="mr-1" />
         文件
       </Button>
       {extensions.map((ext) => (
         <Badge
           key={ext}
-          variant={isActive({ extension: ext }) ? "default" : "outline"}
-          className="cursor-pointer hover:bg-primary/80"
+          variant={isActive({ extension: ext }) ? "filled" : "outline"}
+          style={{ cursor: "pointer" }}
           onClick={() => toggleQuickFilter({ extension: ext })}
         >
           .{ext}
         </Badge>
       ))}
-    </div>
+    </Group>
   );
 }

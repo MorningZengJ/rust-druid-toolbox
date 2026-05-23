@@ -1,6 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import {
+  Flex,
+  Box,
+  Text,
+  ScrollArea,
+  Badge,
+  ActionIcon,
+  Button,
+  useMantineTheme,
+} from "@mantine/core";
 import {
   StopCircle,
   Trash2,
@@ -31,36 +38,29 @@ function statusBadge(status: string) {
   switch (status) {
     case "connecting":
       return (
-        <Badge variant="outline" className="text-xs">
-          <Loader2 size={10} className="mr-1 animate-spin" />
+        <Badge variant="outline" size="xs" leftSection={<Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} />}>
           连接中
         </Badge>
       );
     case "recording":
       return (
-        <Badge variant="default" className="text-xs bg-red-600 hover:bg-red-700">
-          <Circle size={8} className="mr-1 fill-current animate-pulse" />
+        <Badge color="red" size="xs" leftSection={<Circle size={8} fill="currentColor" />}>
           录制中
         </Badge>
       );
     case "stopping":
       return (
-        <Badge variant="outline" className="text-xs">
-          <Loader2 size={10} className="mr-1 animate-spin" />
+        <Badge variant="outline" size="xs" leftSection={<Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} />}>
           停止中
         </Badge>
       );
     case "stopped":
       return (
-        <Badge variant="secondary" className="text-xs">
-          已停止
-        </Badge>
+        <Badge variant="light" color="gray" size="xs">已停止</Badge>
       );
     case "error":
       return (
-        <Badge variant="destructive" className="text-xs">
-          错误
-        </Badge>
+        <Badge color="red" variant="light" size="xs">错误</Badge>
       );
     default:
       return null;
@@ -73,93 +73,107 @@ export function TaskList() {
   const stopRecording = useLiveRecordStore((s) => s.stopRecording);
   const selectTask = useLiveRecordStore((s) => s.selectTask);
   const removeTask = useLiveRecordStore((s) => s.removeTask);
+  const theme = useMantineTheme();
 
   const taskEntries = Object.entries(tasks);
 
   return (
     <>
-      <div className="border-t border-border px-3 py-2">
-        <span className="text-xs font-medium text-muted-foreground">
+      <Box
+        px="sm"
+        py="xs"
+        style={{ borderTop: `1px solid ${theme.colors.gray[3]}` }}
+      >
+        <Text size="xs" fw={500} c="dimmed">
           录制任务 ({taskEntries.length})
-        </span>
-      </div>
+        </Text>
+      </Box>
 
-      <div className="h-[200px] shrink-0 border-b border-border">
-        <ScrollArea className="h-full">
-          <div className="space-y-1 p-2">
+      <Box h={200} style={{ flexShrink: 0, borderBottom: `1px solid ${theme.colors.gray[3]}` }}>
+        <ScrollArea h="100%">
+          <Box p="xs">
             {taskEntries.length > 0 ? (
               taskEntries.map(([id, task]) => (
-                <div
+                <Box
                   key={id}
-                  className={`cursor-pointer rounded border p-2 text-xs transition-colors ${
-                    selectedTaskId === id
-                      ? "border-primary bg-primary/5"
-                      : "border-transparent hover:bg-muted/50"
-                  }`}
+                  p="xs"
+                  mb={4}
+                  style={{
+                    cursor: "pointer",
+                    borderRadius: theme.radius.sm,
+                    border: selectedTaskId === id
+                      ? `1px solid ${theme.colors[theme.primaryColor][6]}`
+                      : "1px solid transparent",
+                    backgroundColor: selectedTaskId === id
+                      ? `${theme.colors[theme.primaryColor][0]}`
+                      : undefined,
+                    transition: "all 150ms ease",
+                  }}
                   onClick={() => selectTask(id)}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="truncate font-medium flex-1">
+                  <Flex justify="space-between" align="center" gap="xs">
+                    <Text size="xs" fw={500} style={{ flex: 1 }} truncate>
                       {task.info.url.split(/[/\\]/).pop() || task.info.url}
-                    </span>
-                    <div className="flex items-center gap-1 shrink-0">
+                    </Text>
+                    <Flex align="center" gap={4}>
                       {statusBadge(task.info.status)}
                       {(task.info.status === "stopped" ||
                         task.info.status === "error") && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0"
+                        <ActionIcon
+                          variant="subtle"
+                          size="xs"
+                          color="gray"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeTask(id);
                           }}
                         >
                           <Trash2 size={10} />
-                        </Button>
+                        </ActionIcon>
                       )}
-                    </div>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2 text-muted-foreground">
+                    </Flex>
+                  </Flex>
+                  <Flex align="center" gap="xs" mt={4} c="dimmed">
                     {task.progress && (
                       <>
-                        <span>
+                        <Text size="xs">
                           {formatDuration(task.progress.durationSecs)}
-                        </span>
-                        <span>{formatSize(task.progress.fileSizeBytes)}</span>
+                        </Text>
+                        <Text size="xs">{formatSize(task.progress.fileSizeBytes)}</Text>
                         {task.progress.bitrateKbps > 0 && (
-                          <span>
+                          <Text size="xs">
                             {task.progress.bitrateKbps.toFixed(0)} kbps
-                          </span>
+                          </Text>
                         )}
                       </>
                     )}
                     {(task.info.status === "recording" ||
                       task.info.status === "connecting") && (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 px-1 ml-auto text-destructive hover:text-destructive"
+                        variant="subtle"
+                        size="compact-xs"
+                        color="red"
+                        ml="auto"
+                        leftSection={<StopCircle size={12} />}
                         onClick={(e) => {
                           e.stopPropagation();
                           stopRecording(id);
                         }}
                       >
-                        <StopCircle size={12} className="mr-0.5" />
                         停止
                       </Button>
                     )}
-                  </div>
-                </div>
+                  </Flex>
+                </Box>
               ))
             ) : (
-              <div className="flex h-full items-center justify-center py-8 text-xs text-muted-foreground">
-                暂无录制任务
-              </div>
+              <Flex h="100%" align="center" justify="center" py="xl">
+                <Text size="xs" c="dimmed">暂无录制任务</Text>
+              </Flex>
             )}
-          </div>
+          </Box>
         </ScrollArea>
-      </div>
+      </Box>
     </>
   );
 }

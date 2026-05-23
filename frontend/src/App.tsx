@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Flex, Box, Button, Text, ActionIcon, useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import { ModalsProvider } from "@mantine/modals";
 import {
   PenLine,
   ImageIcon,
@@ -9,7 +10,6 @@ import {
   Radio,
   Wrench,
 } from "lucide-react";
-import { useTheme } from "@/hooks/useTheme";
 import { useWindowState } from "@/hooks/useWindowState";
 import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
@@ -28,89 +28,91 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
 
 function App() {
   const [activePage, setActivePage] = useState<Page>("rename");
-  const { isDark, setTheme } = useTheme();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const theme = useMantineTheme();
   useWindowState();
 
-  const toggleTheme = () => {
-    setTheme(isDark ? "light" : "dark");
-  };
+  const isDark = colorScheme === "dark";
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
+    <ModalsProvider>
+    <Flex h="100vh" w="100vw" style={{ overflow: "hidden" }}>
       {/* Navigation sidebar */}
-      <nav className="flex w-[90px] flex-col items-center border-r border-border bg-sidebar py-4">
-        <div className="mb-6 text-lg font-bold text-sidebar-foreground">
+      <Flex
+        direction="column"
+        align="center"
+        w={90}
+        py="md"
+        style={{
+          borderRight: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
+          backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
+        }}
+      >
+        <Text fw={700} size="lg" mb="xl">
           Toolbox
-        </div>
+        </Text>
 
-        <div className="flex flex-1 flex-col gap-1">
+        <Flex direction="column" gap={4} style={{ flex: 1 }}>
           {navItems.map((item) => (
             <Button
               key={item.id}
-              variant={activePage === item.id ? "secondary" : "ghost"}
-              className="flex h-auto w-[70px] flex-col items-center gap-1 py-3"
+              variant={activePage === item.id ? "light" : "subtle"}
+              w={70}
+              h="auto"
+              py={12}
+              px={0}
+              style={{ flexDirection: "column", gap: 4 }}
               onClick={() => setActivePage(item.id)}
             >
               {item.icon}
-              <span className="text-xs">{item.label}</span>
+              <Text size="xs">{item.label}</Text>
             </Button>
           ))}
-        </div>
+        </Flex>
 
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={toggleTheme}
+        <Flex direction="column" gap={4}>
+          <ActionIcon
+            variant="subtle"
+            size="lg"
+            onClick={() => toggleColorScheme()}
           >
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </Button>
+          </ActionIcon>
           <Button
-            variant={activePage === "settings" ? "secondary" : "ghost"}
-            className="flex h-auto w-[70px] flex-col items-center gap-1 py-3"
+            variant={activePage === "settings" ? "light" : "subtle"}
+            w={70}
+            h="auto"
+            py={12}
+            px={0}
+            style={{ flexDirection: "column", gap: 4 }}
             onClick={() => setActivePage("settings")}
           >
             <Settings size={20} />
-            <span className="text-xs">设置</span>
+            <Text size="xs">设置</Text>
           </Button>
-        </div>
-      </nav>
+        </Flex>
+      </Flex>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden">
-        <div
-          className="h-full p-4"
-          style={{ display: activePage === "rename" ? "block" : "none" }}
-        >
+      <Box style={{ flex: 1, overflow: "hidden" }}>
+        <Box h="100%" p="md" style={{ display: activePage === "rename" ? "block" : "none" }}>
           <RenamePage />
-        </div>
-        <div
-          className="h-full p-4"
-          style={{ display: activePage === "ascii-art" ? "block" : "none" }}
-        >
+        </Box>
+        <Box h="100%" p="md" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
           <AsciiArtPage />
-        </div>
-        <div
-          className="h-full p-4"
-          style={{ display: activePage === "live-record" ? "block" : "none" }}
-        >
+        </Box>
+        <Box h="100%" p="md" style={{ display: activePage === "live-record" ? "block" : "none" }}>
           <LiveRecordPage />
-        </div>
-        <div
-          className="h-full p-4"
-          style={{ display: activePage === "video-tool" ? "block" : "none" }}
-        >
+        </Box>
+        <Box h="100%" p="md" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
           <VideoToolPage />
-        </div>
-        <div
-          className="h-full p-4"
-          style={{ display: activePage === "settings" ? "block" : "none" }}
-        >
+        </Box>
+        <Box h="100%" p="md" style={{ display: activePage === "settings" ? "block" : "none" }}>
           <SettingsPage />
-        </div>
-      </main>
-    </div>
+        </Box>
+      </Box>
+    </Flex>
+    </ModalsProvider>
   );
 }
 
