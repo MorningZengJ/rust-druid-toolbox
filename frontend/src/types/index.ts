@@ -7,6 +7,7 @@ export interface FileInfo {
   isDir: boolean;
   extension: string;
   size: string;
+  sizeBytes: number;
   createdTime: number;
   modifiedTime: number;
 }
@@ -54,6 +55,15 @@ export type RuleTemplate =
   | "toLowercase"
   | "removeDigitsBeforeExt"
   | "custom";
+
+export type SortDirection = "asc" | "desc";
+
+export type SortField = "name" | "size" | "extension";
+
+export interface SortColumn {
+  field: SortField;
+  direction: SortDirection;
+}
 
 // ASCII Art types
 

@@ -66,7 +66,7 @@ const rose: MantineColorsTuple = [
   "#7a0025",
 ];
 
-export const MANTINE_THEME = createTheme({
+const MANTINE_THEME = createTheme({
   primaryColor: "blue",
   colors: { blue, green, purple, orange, rose },
   fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
@@ -76,16 +76,7 @@ export const MANTINE_THEME = createTheme({
   },
 });
 
-export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
-
-export const COLOR_THEMES: { value: ColorTheme; label: string; color: string }[] = [
-  { value: "default", label: "默认", color: "#1a1a2e" },
-  { value: "blue", label: "蓝色", color: "#1a52ff" },
-  { value: "green", label: "绿色", color: "#0cc04b" },
-  { value: "purple", label: "紫色", color: "#6a10ff" },
-  { value: "orange", label: "橙色", color: "#ff8200" },
-  { value: "rose", label: "玫红", color: "#ff0050" },
-];
+type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
 
 export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: string) {
   if (customPrimary) {

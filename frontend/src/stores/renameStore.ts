@@ -8,6 +8,7 @@ import type {
   ConflictInfo,
   RenameResult,
   RuleTemplate,
+  SortColumn,
 } from "@/types";
 
 interface RenameState {
@@ -18,6 +19,7 @@ interface RenameState {
   filterItems: FilterItem[];
   quickFilters: QuickFilter[];
   replaceInfos: ReplaceInfo[];
+  sortColumns: SortColumn[];
   conflicts: ConflictInfo[];
   ruleHistory: ReplaceInfo[][];
   status: RenameResult | null;
@@ -35,6 +37,7 @@ interface RenameState {
   setFilterItems: (items: FilterItem[]) => void;
   toggleQuickFilter: (filter: QuickFilter) => void;
   setReplaceInfos: (infos: ReplaceInfo[]) => void;
+  setSortColumns: (columns: SortColumn[]) => void;
   addReplaceInfo: () => void;
   removeReplaceInfo: (index: number) => void;
   updateReplaceInfo: (index: number, updates: Partial<ReplaceInfo>) => void;
@@ -62,6 +65,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   filterItems: [{ keyword: "", isRegex: false }],
   quickFilters: ["all"],
   replaceInfos: [],
+  sortColumns: [],
   conflicts: [],
   ruleHistory: [],
   status: null,
@@ -96,8 +100,8 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   setFilterItems: (items) => {
     set({ filterItems: items });
     // Re-filter files
-    const { fileList, quickFilters } = get();
-    const filtered = applyFilters(fileList, items, quickFilters);
+    const { fileList, quickFilters, sortColumns } = get();
+    const filtered = applyFilters(fileList, items, quickFilters, sortColumns);
     set({ filterFileList: filtered, displayLimit: 500 });
     get().detectConflicts();
   },
@@ -120,14 +124,22 @@ export const useRenameStore = create<RenameState>((set, get) => ({
     }
 
     set({ quickFilters: newFilters });
-    const { fileList, filterItems } = get();
-    const filtered = applyFilters(fileList, filterItems, newFilters);
+    const { fileList, filterItems, sortColumns } = get();
+    const filtered = applyFilters(fileList, filterItems, newFilters, sortColumns);
     set({ filterFileList: filtered, displayLimit: 500 });
     get().detectConflicts();
   },
 
   setReplaceInfos: (infos) => {
     set({ replaceInfos: infos });
+    get().detectConflicts();
+  },
+
+  setSortColumns: (columns) => {
+    set({ sortColumns: columns });
+    const { fileList, filterItems, quickFilters } = get();
+    const filtered = applyFilters(fileList, filterItems, quickFilters, columns);
+    set({ filterFileList: filtered, displayLimit: 500 });
     get().detectConflicts();
   },
 
@@ -296,7 +308,8 @@ export const useRenameStore = create<RenameState>((set, get) => ({
 function applyFilters(
   files: FileInfo[],
   filterItems: FilterItem[],
-  quickFilters: QuickFilter[]
+  quickFilters: QuickFilter[],
+  sortColumns: SortColumn[]
 ): FileInfo[] {
   let result = [...files];
 
@@ -329,10 +342,33 @@ function applyFilters(
     });
   }
 
-  // Sort: directories first, then by name
+  // Sort: default = directories first then name; with sortColumns = only by columns
   result.sort((a, b) => {
-    if (b.isDir !== a.isDir) return b.isDir ? 1 : -1;
-    return a.name.localeCompare(b.name);
+    if (sortColumns.length === 0) {
+      if (b.isDir !== a.isDir) return b.isDir ? 1 : -1;
+      return a.name.localeCompare(b.name);
+    }
+
+    for (const col of sortColumns) {
+      const dir = col.direction === "asc" ? 1 : -1;
+      let cmp = 0;
+
+      switch (col.field) {
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "size":
+          cmp = a.sizeBytes - b.sizeBytes;
+          break;
+        case "extension":
+          cmp = a.extension.localeCompare(b.extension);
+          break;
+      }
+
+      if (cmp !== 0) return cmp * dir;
+    }
+
+    return 0;
   });
 
   return result;

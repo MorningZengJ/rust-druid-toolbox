@@ -57,7 +57,7 @@ export default function QuickFilters() {
           style={{ cursor: "pointer" }}
           onClick={() => toggleQuickFilter({ extension: ext })}
         >
-          .{ext}
+          {ext}
         </Badge>
       ))}
     </Group>

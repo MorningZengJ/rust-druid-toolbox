@@ -25,19 +25,6 @@ function applyReplaceRules(name: string, rules: ReplaceInfo[]): string {
   return result;
 }
 
-/**
- * Validate a regex pattern.
- */
-function validateRegex(pattern: string): boolean {
-  try {
-    new RegExp(pattern);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export const renameLogic = {
   applyReplaceRules,
-  validateRegex,
 };

@@ -20,10 +20,6 @@ pub enum ContainerFormat {
 }
 
 impl ContainerFormat {
-    pub fn all() -> Vec<Self> {
-        vec![Self::Ts, Self::Mkv, Self::Mp4, Self::Flv]
-    }
-
     pub fn extension(&self) -> &str {
         match self {
             Self::Mp4 => "mp4",

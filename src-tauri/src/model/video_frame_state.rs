@@ -10,35 +10,12 @@ pub enum ExtractMode {
     ByTimePoints,
 }
 
-impl ExtractMode {
-    pub fn all() -> Vec<Self> {
-        vec![
-            Self::AllFrames,
-            Self::ByInterval,
-            Self::ByCount,
-            Self::ByTimePoints,
-        ]
-    }
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum OutputFormat {
     Png,
     Jpeg,
-}
-
-impl OutputFormat {
-    pub fn all() -> Vec<Self> {
-        vec![Self::Png, Self::Jpeg]
-    }
-
-    pub fn extension(&self) -> &str {
-        match self {
-            Self::Png => "png",
-            Self::Jpeg => "jpg",
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

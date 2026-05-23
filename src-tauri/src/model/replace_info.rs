@@ -12,12 +12,6 @@ pub struct ReplaceInfo {
     pub is_error: bool,
 }
 
-impl PartialEq for ReplaceInfo {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
 impl ReplaceInfo {
     pub fn new(content: String, target: String, is_regex: bool) -> Self {
         Self {

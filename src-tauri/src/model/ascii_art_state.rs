@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 /// Progress event for ASCII art conversion
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -33,16 +32,6 @@ pub enum RenderMode {
     Png,
     Svg,
     Canvas,
-}
-
-impl fmt::Display for RenderMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Png => write!(f, "PNG"),
-            Self::Svg => write!(f, "SVG"),
-            Self::Canvas => write!(f, "Canvas"),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -107,17 +96,6 @@ impl CharsetPreset {
 
 }
 
-impl fmt::Display for CharsetPreset {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Simple => write!(f, "简单"),
-            Self::Standard => write!(f, "标准"),
-            Self::Complex => write!(f, "复杂"),
-            Self::Custom => write!(f, "自定义"),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ColorMode {
@@ -125,17 +103,6 @@ pub enum ColorMode {
     Ansi256,
     TrueColor,
     Html,
-}
-
-impl fmt::Display for ColorMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Monochrome => write!(f, "单色"),
-            Self::Ansi256 => write!(f, "ANSI 256色"),
-            Self::TrueColor => write!(f, "真彩色"),
-            Self::Html => write!(f, "HTML"),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -146,12 +113,3 @@ pub enum Background {
     Transparent,
 }
 
-impl fmt::Display for Background {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Black => write!(f, "黑色"),
-            Self::White => write!(f, "白色"),
-            Self::Transparent => write!(f, "透明"),
-        }
-    }
-}

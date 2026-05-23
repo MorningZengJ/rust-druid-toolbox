@@ -33,13 +33,12 @@ impl FileUtils {
                         .map(|e| e.to_string_lossy().to_string())
                         .unwrap_or_default()
                 };
-                let size = if is_dir {
-                    String::new()
+                let (size, size_bytes) = if is_dir {
+                    let bytes = Self::calculate_dir_size(&entry.path());
+                    (Self::format_size(bytes), bytes)
                 } else {
-                    metadata
-                        .as_ref()
-                        .map(|m| Self::format_size(m.len()))
-                        .unwrap_or_default()
+                    let bytes = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                    (Self::format_size(bytes), bytes)
                 };
                 let created_time = metadata
                     .as_ref()
@@ -61,6 +60,7 @@ impl FileUtils {
                     is_dir,
                     extension,
                     size,
+                    size_bytes,
                     created_time,
                     modified_time,
                 }
@@ -75,6 +75,22 @@ impl FileUtils {
         });
 
         files
+    }
+
+    fn calculate_dir_size(path: &Path) -> u64 {
+        let mut total: u64 = 0;
+        if let Ok(entries) = fs::read_dir(path) {
+            for entry in entries.flatten() {
+                if let Ok(metadata) = entry.metadata() {
+                    if metadata.is_dir() {
+                        total += Self::calculate_dir_size(&entry.path());
+                    } else {
+                        total += metadata.len();
+                    }
+                }
+            }
+        }
+        total
     }
 
     pub fn format_size(size: u64) -> String {

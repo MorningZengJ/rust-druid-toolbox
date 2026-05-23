@@ -66,7 +66,6 @@ pub async fn start_recording(
     };
 
     // Spawn recording in background
-    let handle = app_handle.clone();
     let progress_handle = app_handle.clone();
     let log_handle = app_handle.clone();
     let preview_handle = app_handle.clone();
@@ -109,8 +108,6 @@ pub async fn start_recording(
                 "error": result.err().map(|e| e.to_string()),
             }),
         );
-
-        let _ = handle;
     });
 
     Ok(task_info)
