@@ -48,7 +48,9 @@ export function LiveRecordPanel() {
       <ResizableHandle withHandle />
 
       <ResizablePanel defaultSize={65} minSize={40}>
-        <PreviewPanel />
+        <Box style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <PreviewPanel />
+        </Box>
       </ResizablePanel>
     </ResizablePanelGroup>
   );
