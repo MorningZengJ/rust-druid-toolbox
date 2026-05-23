@@ -119,6 +119,14 @@ impl VideoToolEngine {
         let first_input = ffmpeg_next::format::input(&params.input_paths[0])
             .map_err(|e| anyhow!("打开第一个视频失败: {}", e))?;
 
+        // MPEG-TS 格式的 codec tag 与 MP4 等容器不兼容，必须重编码
+        if Self::is_ts_format(&params.input_paths[0]) {
+            return Err(anyhow!(
+                "MPEG-TS 格式不支持直接流复制到 {}，需要重编码",
+                params.output_format
+            ));
+        }
+
         // Check codec/format compatibility before attempting stream copy
         // FLV only supports flv1/h264/vp6a/vp6f; webm only supports vp8/vp9/opus/vorbis
         for stream in first_input.streams() {
@@ -438,6 +446,18 @@ impl VideoToolEngine {
             .map_err(|e| anyhow!("打开编码器失败: {}", e))?;
         out_video.set_parameters(&encoder);
 
+        // MPEG-TS audio parameters use ADTS container format which is incompatible
+        // with MP4-style containers. Skip audio for MPEG-TS inputs.
+        if has_audio && Self::is_ts_format(&params.input_paths[0]) {
+            log_cb(VideoToolLog {
+                task_id: task_id.to_string(),
+                level: "warn".to_string(),
+                message: "MPEG-TS 音频格式与输出容器不兼容，将跳过音频".to_string(),
+                timestamp: now_ms(),
+            });
+            has_audio = false;
+        }
+
         // Add audio stream if compatible (already determined above)
         if has_audio {
             let audio_stream = first_input
@@ -649,6 +669,19 @@ impl VideoToolEngine {
                         frame_count += 1;
 
                         encode_and_write(&mut encoder, Some(&yuv_frame), &mut output)?;
+
+                        // Report progress every 30 frames
+                        if frame_count % 30 == 0 {
+                            let file_progress = i as f32 / total as f32;
+                            let intra = if total > 0 { 1.0 / total as f32 } else { 0.0 };
+                            let progress = (file_progress + intra * 0.5).min(0.95);
+                            progress_cb(VideoToolProgress {
+                                task_id: task_id.to_string(),
+                                progress,
+                                current_step: "reencoding".to_string(),
+                                elapsed_ms: start.elapsed().as_millis() as u64,
+                            });
+                        }
                     }
                 } else if media_type == ffmpeg_next::media::Type::Audio && has_audio {
                     // Check per-file audio compatibility before collecting
@@ -817,6 +850,16 @@ impl VideoToolEngine {
             ),
             _ => true,
         }
+    }
+
+    /// 检测输入文件是否为 MPEG-TS 格式（ts/m2ts/mts/trp）
+    fn is_ts_format(path: &std::path::Path) -> bool {
+        let Ok(input) = ffmpeg_next::format::input(path) else {
+            return false;
+        };
+        let format_name = input.format().name().to_lowercase();
+        let ts_names = ["mpegts", "mpeg_ts", "m2ts", "trp", "ts"];
+        ts_names.iter().any(|&name| format_name.contains(name))
     }
 
     pub fn images_to_video<P, L>(
@@ -1324,6 +1367,14 @@ impl VideoToolEngine {
         let mut input = ffmpeg_next::format::input(&params.input_path)
             .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
 
+        // MPEG-TS 格式的 codec tag 与 MP4 等容器不兼容，必须重编码
+        if Self::is_ts_format(&params.input_path) {
+            return Err(anyhow!(
+                "MPEG-TS 格式不支持直接流复制到 {}，需要重编码",
+                format_str
+            ));
+        }
+
         // Check codec/format compatibility before attempting stream copy
         for stream in input.streams() {
             if stream.parameters().medium() == ffmpeg_next::media::Type::Video {
@@ -1601,6 +1652,18 @@ impl VideoToolEngine {
             .map_err(|e| anyhow!("打开编码器失败: {}", e))?;
         out_video.set_parameters(&encoder);
 
+        // MPEG-TS audio parameters use ADTS container format which is incompatible
+        // with MP4-style containers. Skip audio for MPEG-TS inputs.
+        if has_audio && Self::is_ts_format(&params.input_path) {
+            log_cb(VideoToolLog {
+                task_id: task_id.to_string(),
+                level: "warn".to_string(),
+                message: "MPEG-TS 音频格式与输出容器不兼容，将跳过音频".to_string(),
+                timestamp: now_ms(),
+            });
+            has_audio = false;
+        }
+
         // Add audio stream if compatible
         if has_audio {
             let audio_stream = input
@@ -1675,6 +1738,15 @@ impl VideoToolEngine {
 
         let enc_tb = ffmpeg_next::Rational::new(1, 25);
         let mut frame_count: u64 = 0;
+        // Estimate total frames from input duration for progress reporting
+        let total_frames = {
+            let dur_secs = input.duration() as f64 / 1_000_000.0;
+            if dur_secs > 0.0 {
+                (dur_secs * 25.0) as u64
+            } else {
+                0
+            }
+        };
 
         // Helper: encode a single frame and write packets
         let encode_and_write =
@@ -1827,6 +1899,17 @@ impl VideoToolEngine {
                     frame_count += 1;
 
                     encode_and_write(&mut encoder, Some(&frame), &mut output)?;
+
+                    // Report progress every 30 frames
+                    if frame_count % 30 == 0 && total_frames > 0 {
+                        let progress = (frame_count as f32 / total_frames as f32).min(0.95);
+                        progress_cb(VideoToolProgress {
+                            task_id: task_id.to_string(),
+                            progress,
+                            current_step: "reencoding".to_string(),
+                            elapsed_ms: start.elapsed().as_millis() as u64,
+                        });
+                    }
                 }
             } else if media_type == ffmpeg_next::media::Type::Audio && has_audio {
                 let audio_compatible =
