@@ -1,4 +1,4 @@
-import { Box, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { Box, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import {
   ResizablePanel,
   ResizablePanelGroup,
@@ -12,7 +12,7 @@ import StatusBar from "./StatusBar";
 
 export default function RenamePage() {
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
   return (

@@ -1,4 +1,4 @@
-import { Button, Badge, Group, Text, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { Button, Badge, Group, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { useModals } from "@mantine/modals";
 import { Play, AlertTriangle, CheckCircle } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
@@ -11,7 +11,7 @@ export default function StatusBar() {
   const executeRenames = useRenameStore((s) => s.executeRenames);
 
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
   const modals = useModals();
 

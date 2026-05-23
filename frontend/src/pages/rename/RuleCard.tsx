@@ -1,4 +1,4 @@
-import { TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import type { ReplaceInfo } from "@/types";
@@ -15,7 +15,7 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
   const removeReplaceInfo = useRenameStore((s) => s.removeReplaceInfo);
 
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
   const collapsed = rulesCollapsed[index] ?? false;

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { useMantineColorScheme } from "@mantine/core";
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { useThemeStore } from "@/stores/themeStore";
+import type { ColorMode, ColorTheme } from "@/stores/themeStore";
 
-export type ColorMode = "light" | "dark" | "system";
-export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
+export type { ColorMode, ColorTheme };
 
 export const COLOR_THEMES: { value: ColorTheme; label: string; color: string }[] = [
   { value: "default", label: "默认", color: "#1a1a2e" },
@@ -14,31 +14,15 @@ export const COLOR_THEMES: { value: ColorTheme; label: string; color: string }[]
   { value: "rose", label: "玫红", color: "#ff0050" },
 ];
 
-const store = new LazyStore("settings.json");
-
 export function useTheme() {
+  return useThemeStore();
+}
+
+export function useColorSchemeSync() {
+  const colorMode = useThemeStore((s) => s.colorMode);
+  const loaded = useThemeStore((s) => s.loaded);
   const { setColorScheme } = useMantineColorScheme();
-  const [colorMode, setColorModeState] = useState<ColorMode>("system");
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>("default");
-  const [customPrimary, setCustomPrimaryState] = useState<string | undefined>(undefined);
-  const [loaded, setLoaded] = useState(false);
 
-  // Sync with store on mount
-  useEffect(() => {
-    (async () => {
-      const [savedMode, savedTheme, savedCustom] = await Promise.all([
-        store.get<ColorMode>("colorMode"),
-        store.get<ColorTheme>("colorTheme"),
-        store.get<string>("customPrimary"),
-      ]);
-      if (savedMode) setColorModeState(savedMode);
-      if (savedTheme) setColorThemeState(savedTheme);
-      if (savedCustom) setCustomPrimaryState(savedCustom);
-      setLoaded(true);
-    })();
-  }, []);
-
-  // Apply color scheme to Mantine whenever colorMode changes
   useEffect(() => {
     if (!loaded) return;
     if (colorMode === "system") {
@@ -47,44 +31,4 @@ export function useTheme() {
       setColorScheme(colorMode);
     }
   }, [colorMode, loaded, setColorScheme]);
-
-  const setColorMode = useCallback((mode: ColorMode) => {
-    setColorModeState(mode);
-    store.set("colorMode", mode);
-  }, []);
-
-  const setColorTheme = useCallback((theme: ColorTheme) => {
-    setColorThemeState(theme);
-    store.set("colorTheme", theme);
-    if (theme !== "default") {
-      setCustomPrimaryState(undefined);
-      store.set("customPrimary", undefined);
-    }
-  }, []);
-
-  const setCustomPrimary = useCallback((hex: string | undefined) => {
-    setCustomPrimaryState(hex);
-    if (hex) {
-      store.set("customPrimary", hex);
-      setColorThemeState("default");
-      store.set("colorTheme", "default");
-    } else {
-      store.set("customPrimary", undefined);
-    }
-  }, []);
-
-  const isDark =
-    colorMode === "dark" ||
-    (colorMode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-  return {
-    colorMode,
-    colorTheme,
-    customPrimary,
-    isDark,
-    loaded,
-    setColorMode,
-    setColorTheme,
-    setCustomPrimary,
-  };
 }

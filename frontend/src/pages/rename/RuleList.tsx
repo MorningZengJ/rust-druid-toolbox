@@ -1,4 +1,4 @@
-import { Button, Group, Text, Stack, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { Button, Group, Text, Stack, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { Plus, Trash } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import RuleCard from "./RuleCard";
@@ -9,7 +9,7 @@ export default function RuleList() {
   const clearAllRules = useRenameStore((s) => s.clearAllRules);
 
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
   return (

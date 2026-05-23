@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flex, Box, Button, Text, ActionIcon, useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import { Flex, Box, Button, Text, ActionIcon, useComputedColorScheme, useMantineTheme } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import {
   PenLine,
@@ -11,6 +11,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useWindowState } from "@/hooks/useWindowState";
+import { useTheme } from "@/hooks/useTheme";
 import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
 import LiveRecordPage from "@/pages/live-record/LiveRecordPage";
@@ -28,11 +29,16 @@ const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
 
 function App() {
   const [activePage, setActivePage] = useState<Page>("rename");
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
+  const { colorMode, setColorMode } = useTheme();
   const theme = useMantineTheme();
   useWindowState();
 
   const isDark = colorScheme === "dark";
+
+  const handleToggleColorScheme = () => {
+    setColorMode(colorMode === "light" ? "dark" : "light");
+  };
 
   return (
     <ModalsProvider>
@@ -74,7 +80,7 @@ function App() {
           <ActionIcon
             variant="subtle"
             size="lg"
-            onClick={() => toggleColorScheme()}
+            onClick={handleToggleColorScheme}
           >
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </ActionIcon>

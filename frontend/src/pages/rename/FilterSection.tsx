@@ -1,4 +1,4 @@
-import { Button, TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { Button, TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import QuickFilters from "./QuickFilters";
@@ -11,7 +11,7 @@ export default function FilterSection() {
   const setFilterItems = useRenameStore((s) => s.setFilterItems);
 
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
   const addFilter = () => {

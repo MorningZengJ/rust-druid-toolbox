@@ -1,4 +1,4 @@
-import { Badge, Text, Group, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { Badge, Text, Group, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { useRenameStore } from "@/stores/renameStore";
 import { renameLogic } from "@/lib/renameLogic";
 import { Virtuoso } from "react-virtuoso";
@@ -16,7 +16,7 @@ export default function FilePreview() {
   const loadFiles = useRenameStore((s) => s.loadFiles);
 
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
   const activeRules = replaceInfos.filter((r) => r.enable);

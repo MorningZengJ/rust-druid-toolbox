@@ -1,4 +1,4 @@
-import { TextInput, Group, Tooltip, ActionIcon, useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { TextInput, Group, Tooltip, ActionIcon, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { FolderOpen, ArrowUp, Undo2 } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 
@@ -12,7 +12,7 @@ export default function Toolbar() {
   const ruleHistory = useRenameStore((s) => s.ruleHistory);
 
   const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
   const handlePathKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
