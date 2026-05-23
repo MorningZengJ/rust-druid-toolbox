@@ -108,13 +108,28 @@ pub struct BatchProgress {
 
 // ── Shared progress/log types ──
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoToolProgress {
     pub task_id: String,
     pub progress: f32,
     pub current_step: String,
     pub elapsed_ms: u64,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_file_index: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_files: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_file_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub eta_ms: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frames_processed: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_frames: Option<u64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

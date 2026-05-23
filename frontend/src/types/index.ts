@@ -303,6 +303,13 @@ export interface VideoToolProgress {
   progress: number;
   currentStep: string;
   elapsedMs: number;
+  currentFileIndex?: number;
+  totalFiles?: number;
+  currentFileName?: string;
+  speed?: number;
+  etaMs?: number;
+  framesProcessed?: number;
+  totalFrames?: number;
 }
 
 export interface VideoToolLog {

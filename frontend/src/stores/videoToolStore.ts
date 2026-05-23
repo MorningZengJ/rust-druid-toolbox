@@ -46,6 +46,15 @@ interface VideoToolState {
   mergeOutputFormat: string;
   mergeReencode: boolean;
   mergeResult: MergeVideosResult | null;
+  mergeProgressDetail: {
+    currentFileIndex: number;
+    totalFiles: number;
+    currentFileName: string;
+    speed: number;
+    etaMs: number;
+    framesProcessed: number;
+    totalFrames: number;
+  } | null;
   setMergeInputs: (paths: string[]) => void;
   setMergeOutputPath: (path: string) => void;
   setMergeOutputFormat: (fmt: string) => void;
@@ -162,6 +171,7 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
   mergeOutputFormat: "mp4",
   mergeReencode: false,
   mergeResult: null,
+  mergeProgressDetail: null,
 
   setMergeInputs: (paths) => set({ mergeInputPaths: paths }),
   setMergeOutputPath: (path) => set({ mergeOutputPath: path }),
@@ -179,7 +189,7 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
       return;
     }
 
-    set({ isProcessing: true, progress: 0, logs: [], errorMessage: null, mergeResult: null });
+    set({ isProcessing: true, progress: 0, logs: [], errorMessage: null, mergeResult: null, mergeProgressDetail: null });
     await get().registerEventListeners();
 
     try {
@@ -562,10 +572,27 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
       "video-tool://progress",
       (event) => {
         const p = event.payload;
-        set({
+        const updates: Record<string, unknown> = {
           progress: p.progress,
-          ...(p.taskId.startsWith("batch-") ? { convertCurrentFileProgress: p.progress } : {}),
-        });
+        };
+
+        if (p.taskId.startsWith("batch-")) {
+          updates.convertCurrentFileProgress = p.progress;
+        }
+
+        if (p.currentFileIndex !== undefined && p.totalFiles !== undefined) {
+          updates.mergeProgressDetail = {
+            currentFileIndex: p.currentFileIndex,
+            totalFiles: p.totalFiles,
+            currentFileName: p.currentFileName ?? "",
+            speed: p.speed ?? 0,
+            etaMs: p.etaMs ?? 0,
+            framesProcessed: p.framesProcessed ?? 0,
+            totalFrames: p.totalFrames ?? 0,
+          };
+        }
+
+        set(updates);
       }
     );
     unlisteners.push(unlistenProgress);

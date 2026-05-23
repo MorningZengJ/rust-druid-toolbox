@@ -84,6 +84,7 @@ impl VideoToolEngine {
                     progress: 0.0,
                     current_step: "reencoding".to_string(),
                     elapsed_ms: start.elapsed().as_millis() as u64,
+                    ..Default::default()
                 });
                 Self::merge_reencode(params, &task_id, start, &mut progress_cb, &mut log_cb)
             }
@@ -193,6 +194,24 @@ impl VideoToolEngine {
             .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
 
         let total_inputs = params.input_paths.len();
+
+        // Pre-scan durations for progress estimation
+        let mut input_durations: Vec<f64> = Vec::with_capacity(total_inputs);
+        let mut total_duration_all: f64 = 0.0;
+        for p in &params.input_paths {
+            let dur = ffmpeg_next::format::input(p)
+                .ok()
+                .map(|inp| inp.duration() as f64 / 1_000_000.0)
+                .unwrap_or(0.0);
+            input_durations.push(dur);
+            total_duration_all += dur;
+        }
+        let mut cumulative_duration: f64 = 0.0;
+
+        // Progress throttling
+        let mut packets_since_progress: u32 = 0;
+        let mut last_progress_emit = Instant::now();
+
         // Track last DTS per output stream in output time_base for timestamp continuity
         let mut last_dts: Vec<i64> = vec![i64::MIN; out_stream_count];
         // Track cumulative DTS offsets per output stream in output time_base
@@ -278,15 +297,52 @@ impl VideoToolEngine {
                 packet
                     .write_interleaved(&mut output)
                     .map_err(|e| anyhow!("写入 packet 失败: {}", e))?;
+
+                // Emit intra-file progress (throttled)
+                packets_since_progress += 1;
+                if packets_since_progress >= 100 || last_progress_emit.elapsed().as_millis() > 200 {
+                    packets_since_progress = 0;
+                    last_progress_emit = Instant::now();
+
+                    let file_dur = input_durations.get(file_idx).copied().unwrap_or(0.0);
+                    let intra_progress = if file_dur > 0.0 {
+                        let ts = stream.time_base();
+                        let pts_secs = packet.pts().unwrap_or(0).max(0) as f64 * ts.0 as f64 / ts.1 as f64;
+                        (pts_secs / file_dur).min(1.0)
+                    } else {
+                        0.5
+                    };
+
+                    let overall = if total_duration_all > 0.0 {
+                        ((cumulative_duration + file_dur * intra_progress) / total_duration_all).min(0.95) as f32
+                    } else {
+                        ((file_idx as f32 + intra_progress as f32) / total_inputs as f32).min(0.95)
+                    };
+
+                    let elapsed_ms = start.elapsed().as_millis() as u64;
+                    let remaining_dur = total_duration_all - cumulative_duration - file_dur * intra_progress;
+                    let processed_dur = cumulative_duration + file_dur * intra_progress;
+                    let eta_ms = if processed_dur > 0.0 && elapsed_ms > 0 {
+                        Some((remaining_dur / processed_dur * elapsed_ms as f64) as u64)
+                    } else {
+                        None
+                    };
+
+                    progress_cb(VideoToolProgress {
+                        task_id: task_id.to_string(),
+                        progress: overall,
+                        current_step: "merging".to_string(),
+                        elapsed_ms,
+                        current_file_index: Some(file_idx),
+                        total_files: Some(total_inputs),
+                        current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
+                        eta_ms,
+                        ..Default::default()
+                    });
+                }
             }
 
-            let progress = (file_idx + 1) as f32 / total_inputs as f32;
-            progress_cb(VideoToolProgress {
-                task_id: task_id.to_string(),
-                progress,
-                current_step: "merging".to_string(),
-                elapsed_ms: start.elapsed().as_millis() as u64,
-            });
+            cumulative_duration += input_durations.get(file_idx).copied().unwrap_or(0.0);
         }
 
         output
@@ -302,6 +358,9 @@ impl VideoToolEngine {
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
+            current_file_index: Some(total_inputs.saturating_sub(1)),
+            total_files: Some(total_inputs),
+            ..Default::default()
         });
 
         log_cb(VideoToolLog {
@@ -480,6 +539,18 @@ impl VideoToolEngine {
         let enc_tb = ffmpeg_next::Rational::new(1, 25);
         let mut frame_count: u64 = 0;
         let total = params.input_paths.len();
+
+        // Pre-scan durations to estimate total frames for accurate progress
+        let mut estimated_total_frames: u64 = 0;
+        for p in &params.input_paths {
+            let dur_secs = ffmpeg_next::format::input(p)
+                .ok()
+                .map(|inp| inp.duration() as f64 / 1_000_000.0)
+                .unwrap_or(0.0);
+            if dur_secs > 0.0 {
+                estimated_total_frames += (dur_secs * 25.0) as u64;
+            }
+        }
 
         // Helper: encode a single frame and write packets
         let encode_and_write =
@@ -672,14 +743,30 @@ impl VideoToolEngine {
 
                         // Report progress every 30 frames
                         if frame_count % 30 == 0 {
-                            let file_progress = i as f32 / total as f32;
-                            let intra = if total > 0 { 1.0 / total as f32 } else { 0.0 };
-                            let progress = (file_progress + intra * 0.5).min(0.95);
+                            let progress = if estimated_total_frames > 0 {
+                                (frame_count as f32 / estimated_total_frames as f32).min(0.95)
+                            } else {
+                                ((i as f32 + 0.5) / total as f32).min(0.95)
+                            };
+                            let elapsed = start.elapsed().as_secs_f64();
+                            let speed = if elapsed > 0.0 { frame_count as f64 / elapsed } else { 0.0 };
+                            let eta_ms = if speed > 0.0 && estimated_total_frames > frame_count {
+                                Some(((estimated_total_frames - frame_count) as f64 / speed * 1000.0) as u64)
+                            } else {
+                                None
+                            };
                             progress_cb(VideoToolProgress {
                                 task_id: task_id.to_string(),
                                 progress,
                                 current_step: "reencoding".to_string(),
                                 elapsed_ms: start.elapsed().as_millis() as u64,
+                                current_file_index: Some(i),
+                                total_files: Some(total),
+                                current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
+                                speed: Some(speed),
+                                eta_ms,
+                                frames_processed: Some(frame_count),
+                                total_frames: Some(estimated_total_frames),
                             });
                         }
                     }
@@ -775,6 +862,31 @@ impl VideoToolEngine {
                 frame_count += 1;
 
                 encode_and_write(&mut encoder, Some(&yuv_frame), &mut output)?;
+
+                // Report progress during decoder flush
+                if frame_count % 30 == 0 && estimated_total_frames > 0 {
+                    let progress = (frame_count as f32 / estimated_total_frames as f32).min(0.95);
+                    let elapsed = start.elapsed().as_secs_f64();
+                    let speed = if elapsed > 0.0 { frame_count as f64 / elapsed } else { 0.0 };
+                    let eta_ms = if speed > 0.0 && estimated_total_frames > frame_count {
+                        Some(((estimated_total_frames - frame_count) as f64 / speed * 1000.0) as u64)
+                    } else {
+                        None
+                    };
+                    progress_cb(VideoToolProgress {
+                        task_id: task_id.to_string(),
+                        progress,
+                        current_step: "reencoding".to_string(),
+                        elapsed_ms: start.elapsed().as_millis() as u64,
+                        current_file_index: Some(i),
+                        total_files: Some(total),
+                        current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
+                        speed: Some(speed),
+                        eta_ms,
+                        frames_processed: Some(frame_count),
+                        total_frames: Some(estimated_total_frames),
+                    });
+                }
             }
 
             // Remux collected audio packets
@@ -790,13 +902,6 @@ impl VideoToolEngine {
                 }
             }
 
-            let progress = (i + 1) as f32 / total as f32;
-            progress_cb(VideoToolProgress {
-                task_id: task_id.to_string(),
-                progress,
-                current_step: "reencoding".to_string(),
-                elapsed_ms: start.elapsed().as_millis() as u64,
-            });
         }
 
         // Flush encoder
@@ -815,6 +920,11 @@ impl VideoToolEngine {
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
+            current_file_index: Some(total.saturating_sub(1)),
+            total_files: Some(total),
+            frames_processed: Some(frame_count),
+            total_frames: Some(estimated_total_frames),
+            ..Default::default()
         });
 
         log_cb(VideoToolLog {
@@ -1075,6 +1185,7 @@ impl VideoToolEngine {
                 progress: progress * 0.9,
                 current_step: "encoding".to_string(),
                 elapsed_ms: start.elapsed().as_millis() as u64,
+            ..Default::default()
             });
 
             log_cb(VideoToolLog {
@@ -1135,6 +1246,7 @@ impl VideoToolEngine {
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
+        ..Default::default()
         });
 
         log_cb(VideoToolLog {
@@ -1211,6 +1323,7 @@ impl VideoToolEngine {
                     progress: 0.0,
                     current_step: "reencoding".to_string(),
                     elapsed_ms: start.elapsed().as_millis() as u64,
+                ..Default::default()
                 });
                 Self::convert_video_reencode(params, &task_id, start, &mut progress_cb, &mut log_cb)
             }
@@ -1401,6 +1514,7 @@ impl VideoToolEngine {
                     progress,
                     current_step: "converting".to_string(),
                     elapsed_ms: start.elapsed().as_millis() as u64,
+                ..Default::default()
                 });
             }
         }
@@ -1418,6 +1532,7 @@ impl VideoToolEngine {
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
+        ..Default::default()
         });
 
         log_cb(VideoToolLog {
@@ -1576,6 +1691,7 @@ impl VideoToolEngine {
                     progress,
                     current_step: "converting".to_string(),
                     elapsed_ms: start.elapsed().as_millis() as u64,
+                ..Default::default()
                 });
             }
         }
@@ -1593,6 +1709,7 @@ impl VideoToolEngine {
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
+        ..Default::default()
         });
 
         log_cb(VideoToolLog {
@@ -2011,6 +2128,7 @@ impl VideoToolEngine {
                             progress,
                             current_step: "reencoding".to_string(),
                             elapsed_ms: start.elapsed().as_millis() as u64,
+                        ..Default::default()
                         });
                     }
                 }
@@ -2075,6 +2193,7 @@ impl VideoToolEngine {
             progress: 1.0,
             current_step: "done".to_string(),
             elapsed_ms: start.elapsed().as_millis() as u64,
+        ..Default::default()
         });
 
         log_cb(VideoToolLog {

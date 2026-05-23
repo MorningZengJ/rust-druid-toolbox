@@ -1,6 +1,14 @@
-import { Box, Flex, Text, ScrollArea, Stack, Progress, useMantineTheme } from "@mantine/core";
+import { Box, Flex, Text, ScrollArea, Stack, Progress, Group, useMantineTheme } from "@mantine/core";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useVideoToolStore } from "@/stores/videoToolStore";
+
+function formatEta(ms: number): string {
+  const totalSec = Math.ceil(ms / 1000);
+  if (totalSec < 60) return `${totalSec}秒`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}分${sec}秒`;
+}
 
 export function ProgressPanel() {
   const theme = useMantineTheme();
@@ -8,6 +16,7 @@ export function ProgressPanel() {
   const progress = useVideoToolStore((s) => s.progress);
   const logs = useVideoToolStore((s) => s.logs);
   const errorMessage = useVideoToolStore((s) => s.errorMessage);
+  const mergeProgressDetail = useVideoToolStore((s) => s.mergeProgressDetail);
 
   return (
     <Flex direction="column" style={{ height: "100%", overflow: "hidden", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.dark[4]}` }}>
@@ -23,6 +32,34 @@ export function ProgressPanel() {
             </Flex>
             <Progress value={progress * 100} size="sm" radius="xl" />
           </Box>
+        )}
+
+        {isProcessing && mergeProgressDetail && (
+          <Stack gap={4} mb="md">
+            <Group justify="space-between">
+              <Text size="xs" c="dimmed">
+                文件 {mergeProgressDetail.currentFileIndex + 1}/{mergeProgressDetail.totalFiles}
+                {mergeProgressDetail.currentFileName && ` - ${mergeProgressDetail.currentFileName}`}
+              </Text>
+            </Group>
+            {mergeProgressDetail.framesProcessed > 0 && mergeProgressDetail.totalFrames > 0 && (
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">
+                  帧 {mergeProgressDetail.framesProcessed}/{mergeProgressDetail.totalFrames}
+                </Text>
+                {mergeProgressDetail.speed > 0 && (
+                  <Text size="xs" c="dimmed">
+                    {Math.round(mergeProgressDetail.speed)} fps
+                  </Text>
+                )}
+              </Group>
+            )}
+            {mergeProgressDetail.etaMs > 0 && (
+              <Text size="xs" c="dimmed">
+                预计剩余: {formatEta(mergeProgressDetail.etaMs)}
+              </Text>
+            )}
+          </Stack>
         )}
 
         {errorMessage && (
