@@ -469,6 +469,19 @@ impl VideoToolEngine {
         let width = first_decoder.width() / 2 * 2;
         let height = first_decoder.height() / 2 * 2;
 
+        // Read actual frame rate from input video
+        let avg_frame_rate = first_video.avg_frame_rate();
+        let fps = if avg_frame_rate.1 > 0 {
+            avg_frame_rate.0 as f64 / avg_frame_rate.1 as f64
+        } else {
+            25.0
+        };
+        let enc_tb = if avg_frame_rate.1 > 0 {
+            Self::constrain_timebase(ffmpeg_next::Rational::new(avg_frame_rate.1, avg_frame_rate.0))
+        } else {
+            ffmpeg_next::Rational::new(1, 25)
+        };
+
         // Determine audio codec compatibility
         let mut has_audio = false;
         let first_audio_codec = first_input
@@ -515,18 +528,18 @@ impl VideoToolEngine {
 
         encoder_ctx.set_width(width);
         encoder_ctx.set_height(height);
-        encoder_ctx.set_time_base(ffmpeg_next::Rational::new(1, 25));
+        encoder_ctx.set_time_base(enc_tb);
         encoder_ctx.set_format(ffmpeg_next::format::Pixel::YUV420P);
         encoder_ctx.set_bit_rate(first_decoder.bit_rate().max(2_000_000));
         if codec_name.starts_with("libx264") || codec_name.starts_with("libx265") {
-            encoder_ctx.set_gop(250);
+            encoder_ctx.set_gop((fps * 10.0) as u32);  // 10-second GOP
         }
-        out_video.set_time_base(ffmpeg_next::Rational::new(1, 25));
 
         let mut encoder = encoder_ctx
             .open_as(codec)
             .map_err(|e| anyhow!("打开编码器失败: {}", e))?;
         out_video.set_parameters(&encoder);
+        out_video.set_time_base(enc_tb);
 
         // MPEG-TS audio parameters use ADTS container format which is incompatible
         // with MP4-style containers. Skip audio for MPEG-TS inputs.
@@ -576,7 +589,6 @@ impl VideoToolEngine {
             .write_header()
             .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
 
-        let enc_tb = ffmpeg_next::Rational::new(1, 25);
         let mut frame_count: u64 = 0;
         let total = params.input_paths.len();
         // Track audio DTS continuity across files
@@ -1084,6 +1096,38 @@ impl VideoToolEngine {
             ),
             _ => true,
         }
+    }
+
+    /// 约束 timebase 以满足编码器限制（如 MPEG4 要求分母 ≤ 65535）
+    fn constrain_timebase(tb: ffmpeg_next::Rational) -> ffmpeg_next::Rational {
+        let max_den: i32 = 65535;
+        if tb.1 <= max_den {
+            return tb;
+        }
+        // 先约分
+        let a = tb.0.unsigned_abs();
+        let b = tb.1.unsigned_abs();
+        let g = Self::gcd(a, b);
+        let mut num = (a / g) as i32;
+        let mut den = (b / g) as i32;
+        // 等比缩放直到分母 ≤ max_den
+        while den > max_den {
+            num = (num as f64 * max_den as f64 / den as f64).round() as i32;
+            den = max_den;
+            if num <= 0 {
+                num = 1;
+            }
+        }
+        ffmpeg_next::Rational::new(num, den)
+    }
+
+    fn gcd(mut a: u32, mut b: u32) -> u32 {
+        while b != 0 {
+            let t = b;
+            b = a % b;
+            a = t;
+        }
+        a
     }
 
     /// 检测输入文件是否为 MPEG-TS 格式（ts/m2ts/mts/trp）
@@ -1943,6 +1987,19 @@ impl VideoToolEngine {
             .and_then(Self::parse_bitrate)
             .unwrap_or_else(|| decoder.bit_rate().max(2_000_000));
 
+        // Read actual frame rate from input video
+        let avg_frame_rate = video_stream.avg_frame_rate();
+        let fps = if avg_frame_rate.1 > 0 {
+            avg_frame_rate.0 as f64 / avg_frame_rate.1 as f64
+        } else {
+            25.0
+        };
+        let enc_tb = if avg_frame_rate.1 > 0 {
+            Self::constrain_timebase(ffmpeg_next::Rational::new(avg_frame_rate.1, avg_frame_rate.0))
+        } else {
+            ffmpeg_next::Rational::new(1, 25)
+        };
+
         // Determine audio codec compatibility
         let mut has_audio = false;
         let first_audio_codec = input
@@ -1986,18 +2043,18 @@ impl VideoToolEngine {
 
         encoder_ctx.set_width(width);
         encoder_ctx.set_height(height);
-        encoder_ctx.set_time_base(ffmpeg_next::Rational::new(1, 25));
+        encoder_ctx.set_time_base(enc_tb);
         encoder_ctx.set_format(ffmpeg_next::format::Pixel::YUV420P);
         encoder_ctx.set_bit_rate(bit_rate);
         if codec_name.starts_with("libx264") || codec_name.starts_with("libx265") {
-            encoder_ctx.set_gop(250);
+            encoder_ctx.set_gop((fps * 10.0) as u32);  // 10-second GOP
         }
-        out_video.set_time_base(ffmpeg_next::Rational::new(1, 25));
 
         let mut encoder = encoder_ctx
             .open_as(codec)
             .map_err(|e| anyhow!("打开编码器失败: {}", e))?;
         out_video.set_parameters(&encoder);
+        out_video.set_time_base(enc_tb);
 
         // MPEG-TS audio parameters use ADTS container format which is incompatible
         // with MP4-style containers. Skip audio for MPEG-TS inputs.
@@ -2100,13 +2157,12 @@ impl VideoToolEngine {
             });
         }
 
-        let enc_tb = ffmpeg_next::Rational::new(1, 25);
         let mut frame_count: u64 = 0;
         // Estimate total frames from input duration for progress reporting
         let total_frames = {
             let dur_secs = input.duration() as f64 / 1_000_000.0;
             if dur_secs > 0.0 {
-                (dur_secs * 25.0) as u64
+                (dur_secs * fps) as u64
             } else {
                 0
             }
