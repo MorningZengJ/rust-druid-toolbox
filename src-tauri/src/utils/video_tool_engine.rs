@@ -171,8 +171,11 @@ impl VideoToolEngine {
 
         for stream in first_input.streams() {
             let media_type = stream.parameters().medium();
+            let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
             if media_type == ffmpeg_next::media::Type::Video
                 || media_type == ffmpeg_next::media::Type::Audio
+                || is_cover
             {
                 stream_mapping[stream.index()] = Some(out_stream_count);
                 out_stream_count += 1;
@@ -229,17 +232,31 @@ impl VideoToolEngine {
                 timestamp: now_ms(),
             });
 
-            let mut input = ffmpeg_next::format::input(input_path)
-                .map_err(|e| anyhow!("打开视频 {} 失败: {}", input_path.display(), e))?;
+            let mut input = match ffmpeg_next::format::input(input_path) {
+                Ok(input) => input,
+                Err(e) => {
+                    log_cb(VideoToolLog {
+                        task_id: task_id.to_string(),
+                        level: "error".to_string(),
+                        message: format!("打开视频 {} 失败: {}", input_path.display(), e),
+                        timestamp: now_ms(),
+                    });
+                    return Err(anyhow!("打开视频 {} 失败: {}", input_path.display(), e));
+                }
+            };
 
             // Build per-file stream mapping
             file_stream_mapping = vec![None; input.nb_streams() as usize];
             let mut out_idx = 0;
             for stream in input.streams() {
                 let media_type = stream.parameters().medium();
-                if media_type == ffmpeg_next::media::Type::Video
+                let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                    || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                // Only copy cover art from the first file
+                let should_map = media_type == ffmpeg_next::media::Type::Video
                     || media_type == ffmpeg_next::media::Type::Audio
-                {
+                    || (is_cover && file_idx == 0);
+                if should_map {
                     if out_idx < out_stream_count {
                         file_stream_mapping[stream.index()] = Some(out_idx);
                         out_idx += 1;
@@ -294,9 +311,15 @@ impl VideoToolEngine {
                 packet.set_stream(out_idx);
                 packet.set_position(-1);
 
-                packet
-                    .write_interleaved(&mut output)
-                    .map_err(|e| anyhow!("写入 packet 失败: {}", e))?;
+                if let Err(e) = packet.write_interleaved(&mut output) {
+                    log_cb(VideoToolLog {
+                        task_id: task_id.to_string(),
+                        level: "error".to_string(),
+                        message: format!("处理文件 {} 时写入失败: {}", input_path.display(), e),
+                        timestamp: now_ms(),
+                    });
+                    return Err(anyhow!("处理文件 {} 时写入失败: {}", input_path.display(), e));
+                }
 
                 // Emit intra-file progress (throttled)
                 packets_since_progress += 1;
@@ -532,6 +555,23 @@ impl VideoToolEngine {
             out_audio.set_time_base(audio_tb);
         }
 
+        // Add cover art streams from first input (Attachment or ATTACHED_PIC)
+        let mut cover_stream_indices: Vec<usize> = Vec::new();
+        for stream in first_input.streams() {
+            let media_type = stream.parameters().medium();
+            let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+            if is_cover {
+                let mut out_att = output
+                    .add_stream(None)
+                    .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
+                out_att.set_parameters(stream.parameters());
+                out_att.set_time_base(stream.time_base());
+                cover_stream_indices.push(output.nb_streams() as usize - 1);
+            }
+        }
+        let has_cover = !cover_stream_indices.is_empty();
+
         output
             .write_header()
             .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
@@ -545,12 +585,18 @@ impl VideoToolEngine {
         // Pre-scan durations to estimate total frames for accurate progress
         let mut estimated_total_frames: u64 = 0;
         for p in &params.input_paths {
-            let dur_secs = ffmpeg_next::format::input(p)
-                .ok()
-                .map(|inp| inp.duration() as f64 / 1_000_000.0)
-                .unwrap_or(0.0);
-            if dur_secs > 0.0 {
-                estimated_total_frames += (dur_secs * 25.0) as u64;
+            if let Ok(inp) = ffmpeg_next::format::input(p) {
+                let dur_secs = inp.duration() as f64 / 1_000_000.0;
+                if dur_secs > 0.0 {
+                    let fps = inp.streams()
+                        .best(ffmpeg_next::media::Type::Video)
+                        .map(|s| {
+                            let r = s.avg_frame_rate();
+                            if r.1 > 0 { r.0 as f64 / r.1 as f64 } else { 25.0 }
+                        })
+                        .unwrap_or(25.0);
+                    estimated_total_frames += (dur_secs * fps) as u64;
+                }
             }
         }
 
@@ -588,8 +634,18 @@ impl VideoToolEngine {
                 timestamp: now_ms(),
             });
 
-            let mut input = ffmpeg_next::format::input(input_path)
-                .map_err(|e| anyhow!("打开视频 {} 失败: {}", input_path.display(), e))?;
+            let mut input = match ffmpeg_next::format::input(input_path) {
+                Ok(input) => input,
+                Err(e) => {
+                    log_cb(VideoToolLog {
+                        task_id: task_id.to_string(),
+                        level: "error".to_string(),
+                        message: format!("打开视频 {} 失败: {}", input_path.display(), e),
+                        timestamp: now_ms(),
+                    });
+                    return Err(anyhow!("打开视频 {} 失败: {}", input_path.display(), e));
+                }
+            };
 
             // Find video stream in this input
             let video_stream = input
@@ -654,13 +710,22 @@ impl VideoToolEngine {
             let mut audio_packets: Vec<(ffmpeg_next::Packet, ffmpeg_next::Rational)> =
                 Vec::new();
 
+            // Track which cover art stream we're processing (for first file only)
+            let mut cover_stream_counter: usize = 0;
+
             for (stream, packet) in input.packets() {
                 let media_type = stream.parameters().medium();
 
                 if media_type == ffmpeg_next::media::Type::Video {
-                    decoder
-                        .send_packet(&packet)
-                        .map_err(|e| anyhow!("发送 packet 到解码器失败: {}", e))?;
+                    if let Err(e) = decoder.send_packet(&packet) {
+                        log_cb(VideoToolLog {
+                            task_id: task_id.to_string(),
+                            level: "error".to_string(),
+                            message: format!("处理文件 {} 时解码失败: {}", input_path.display(), e),
+                            timestamp: now_ms(),
+                        });
+                        return Err(anyhow!("处理文件 {} 时解码失败: {}", input_path.display(), e));
+                    }
 
                     let mut decoded = ffmpeg_next::frame::Video::empty();
                     while decoder.receive_frame(&mut decoded).is_ok() {
@@ -741,7 +806,15 @@ impl VideoToolEngine {
                         yuv_frame.set_pts(Some(frame_count as i64));
                         frame_count += 1;
 
-                        encode_and_write(&mut encoder, Some(&yuv_frame), &mut output)?;
+                        if let Err(e) = encode_and_write(&mut encoder, Some(&yuv_frame), &mut output) {
+                            log_cb(VideoToolLog {
+                                task_id: task_id.to_string(),
+                                level: "error".to_string(),
+                                message: format!("处理文件 {} 时编码失败: {}", input_path.display(), e),
+                                timestamp: now_ms(),
+                            });
+                            return Err(anyhow!("处理文件 {} 时编码失败: {}", input_path.display(), e));
+                        }
 
                         // Report progress every 30 frames
                         if frame_count % 30 == 0 {
@@ -767,7 +840,7 @@ impl VideoToolEngine {
                                 current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
                                 speed: Some(speed),
                                 eta_ms,
-                                frames_processed: Some(frame_count),
+                                frames_processed: Some(frame_count.min(estimated_total_frames)),
                                 total_frames: Some(estimated_total_frames),
                             });
                         }
@@ -778,6 +851,24 @@ impl VideoToolEngine {
                         Self::is_audio_compatible(stream.parameters().id(), &params.output_format);
                     if audio_compatible {
                         audio_packets.push((packet, stream.time_base()));
+                    }
+                } else if has_cover && i == 0 {
+                    // Copy cover art packets from first file only
+                    let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                        || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                    if is_cover {
+                        if let Some(&out_idx) = cover_stream_indices.get(cover_stream_counter) {
+                            if let Some(out_st) = output.stream(out_idx) {
+                                let in_tb = stream.time_base();
+                                let out_tb = out_st.time_base();
+                                let mut cover_packet = packet.clone();
+                                cover_packet.set_stream(out_idx);
+                                cover_packet.rescale_ts(in_tb, out_tb);
+                                cover_packet.set_position(-1);
+                                let _ = cover_packet.write_interleaved(&mut output);
+                            }
+                        }
+                        cover_stream_counter += 1;
                     }
                 }
             }
@@ -885,7 +976,7 @@ impl VideoToolEngine {
                         current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
                         speed: Some(speed),
                         eta_ms,
-                        frames_processed: Some(frame_count),
+                        frames_processed: Some(frame_count.min(estimated_total_frames)),
                         total_frames: Some(estimated_total_frames),
                     });
                 }
@@ -923,9 +1014,15 @@ impl VideoToolEngine {
                     }
 
                     packet.set_position(-1);
-                    packet
-                        .write_interleaved(&mut output)
-                        .map_err(|e| anyhow!("写入音频 packet 失败: {}", e))?;
+                    if let Err(e) = packet.write_interleaved(&mut output) {
+                        log_cb(VideoToolLog {
+                            task_id: task_id.to_string(),
+                            level: "error".to_string(),
+                            message: format!("处理文件 {} 时写入音频失败: {}", input_path.display(), e),
+                            timestamp: now_ms(),
+                        });
+                        return Err(anyhow!("处理文件 {} 时写入音频失败: {}", input_path.display(), e));
+                    }
                 }
             }
 
@@ -1668,8 +1765,11 @@ impl VideoToolEngine {
 
         for stream in input.streams() {
             let media_type = stream.parameters().medium();
+            let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
             if media_type == ffmpeg_next::media::Type::Video
                 || media_type == ffmpeg_next::media::Type::Audio
+                || is_cover
             {
                 stream_mapping[stream.index()] = Some(out_stream_count);
                 out_stream_count += 1;
@@ -1926,6 +2026,23 @@ impl VideoToolEngine {
             out_audio.set_time_base(audio_tb);
         }
 
+        // Add cover art streams from input (Attachment or ATTACHED_PIC)
+        let mut cover_stream_indices: Vec<usize> = Vec::new();
+        for stream in input.streams() {
+            let media_type = stream.parameters().medium();
+            let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+            if is_cover {
+                let mut out_att = output
+                    .add_stream(None)
+                    .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
+                out_att.set_parameters(stream.parameters());
+                out_att.set_time_base(stream.time_base());
+                cover_stream_indices.push(output.nb_streams() as usize - 1);
+            }
+        }
+        let has_cover = !cover_stream_indices.is_empty();
+
         output
             .write_header()
             .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
@@ -2119,6 +2236,9 @@ impl VideoToolEngine {
         // Collect audio packets for remuxing
         let mut audio_packets: Vec<(ffmpeg_next::Packet, ffmpeg_next::Rational)> = Vec::new();
 
+        // Track which cover art stream we're processing
+        let mut cover_stream_counter: usize = 0;
+
         for (stream, packet) in input.packets() {
             let media_type = stream.parameters().medium();
 
@@ -2164,6 +2284,24 @@ impl VideoToolEngine {
                     Self::is_audio_compatible(stream.parameters().id(), &format_str);
                 if audio_compatible {
                     audio_packets.push((packet, stream.time_base()));
+                }
+            } else if has_cover {
+                // Copy cover art packets
+                let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                    || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                if is_cover {
+                    if let Some(&out_idx) = cover_stream_indices.get(cover_stream_counter) {
+                        if let Some(out_st) = output.stream(out_idx) {
+                            let in_tb = stream.time_base();
+                            let out_tb = out_st.time_base();
+                            let mut cover_packet = packet.clone();
+                            cover_packet.set_stream(out_idx);
+                            cover_packet.rescale_ts(in_tb, out_tb);
+                            cover_packet.set_position(-1);
+                            let _ = cover_packet.write_interleaved(&mut output);
+                        }
+                    }
+                    cover_stream_counter += 1;
                 }
             }
         }
