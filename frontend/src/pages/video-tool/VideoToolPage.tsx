@@ -5,17 +5,14 @@ import {
   Images,
   RefreshCw,
   Film,
-  Radio,
   AlertCircle,
 } from "lucide-react";
 import { useVideoToolStore } from "@/stores/videoToolStore";
-import { useLiveRecordStore } from "@/stores/liveRecordStore";
 import type { VideoToolTab } from "@/types";
 import { MergePanel } from "./MergePanel";
 import { ImagesPanel } from "./ImagesPanel";
 import { ConvertPanel } from "./ConvertPanel";
 import { ExtractPanel } from "./ExtractPanel";
-import { LiveRecordPanel } from "./LiveRecordPanel";
 
 export default function VideoToolPage() {
   const ffmpegAvailable = useVideoToolStore((s) => s.ffmpegAvailable);
@@ -24,12 +21,6 @@ export default function VideoToolPage() {
   const checkEncoders = useVideoToolStore((s) => s.checkEncoders);
   const activeTab = useVideoToolStore((s) => s.activeTab);
   const setActiveTab = useVideoToolStore((s) => s.setActiveTab);
-  const registerEventListeners = useLiveRecordStore(
-    (s) => s.registerEventListeners
-  );
-  const unregisterEventListeners = useLiveRecordStore(
-    (s) => s.unregisterEventListeners
-  );
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
@@ -38,13 +29,6 @@ export default function VideoToolPage() {
     checkFfmpeg();
     checkEncoders();
   }, [checkFfmpeg, checkEncoders]);
-
-  useEffect(() => {
-    registerEventListeners();
-    return () => {
-      unregisterEventListeners();
-    };
-  }, [registerEventListeners, unregisterEventListeners]);
 
   if (!ffmpegAvailable) {
     return (
@@ -130,9 +114,6 @@ export default function VideoToolPage() {
             <Tabs.Tab value="extract" leftSection={<Film size={16} />}>
               抽帧
             </Tabs.Tab>
-            <Tabs.Tab value="live-record" leftSection={<Radio size={16} />}>
-              直播录制
-            </Tabs.Tab>
           </Tabs.List>
         </Box>
 
@@ -148,9 +129,6 @@ export default function VideoToolPage() {
           </Tabs.Panel>
           <Tabs.Panel value="extract" style={{ height: "100%" }}>
             <ExtractPanel />
-          </Tabs.Panel>
-          <Tabs.Panel value="live-record" style={{ height: "100%" }}>
-            <LiveRecordPanel />
           </Tabs.Panel>
         </Box>
       </Tabs>

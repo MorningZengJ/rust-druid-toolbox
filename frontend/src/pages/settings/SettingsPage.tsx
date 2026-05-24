@@ -129,7 +129,7 @@ export default function SettingsPage() {
             <Text size="sm" fw={500} c="dimmed">关于</Text>
             <Box p="md" style={{ border: `1px solid ${theme.colors.gray[3]}`, borderRadius: theme.radius.md }}>
               <Text size="sm" fw={500}>Druid Toolbox</Text>
-              <Text size="sm" c="dimmed">批量重命名 / 字符画生成 / 视频抽帧 / 直播录制 / 视频工具</Text>
+              <Text size="sm" c="dimmed">批量重命名 / 字符画生成 / 视频抽帧 / 视频工具</Text>
               <Text size="xs" c="dimmed" mt="xs">
                 Tauri v2 + React + Mantine
               </Text>

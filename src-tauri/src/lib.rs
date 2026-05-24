@@ -22,48 +22,8 @@ pub fn run() {
     #[cfg(feature = "video-frame")]
     let builder = builder.manage(commands::video_frame::FrameWatcherState::new());
 
-    #[cfg(feature = "live-record")]
-    let builder = builder.manage(commands::live_record::LiveRecordManager::new());
-
     // R9: Feature-gate commands in handler
-    #[cfg(all(feature = "video-frame", feature = "live-record"))]
-    let builder = builder.invoke_handler(tauri::generate_handler![
-        // Rename commands
-        commands::rename::list_files,
-        commands::rename::preview_renames,
-        commands::rename::detect_conflicts,
-        commands::rename::execute_renames,
-        commands::rename::validate_regex,
-        commands::rename::apply_rule_template,
-        commands::rename::parent_path,
-        // ASCII art commands
-        commands::ascii_art::convert_ascii_art_from_path,
-        commands::ascii_art::save_temp_image_and_convert,
-        commands::ascii_art::load_image_from_file,
-        commands::ascii_art::export_ascii_art,
-        commands::ascii_art::write_binary_file,
-        commands::ascii_art::cleanup_ascii_art_file,
-        // Video frame commands
-        commands::video_frame::check_ffmpeg,
-        commands::video_frame::probe_video,
-        commands::video_frame::extract_frames,
-        commands::video_frame::start_frame_watcher,
-        commands::video_frame::stop_frame_watcher,
-        // Live record commands
-        commands::live_record::start_recording,
-        commands::live_record::stop_recording,
-        commands::live_record::list_recordings,
-        // Video tool commands
-        commands::video_tool::check_video_encoders,
-        commands::video_tool::merge_videos,
-        commands::video_tool::images_to_video,
-        commands::video_tool::convert_format,
-        commands::video_tool::batch_convert_format,
-        commands::video_utils::list_images_in_folder,
-        commands::video_utils::list_media_files_in_folder,
-    ]);
-
-    #[cfg(all(feature = "video-frame", not(feature = "live-record")))]
+    #[cfg(feature = "video-frame")]
     let builder = builder.invoke_handler(tauri::generate_handler![
         // Rename commands
         commands::rename::list_files,
@@ -96,33 +56,7 @@ pub fn run() {
         commands::video_utils::list_media_files_in_folder,
     ]);
 
-    #[cfg(all(not(feature = "video-frame"), feature = "live-record"))]
-    let builder = builder.invoke_handler(tauri::generate_handler![
-        // Rename commands
-        commands::rename::list_files,
-        commands::rename::preview_renames,
-        commands::rename::detect_conflicts,
-        commands::rename::execute_renames,
-        commands::rename::validate_regex,
-        commands::rename::apply_rule_template,
-        commands::rename::parent_path,
-        // ASCII art commands
-        commands::ascii_art::convert_ascii_art_from_path,
-        commands::ascii_art::save_temp_image_and_convert,
-        commands::ascii_art::load_image_from_file,
-        commands::ascii_art::export_ascii_art,
-        commands::ascii_art::write_binary_file,
-        commands::ascii_art::cleanup_ascii_art_file,
-        // Live record commands
-        commands::live_record::start_recording,
-        commands::live_record::stop_recording,
-        commands::live_record::list_recordings,
-        // Video tool commands
-        commands::video_utils::list_images_in_folder,
-        commands::video_utils::list_media_files_in_folder,
-    ]);
-
-    #[cfg(not(any(feature = "video-frame", feature = "live-record")))]
+    #[cfg(not(feature = "video-frame"))]
     let builder = builder.invoke_handler(tauri::generate_handler![
         // Rename commands
         commands::rename::list_files,

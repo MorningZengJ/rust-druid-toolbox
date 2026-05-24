@@ -32,7 +32,6 @@
 - CPU 密集操作使用 `tokio::task::spawn_blocking`
 - 文件操作错误必须处理，不使用 `let _ =` 静默忽略
 - 视频帧/视频工具相关代码使用 `#[cfg(feature = "video-frame")]` 条件编译
-- 直播录制相关代码使用 `#[cfg(feature = "live-record")]` 条件编译
 
 ### 修改后
 
