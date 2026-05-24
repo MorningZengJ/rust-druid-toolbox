@@ -539,6 +539,8 @@ impl VideoToolEngine {
         let enc_tb = ffmpeg_next::Rational::new(1, 25);
         let mut frame_count: u64 = 0;
         let total = params.input_paths.len();
+        // Track audio DTS continuity across files
+        let mut last_audio_dts: i64 = i64::MIN;
 
         // Pre-scan durations to estimate total frames for accurate progress
         let mut estimated_total_frames: u64 = 0;
@@ -889,12 +891,37 @@ impl VideoToolEngine {
                 }
             }
 
-            // Remux collected audio packets
+            // Remux collected audio packets with DTS continuity across files
             if has_audio {
+                let out_tb = output.stream(1).unwrap().time_base();
+                let mut audio_dts_offset: i64 = 0;
+                let mut first_audio = true;
+
                 for (mut packet, in_tb) in audio_packets.drain(..) {
                     packet.set_stream(1);
-                    let out_tb = output.stream(1).unwrap().time_base();
                     packet.rescale_ts(in_tb, out_tb);
+
+                    let raw_dts = packet.dts().unwrap_or_else(|| packet.pts().unwrap_or(0));
+
+                    if first_audio {
+                        first_audio = false;
+                        if last_audio_dts != i64::MIN {
+                            audio_dts_offset = last_audio_dts + 1 - raw_dts;
+                        }
+                    }
+
+                    if let Some(p) = packet.pts() {
+                        packet.set_pts(Some(p + audio_dts_offset));
+                    }
+                    if let Some(d) = packet.dts() {
+                        packet.set_dts(Some(d + audio_dts_offset));
+                    }
+
+                    let current_dts = packet.dts().unwrap_or_else(|| packet.pts().unwrap_or(0));
+                    if current_dts > last_audio_dts {
+                        last_audio_dts = current_dts;
+                    }
+
                     packet.set_position(-1);
                     packet
                         .write_interleaved(&mut output)
