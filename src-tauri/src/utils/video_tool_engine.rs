@@ -161,7 +161,7 @@ impl VideoToolEngine {
 
         let mut output = ffmpeg_next::format::output_as(
             &params.output_path,
-            &params.output_format,
+            Self::normalize_format_name(&params.output_format),
         )
         .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
@@ -184,6 +184,11 @@ impl VideoToolEngine {
                     .add_stream(None)
                     .map_err(|e| anyhow!("添加输出流失败: {}", e))?;
                 out_stream.set_parameters(stream.parameters());
+                // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+                unsafe {
+                    let avstream = out_stream.as_mut_ptr();
+                    (*(*avstream).codecpar).codec_tag = 0;
+                }
                 out_stream.set_time_base(stream.time_base());
             }
         }
@@ -547,7 +552,7 @@ impl VideoToolEngine {
         // Create output
         let mut output = ffmpeg_next::format::output_as(
             &params.output_path,
-            &params.output_format,
+            Self::normalize_format_name(&params.output_format),
         )
         .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
@@ -1202,6 +1207,16 @@ impl VideoToolEngine {
         a
     }
 
+    /// 将文件扩展名映射为 FFmpeg 标准格式名
+    fn normalize_format_name(ext: &str) -> &str {
+        match ext {
+            "mkv" => "matroska",
+            "ts" => "mpegts",
+            "m4v" => "mp4",
+            other => other,
+        }
+    }
+
     /// 检测输入文件是否为 MPEG-TS 格式（ts/m2ts/mts/trp）
     fn is_ts_format(path: &std::path::Path) -> bool {
         let Ok(input) = ffmpeg_next::format::input(path) else {
@@ -1319,7 +1334,7 @@ impl VideoToolEngine {
         let mut input = ffmpeg_next::format::input(video_path)
             .map_err(|e| anyhow!("打开原视频失败: {}", e))?;
 
-        let mut output = ffmpeg_next::format::output_as(&temp_path, output_format)
+        let mut output = ffmpeg_next::format::output_as(&temp_path, Self::normalize_format_name(output_format))
             .map_err(|e| anyhow!("创建临时输出失败: {}", e))?;
 
         // 复制所有现有流
@@ -1330,6 +1345,11 @@ impl VideoToolEngine {
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加输出流失败: {}", e))?;
             out_stream.set_parameters(stream.parameters());
+            // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+            unsafe {
+                let avstream = out_stream.as_mut_ptr();
+                (*(*avstream).codecpar).codec_tag = 0;
+            }
             out_stream.set_time_base(stream.time_base());
             stream_mapping[idx] = Some(output.nb_streams() as usize - 1);
         }
@@ -1484,7 +1504,7 @@ impl VideoToolEngine {
         // Create output
         let mut output = ffmpeg_next::format::output_as(
             &params.output_path,
-            &params.output_format,
+            Self::normalize_format_name(&params.output_format),
         )
         .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
@@ -1882,7 +1902,7 @@ impl VideoToolEngine {
         let mut input = ffmpeg_next::format::input(&params.input_path)
             .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
 
-        let mut output = ffmpeg_next::format::output_as(&params.output_path, &format_str)
+        let mut output = ffmpeg_next::format::output_as(&params.output_path, Self::normalize_format_name(&format_str))
             .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
         let mut stream_mapping: Vec<Option<usize>> = vec![None; input.nb_streams() as usize];
@@ -1897,6 +1917,11 @@ impl VideoToolEngine {
                     .add_stream(None)
                     .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
                 out_stream.set_parameters(stream.parameters());
+                // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+                unsafe {
+                    let avstream = out_stream.as_mut_ptr();
+                    (*(*avstream).codecpar).codec_tag = 0;
+                }
                 out_stream.set_time_base(stream.time_base());
             }
         }
@@ -2056,7 +2081,7 @@ impl VideoToolEngine {
             }
         }
 
-        let mut output = ffmpeg_next::format::output_as(&params.output_path, &format_str)
+        let mut output = ffmpeg_next::format::output_as(&params.output_path, Self::normalize_format_name(&format_str))
             .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
         let mut stream_mapping: Vec<Option<usize>> = vec![None; input.nb_streams() as usize];
@@ -2077,6 +2102,11 @@ impl VideoToolEngine {
                     .add_stream(None)
                     .map_err(|e| anyhow!("添加流失败: {}", e))?;
                 out_stream.set_parameters(stream.parameters());
+                // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+                unsafe {
+                    let avstream = out_stream.as_mut_ptr();
+                    (*(*avstream).codecpar).codec_tag = 0;
+                }
                 out_stream.set_time_base(stream.time_base());
             }
         }
@@ -2279,7 +2309,7 @@ impl VideoToolEngine {
         }
 
         // Create output
-        let mut output = ffmpeg_next::format::output_as(&params.output_path, &format_str)
+        let mut output = ffmpeg_next::format::output_as(&params.output_path, Self::normalize_format_name(&format_str))
             .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
         // Add encoded video stream
