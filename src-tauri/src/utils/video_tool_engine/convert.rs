@@ -228,8 +228,14 @@ impl VideoToolEngine {
             .add_stream(enc_codec)
             .map_err(|e| anyhow!("添加音频输出流失败: {}", e))?;
 
-        let sample_rate = decoder.rate();
-        let channels = decoder.channels();
+        let dec_format = decoder.format();
+        let dec_rate = decoder.rate();
+        let dec_channels = decoder.channels();
+        let dec_layout = decoder.channel_layout();
+
+        let (enc_format, enc_rate, enc_layout) = Self::query_audio_encoder_params(
+            &enc_codec, dec_format, dec_rate, dec_channels,
+        );
 
         let mut enc_ctx = ffmpeg_next::codec::context::Context::from_parameters(out_audio.parameters())
             .map_err(|e| anyhow!("创建编码上下文失败: {}", e))?
@@ -237,39 +243,30 @@ impl VideoToolEngine {
             .audio()
             .map_err(|e| anyhow!("创建音频编码器失败: {}", e))?;
 
-        enc_ctx.set_rate(sample_rate as i32);
-        let ch_layout = if channels >= 2 {
-            ffmpeg_next::channel_layout::ChannelLayout::STEREO
-        } else {
-            ffmpeg_next::channel_layout::ChannelLayout::MONO
-        };
-        enc_ctx.set_channel_layout(ch_layout);
-        enc_ctx.set_format(ffmpeg_next::format::Sample::F32(ffmpeg_next::format::sample::Type::Planar));
+        enc_ctx.set_rate(enc_rate as i32);
+        enc_ctx.set_channel_layout(enc_layout);
+        enc_ctx.set_format(enc_format);
         if let Some(bitrate_str) = &params.audio_bitrate {
             if let Some(br) = Self::parse_bitrate(bitrate_str) {
                 enc_ctx.set_bit_rate(br);
             }
         }
-        enc_ctx.set_time_base(ffmpeg_next::Rational::new(1, sample_rate as i32));
+        enc_ctx.set_time_base(ffmpeg_next::Rational::new(1, enc_rate as i32));
 
         let mut encoder = enc_ctx
             .open_as(enc_codec)
             .map_err(|e| anyhow!("打开音频编码器失败: {}", e))?;
         out_audio.set_parameters(&encoder);
-        out_audio.set_time_base(ffmpeg_next::Rational::new(1, sample_rate as i32));
+        out_audio.set_time_base(ffmpeg_next::Rational::new(1, enc_rate as i32));
 
-        let needs_resample = decoder.format() != ffmpeg_next::format::Sample::F32(ffmpeg_next::format::sample::Type::Planar)
-            || decoder.rate() != sample_rate
-            || decoder.channel_layout() != ch_layout;
+        let needs_resample = dec_format != enc_format
+            || dec_rate != enc_rate
+            || dec_layout != enc_layout;
         let mut resampler = if needs_resample {
             Some(
                 ffmpeg_next::software::resampling::Context::get(
-                    decoder.format(),
-                    decoder.channel_layout(),
-                    decoder.rate(),
-                    ffmpeg_next::format::Sample::F32(ffmpeg_next::format::sample::Type::Planar),
-                    ch_layout,
-                    sample_rate,
+                    dec_format, dec_layout, dec_rate,
+                    enc_format, enc_layout, enc_rate,
                 )
                 .map_err(|e| anyhow!("创建音频重采样器失败: {}", e))?,
             )
@@ -568,12 +565,18 @@ impl VideoToolEngine {
                 .audio()
                 .map_err(|e| anyhow!("创建音频解码器失败: {}", e))?;
 
-            let sample_rate = dec.rate();
-            let channels = dec.channels();
+            let dec_format = dec.format();
+            let dec_rate = dec.rate();
+            let dec_channels = dec.channels();
+            let dec_layout = dec.channel_layout();
 
             let enc_codec_name = resolved_audio_encoder.unwrap();
             let enc_codec = ffmpeg_next::codec::encoder::find_by_name(enc_codec_name)
                 .ok_or_else(|| anyhow!("未找到音频编码器: {}", enc_codec_name))?;
+
+            let (enc_format, enc_rate, enc_layout) = Self::query_audio_encoder_params(
+                &enc_codec, dec_format, dec_rate, dec_channels,
+            );
 
             let mut out_audio = output
                 .add_stream(enc_codec)
@@ -585,39 +588,30 @@ impl VideoToolEngine {
                 .audio()
                 .map_err(|e| anyhow!("创建音频编码器失败: {}", e))?;
 
-            enc_ctx.set_rate(sample_rate as i32);
-            let ch_layout = if channels >= 2 {
-                ffmpeg_next::channel_layout::ChannelLayout::STEREO
-            } else {
-                ffmpeg_next::channel_layout::ChannelLayout::MONO
-            };
-            enc_ctx.set_channel_layout(ch_layout);
-            enc_ctx.set_format(ffmpeg_next::format::Sample::F32(ffmpeg_next::format::sample::Type::Planar));
+            enc_ctx.set_rate(enc_rate as i32);
+            enc_ctx.set_channel_layout(enc_layout);
+            enc_ctx.set_format(enc_format);
             if let Some(bitrate_str) = &params.audio_bitrate {
                 if let Some(br) = Self::parse_bitrate(bitrate_str) {
                     enc_ctx.set_bit_rate(br);
                 }
             }
-            enc_ctx.set_time_base(ffmpeg_next::Rational::new(1, sample_rate as i32));
+            enc_ctx.set_time_base(ffmpeg_next::Rational::new(1, enc_rate as i32));
 
             let opened_enc = enc_ctx
                 .open_as(enc_codec)
                 .map_err(|e| anyhow!("打开音频编码器失败: {}", e))?;
             out_audio.set_parameters(&opened_enc);
-            out_audio.set_time_base(ffmpeg_next::Rational::new(1, sample_rate as i32));
+            out_audio.set_time_base(ffmpeg_next::Rational::new(1, enc_rate as i32));
 
-            let needs_resample = dec.format() != ffmpeg_next::format::Sample::F32(ffmpeg_next::format::sample::Type::Planar)
-                || dec.rate() != sample_rate
-                || dec.channel_layout() != ch_layout;
+            let needs_resample = dec_format != enc_format
+                || dec_rate != enc_rate
+                || dec_layout != enc_layout;
             let resamp = if needs_resample {
                 Some(
                     ffmpeg_next::software::resampling::Context::get(
-                        dec.format(),
-                        dec.channel_layout(),
-                        dec.rate(),
-                        ffmpeg_next::format::Sample::F32(ffmpeg_next::format::sample::Type::Planar),
-                        ch_layout,
-                        sample_rate,
+                        dec_format, dec_layout, dec_rate,
+                        enc_format, enc_layout, enc_rate,
                     )
                     .map_err(|e| anyhow!("创建音频重采样器失败: {}", e))?,
                 )
@@ -628,7 +622,7 @@ impl VideoToolEngine {
             log_cb(VideoToolLog {
                 task_id: task_id.to_string(),
                 level: "info".to_string(),
-                message: format!("音频将重编码为 {} ({}Hz)", enc_codec_name, sample_rate),
+                message: format!("音频将重编码为 {} ({}Hz)", enc_codec_name, enc_rate),
                 timestamp: now_ms(),
             });
 

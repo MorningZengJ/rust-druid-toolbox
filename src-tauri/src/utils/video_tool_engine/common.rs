@@ -27,6 +27,72 @@ impl VideoToolEngine {
         (scaled_width / 2 * 2, scaled_height / 2 * 2)
     }
 
+    /// 查询编码器支持的音频参数，返回 (最佳采样格式, 最佳采样率, 最佳声道布局)
+    /// 若编码器未限制某项则回退到解码器参数
+    pub(super) fn query_audio_encoder_params(
+        enc_codec: &ffmpeg_next::Codec,
+        dec_format: ffmpeg_next::format::Sample,
+        dec_rate: u32,
+        dec_channels: u16,
+    ) -> (ffmpeg_next::format::Sample, u32, ffmpeg_next::channel_layout::ChannelLayout) {
+        let audio_codec = enc_codec.audio().ok();
+
+        // 采样格式：优先匹配解码器格式，否则取编码器支持的第一个
+        let format = if let Some(ref codec) = audio_codec {
+            if let Some(formats) = codec.formats() {
+                let supported: Vec<ffmpeg_next::format::Sample> = formats.collect();
+                if supported.contains(&dec_format) {
+                    dec_format
+                } else {
+                    supported.into_iter().next().unwrap_or(dec_format)
+                }
+            } else {
+                dec_format
+            }
+        } else {
+            dec_format
+        };
+
+        // 采样率：优先匹配解码器速率，否则取编码器支持的最近值
+        let rate = if let Some(ref codec) = audio_codec {
+            if let Some(rates) = codec.rates() {
+                let supported: Vec<i32> = rates.collect();
+                if supported.is_empty() {
+                    dec_rate
+                } else if supported.contains(&(dec_rate as i32)) {
+                    dec_rate
+                } else {
+                    supported
+                        .into_iter()
+                        .min_by_key(|r| (*r - dec_rate as i32).unsigned_abs())
+                        .map(|r| r as u32)
+                        .unwrap_or(dec_rate)
+                }
+            } else {
+                dec_rate
+            }
+        } else {
+            dec_rate
+        };
+
+        // 声道布局：优先匹配解码器声道数
+        let ch_layout = if let Some(ref codec) = audio_codec {
+            if let Some(layouts) = codec.channel_layouts() {
+                layouts.best(dec_channels as i32)
+            } else if dec_channels >= 2 {
+                ffmpeg_next::channel_layout::ChannelLayout::STEREO
+            } else {
+                ffmpeg_next::channel_layout::ChannelLayout::MONO
+            }
+        } else if dec_channels >= 2 {
+            ffmpeg_next::channel_layout::ChannelLayout::STEREO
+        } else {
+            ffmpeg_next::channel_layout::ChannelLayout::MONO
+        };
+
+        (format, rate, ch_layout)
+    }
+
     pub(super) fn is_audio_compatible(codec_id: ffmpeg_next::codec::Id, output_format: &str) -> bool {
         match output_format {
             "flv" => matches!(
