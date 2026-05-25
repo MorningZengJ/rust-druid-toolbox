@@ -8,6 +8,7 @@
 4. **获得需求后必须先制定计划（plan），经用户明确同意后才执行计划。**
 5. **禁止重复造轮子；已有公共能力、工具、约定或模块可复用时必须优先复用。**
 6. **修改前先查已有实现，修改后说明验证结果或未验证原因。**
+7. **生成代码前必须先分析影响范围、给出模块拆分方案、判断是否需要新增文件，并避免造成架构膨胀。**
 
 ## 代码修改规则
 
@@ -16,6 +17,7 @@
 - 阅读目标文件及其依赖的相关代码
 - 确认修改不会破坏现有的 IPC 接口和状态管理
 - 检查是否有已有的工具函数、组件或 store action 可以复用
+- 分析影响范围，判断是否需要新增文件或拆分模块
 
 ### 修改时
 
@@ -25,13 +27,18 @@
 - 使用 Zustand store（v5）管理状态，不使用 React Context
 - 使用 lucide-react 图标
 - 新页面创建独立的 store 和页面组件，并在 App.tsx 中注册
+- invoke 必须统一封装，页面不得直接调用后端 command
+- UI 与状态逻辑分离，hooks/composables 独立
 
 **后端：**
 - 遵循 Rust + Tauri 命令规范
+- command 仅做入口，business logic 放 utils
 - 所有 IPC 数据结构 derive Serialize + Deserialize + `#[serde(rename_all = "camelCase")]`
 - CPU 密集操作使用 `tokio::task::spawn_blocking`
 - 文件操作错误必须处理，不使用 `let _ =` 静默忽略
 - 视频帧/视频工具相关代码使用 `#[cfg(feature = "video-frame")]` 条件编译
+- 避免 pub 泛滥，避免 Arc<Mutex> 扩散
+- 单文件 <= 500 行，单函数 <= 50 行，超过 300 行优先拆分
 
 ### 修改后
 

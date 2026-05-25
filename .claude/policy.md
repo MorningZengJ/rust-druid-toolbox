@@ -1,14 +1,27 @@
 # 开发策略
 
+## 文件/函数限制
+
+- 单文件尽量 <= 500 行，超过 300 行时优先考虑拆分
+- 单函数尽量 <= 50 行
+- 避免超长 impl
+
 ## 构建与运行
 
 - **Tauri 开发**: `npm run tauri dev`（项目根目录）
 - **前端构建**: `cd frontend && npm run build`
-- **Tauri 构建**: `cd frontend && npm run tauri build`
+- **Tauri 构建**: `npx tauri build`
 - **Rust 检查**: `cargo check --manifest-path src-tauri/Cargo.toml`
 - **Rust 测试**: `cargo test --manifest-path src-tauri/Cargo.toml`
 - **FFmpeg 编译检查**: `cargo check --manifest-path src-tauri/Cargo.toml --features video-frame`
 - **平台**: Windows 为主（`#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]`）
+
+## 环境要求
+
+- **PowerShell 执行策略**: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
+- **LLVM**: `winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements`（FFmpeg 编译需要）
+- **vcpkg FFmpeg 静态库**: `C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md`
+- **图标生成**: `npm run tauri icon <your-icon.png>`
 
 ## 代码规范
 
@@ -21,15 +34,21 @@
 - **路径别名**: `@/` 指向 `frontend/src/`
 - **图标**: 使用 lucide-react，不使用自定义 SVG
 - **页面切换**: App.tsx 通过 display 属性切换页面（非路由），新增页面需在 App.tsx 中注册
+- **API 调用**: invoke 必须统一封装，页面不得直接调用后端 command
+- **UI 与状态逻辑分离**: hooks/composables 独立
 
 ### 后端（Rust + Tauri）
 
-- **模块组织**: commands/（Tauri 命令）、model/（数据模型）、utils/（工具函数）
+- **模块组织**: commands/（Tauri 命令入口）、model/（数据模型）、utils/（业务逻辑）
+- **职责分离**: command 仅做入口，business logic 放 utils，避免 command 层包含复杂逻辑
 - **命名约定**: 结构体 PascalCase，函数 snake_case，文件 snake_case
 - **IPC 模型**: 所有跨 IPC 结构必须 derive Serialize + Deserialize + `#[serde(rename_all = "camelCase")]`
 - **异步命令**: CPU 密集操作使用 `tokio::task::spawn_blocking`
 - **错误处理**: Tauri 命令返回 `Result<T, String>` 或直接返回值
 - **条件编译**: 视频帧/视频工具功能通过 `#[cfg(feature = "video-frame")]` 控制
+- **避免 pub 泛滥**: 仅暴露必要接口
+- **避免 Arc<Mutex> 扩散**: 优先使用消息传递或 Tauri 状态管理
+- **避免巨型 mod.rs**: 每个模块保持合理大小
 
 ### Mantine UI 组件
 
@@ -66,3 +85,19 @@
 - 禁止引入与现有功能重复的依赖
 - 禁止静默忽略文件系统错误（如 `let _ = fs::rename(...)`）
 - 禁止新增路由库（当前使用 display 切换，无路由需求）
+
+## 开发策略
+
+新增功能时：
+
+- 优先新建模块，不要持续扩展已有大文件
+- 优先抽离公共逻辑，保持模块自治
+
+生成代码前：
+
+1. 先分析影响范围
+2. 给出模块拆分方案
+3. 判断是否需要新增文件
+4. 避免造成架构膨胀
+
+不要为了速度牺牲架构质量。
