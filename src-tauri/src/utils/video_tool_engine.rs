@@ -168,6 +168,8 @@ impl VideoToolEngine {
         // Build stream mapping from first input
         let mut stream_mapping: Vec<Option<usize>> = vec![None; first_input.nb_streams() as usize];
         let mut out_stream_count: usize = 0;
+        // FLV 等格式不支持封面图/附件流，需要跳过
+        let supports_cover = !matches!(params.output_format.as_str(), "flv");
 
         for stream in first_input.streams() {
             let media_type = stream.parameters().medium();
@@ -175,7 +177,7 @@ impl VideoToolEngine {
                 || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
             if media_type == ffmpeg_next::media::Type::Video
                 || media_type == ffmpeg_next::media::Type::Audio
-                || is_cover
+                || (is_cover && supports_cover)
             {
                 stream_mapping[stream.index()] = Some(out_stream_count);
                 out_stream_count += 1;
@@ -197,7 +199,7 @@ impl VideoToolEngine {
             return Err(anyhow!("第一个视频中未找到视频或音频流"));
         }
 
-        let has_cover_art = first_input.streams().any(|s| {
+        let has_cover_art = supports_cover && first_input.streams().any(|s| {
             let mt = s.parameters().medium();
             mt == ffmpeg_next::media::Type::Attachment
                 || s.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC)
@@ -609,22 +611,36 @@ impl VideoToolEngine {
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
             out_audio.set_parameters(audio_params);
+            // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+            unsafe {
+                let avstream = out_audio.as_mut_ptr();
+                (*(*avstream).codecpar).codec_tag = 0;
+            }
             out_audio.set_time_base(audio_tb);
         }
 
         // Add cover art streams from first input (Attachment or ATTACHED_PIC)
+        // FLV 等格式不支持封面图/附件流，需要跳过
         let mut cover_stream_indices: Vec<usize> = Vec::new();
-        for stream in first_input.streams() {
-            let media_type = stream.parameters().medium();
-            let is_cover = media_type == ffmpeg_next::media::Type::Attachment
-                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
-            if is_cover {
-                let mut out_att = output
-                    .add_stream(None)
-                    .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
-                out_att.set_parameters(stream.parameters());
-                out_att.set_time_base(stream.time_base());
-                cover_stream_indices.push(output.nb_streams() as usize - 1);
+        let supports_cover = !matches!(params.output_format.as_str(), "flv");
+        if supports_cover {
+            for stream in first_input.streams() {
+                let media_type = stream.parameters().medium();
+                let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                    || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                if is_cover {
+                    let mut out_att = output
+                        .add_stream(None)
+                        .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
+                    out_att.set_parameters(stream.parameters());
+                    // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+                    unsafe {
+                        let avstream = out_att.as_mut_ptr();
+                        (*(*avstream).codecpar).codec_tag = 0;
+                    }
+                    out_att.set_time_base(stream.time_base());
+                    cover_stream_indices.push(output.nb_streams() as usize - 1);
+                }
             }
         }
         let has_cover = !cover_stream_indices.is_empty();
@@ -1368,6 +1384,11 @@ impl VideoToolEngine {
             .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
         cover_stream.set_parameters(cover_params);
         cover_stream.set_time_base(ffmpeg_next::Rational::new(1, 90000));
+        // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+        unsafe {
+            let avstream = cover_stream.as_mut_ptr();
+            (*(*avstream).codecpar).codec_tag = 0;
+        }
         unsafe {
             (*cover_stream.as_mut_ptr()).disposition =
                 ffmpeg_next::format::stream::Disposition::ATTACHED_PIC.bits();
@@ -1552,6 +1573,11 @@ impl VideoToolEngine {
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
             out_audio.set_parameters(aparams);
+            // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+            unsafe {
+                let avstream = out_audio.as_mut_ptr();
+                (*(*avstream).codecpar).codec_tag = 0;
+            }
             out_audio.set_time_base(atb);
 
             audio_input = Some(ainput);
@@ -2087,13 +2113,15 @@ impl VideoToolEngine {
         let mut stream_mapping: Vec<Option<usize>> = vec![None; input.nb_streams() as usize];
         let mut out_stream_count: usize = 0;
 
+        // FLV 等格式不支持封面图/附件流，需要跳过
+        let supports_cover = !matches!(format_str.as_str(), "flv");
         for stream in input.streams() {
             let media_type = stream.parameters().medium();
             let is_cover = media_type == ffmpeg_next::media::Type::Attachment
                 || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
             if media_type == ffmpeg_next::media::Type::Video
                 || media_type == ffmpeg_next::media::Type::Audio
-                || is_cover
+                || (is_cover && supports_cover)
             {
                 stream_mapping[stream.index()] = Some(out_stream_count);
                 out_stream_count += 1;
@@ -2365,22 +2393,36 @@ impl VideoToolEngine {
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
             out_audio.set_parameters(audio_params);
+            // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+            unsafe {
+                let avstream = out_audio.as_mut_ptr();
+                (*(*avstream).codecpar).codec_tag = 0;
+            }
             out_audio.set_time_base(audio_tb);
         }
 
         // Add cover art streams from input (Attachment or ATTACHED_PIC)
+        // FLV 等格式不支持封面图/附件流，需要跳过
         let mut cover_stream_indices: Vec<usize> = Vec::new();
-        for stream in input.streams() {
-            let media_type = stream.parameters().medium();
-            let is_cover = media_type == ffmpeg_next::media::Type::Attachment
-                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
-            if is_cover {
-                let mut out_att = output
-                    .add_stream(None)
-                    .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
-                out_att.set_parameters(stream.parameters());
-                out_att.set_time_base(stream.time_base());
-                cover_stream_indices.push(output.nb_streams() as usize - 1);
+        let supports_cover = !matches!(format_str.as_str(), "flv");
+        if supports_cover {
+            for stream in input.streams() {
+                let media_type = stream.parameters().medium();
+                let is_cover = media_type == ffmpeg_next::media::Type::Attachment
+                    || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                if is_cover {
+                    let mut out_att = output
+                        .add_stream(None)
+                        .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
+                    out_att.set_parameters(stream.parameters());
+                    // 重置 codec_tag，让 FFmpeg 为输出容器自动检测正确的 tag
+                    unsafe {
+                        let avstream = out_att.as_mut_ptr();
+                        (*(*avstream).codecpar).codec_tag = 0;
+                    }
+                    out_att.set_time_base(stream.time_base());
+                    cover_stream_indices.push(output.nb_streams() as usize - 1);
+                }
             }
         }
         let has_cover = !cover_stream_indices.is_empty();
@@ -2584,9 +2626,15 @@ impl VideoToolEngine {
             let media_type = stream.parameters().medium();
 
             if media_type == ffmpeg_next::media::Type::Video {
-                decoder
-                    .send_packet(&packet)
-                    .map_err(|e| anyhow!("发送 packet 到解码器失败: {}", e))?;
+                if let Err(e) = decoder.send_packet(&packet) {
+                    log_cb(VideoToolLog {
+                        task_id: task_id.to_string(),
+                        level: "warn".to_string(),
+                        message: format!("跳过损坏的视频 packet: {}", e),
+                        timestamp: now_ms(),
+                    });
+                    continue;
+                }
 
                 let mut decoded = ffmpeg_next::frame::Video::empty();
                 while decoder.receive_frame(&mut decoded).is_ok() {
