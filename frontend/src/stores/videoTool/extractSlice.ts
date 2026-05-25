@@ -107,34 +107,44 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
     get().stopExtractWatcher();
     set({ isExtracting: true, extractProgress: 0, errorMessage: null, extractFrames: [], extractLogs: [], extractEstimatedTimeRemaining: null });
 
-    const unlistenProgress = await listen<ProgressInfo>(
-      "video-frame://progress",
-      (event) => {
-        const info = event.payload;
-        set({ extractProgress: info.progress * 100 });
-        if (info.progress > 0 && info.elapsedMs > 0) {
-          const totalEstimatedMs = info.elapsedMs / info.progress;
-          const remainingMs = totalEstimatedMs - info.elapsedMs;
-          set({ extractEstimatedTimeRemaining: Math.ceil(remainingMs / 1000) });
-        }
-      }
-    );
-
-    const unlistenLog = await listen<LogEntry>(
-      "video-frame://log",
-      (event) => {
-        set((s) => ({ extractLogs: [...s.extractLogs, event.payload] }));
-      }
-    );
-
-    const unlistenFrame = await listen<ExtractedFrame>(
-      "video-frame://frame",
-      (event) => {
-        set((state) => ({ extractFrames: [...state.extractFrames, event.payload] }));
-      }
-    );
-
+    const unlisteners: (() => void)[] = [];
+    const MAX_LOGS = 500;
     try {
+      const unlistenProgress = await listen<ProgressInfo>(
+        "video-frame://progress",
+        (event) => {
+          const info = event.payload;
+          set({ extractProgress: info.progress * 100 });
+          if (info.progress > 0 && info.elapsedMs > 0) {
+            const totalEstimatedMs = info.elapsedMs / info.progress;
+            const remainingMs = totalEstimatedMs - info.elapsedMs;
+            set({ extractEstimatedTimeRemaining: Math.ceil(remainingMs / 1000) });
+          }
+        }
+      );
+      unlisteners.push(unlistenProgress);
+
+      const unlistenLog = await listen<LogEntry>(
+        "video-frame://log",
+        (event) => {
+          set((s) => {
+            const newLogs = s.extractLogs.length >= MAX_LOGS
+              ? [...s.extractLogs.slice(s.extractLogs.length - MAX_LOGS + 1), event.payload]
+              : [...s.extractLogs, event.payload];
+            return { extractLogs: newLogs };
+          });
+        }
+      );
+      unlisteners.push(unlistenLog);
+
+      const unlistenFrame = await listen<ExtractedFrame>(
+        "video-frame://frame",
+        (event) => {
+          set((state) => ({ extractFrames: [...state.extractFrames, event.payload] }));
+        }
+      );
+      unlisteners.push(unlistenFrame);
+
       const frames = await invoke<ExtractedFrame[]>("extract_frames", {
         params: extractParams,
         outputDir: extractOutputDir,
@@ -144,9 +154,9 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
     } catch (e) {
       set({ errorMessage: `提取帧失败: ${e}`, isExtracting: false });
     } finally {
-      unlistenProgress();
-      unlistenLog();
-      unlistenFrame();
+      for (const unlisten of unlisteners) {
+        unlisten();
+      }
     }
   },
 

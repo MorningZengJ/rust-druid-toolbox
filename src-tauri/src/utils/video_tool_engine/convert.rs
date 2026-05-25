@@ -1,4 +1,5 @@
 use super::VideoToolEngine;
+use super::common::{now_ms, find_video_encoder_for_format, find_audio_encoder_for_codec, reset_codec_tag};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -17,12 +18,6 @@ impl VideoToolEngine {
 
         let task_id = uuid::Uuid::new_v4().to_string();
         let start = Instant::now();
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
 
         let is_audio_only = matches!(params.target, ConversionTarget::AudioFormat(_));
 
@@ -59,13 +54,6 @@ impl VideoToolEngine {
         let mut results = Vec::with_capacity(total);
         let mut success_count = 0u32;
         let mut fail_count = 0u32;
-
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
 
         for (index, item) in params.items.iter().enumerate() {
             let file_name = item
@@ -158,13 +146,6 @@ impl VideoToolEngine {
         P: FnMut(VideoToolProgress),
         L: FnMut(VideoToolLog),
     {
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
-
         let format_str = match &params.target {
             ConversionTarget::AudioFormat(f) => f.clone(),
             _ => unreachable!(),
@@ -193,20 +174,7 @@ impl VideoToolEngine {
             .audio()
             .map_err(|e| anyhow!("创建音频解码器失败: {}", e))?;
 
-        let encoder_candidates: &[&str] = match format_str.as_str() {
-            "mp3" => &["libmp3lame", "mp3"],
-            "aac" => &["aac", "libfdk_aac"],
-            "wav" => &["pcm_s16le"],
-            "flac" => &["flac"],
-            "ogg" => &["libvorbis", "vorbis"],
-            "opus" => &["libopus", "opus"],
-            _ => &["aac", "libfdk_aac"],
-        };
-        let encoder_name = encoder_candidates
-            .iter()
-            .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-            .copied()
-            .ok_or_else(|| anyhow!("未找到可用的音频编码器: {}", format_str))?;
+        let encoder_name = find_audio_encoder_for_codec(&format_str)?;
 
         log_cb(VideoToolLog {
             task_id: task_id.to_string(),
@@ -405,13 +373,6 @@ impl VideoToolEngine {
         P: FnMut(VideoToolProgress),
         L: FnMut(VideoToolLog),
     {
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
-
         let format_str = match &params.target {
             ConversionTarget::VideoFormat(f) => f.clone(),
             _ => unreachable!(),
@@ -424,21 +385,7 @@ impl VideoToolEngine {
             timestamp: now_ms(),
         });
 
-        let codec_candidates: &[&str] = match format_str.as_str() {
-            "flv" => &["libx264", "libx264rgb", "flv", "mpeg4"],
-            "webm" => &["libvpx", "libvpx-vp9", "libx264"],
-            _ => &["libx264", "libx264rgb", "libx265", "mpeg4"],
-        };
-        let codec_name = codec_candidates
-            .iter()
-            .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-            .copied()
-            .ok_or_else(|| {
-                anyhow!(
-                    "未找到可用的视频编码器。请确保已安装包含 libx264 的 FFmpeg。\
-                    可以从 https://ffmpeg.org/download.html 下载完整版 FFmpeg。"
-                )
-            })?;
+        let codec_name = find_video_encoder_for_format(&format_str)?;
 
         log_cb(VideoToolLog {
             task_id: task_id.to_string(),
@@ -491,20 +438,7 @@ impl VideoToolEngine {
 
         let mut has_audio = input.streams().best(ffmpeg_next::media::Type::Audio).is_some();
         let audio_codec_name = params.audio_codec.as_deref().unwrap_or("aac");
-        let audio_encoder_candidates: &[&str] = match audio_codec_name {
-            "mp3" => &["libmp3lame", "mp3"],
-            "aac" => &["aac", "libfdk_aac"],
-            "opus" => &["libopus", "opus"],
-            "vorbis" => &["libvorbis", "vorbis"],
-            "flac" => &["flac"],
-            "alac" => &["alac"],
-            "ac3" => &["ac3"],
-            other => &[other],
-        };
-        let resolved_audio_encoder = audio_encoder_candidates
-            .iter()
-            .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-            .copied();
+        let resolved_audio_encoder = find_audio_encoder_for_codec(audio_codec_name).ok();
 
         let mut output = ffmpeg_next::format::output_as(&params.output_path, Self::normalize_format_name(&format_str))
             .map_err(|e| anyhow!("创建输出失败: {}", e))?;
@@ -570,7 +504,8 @@ impl VideoToolEngine {
             let dec_channels = dec.channels();
             let dec_layout = dec.channel_layout();
 
-            let enc_codec_name = resolved_audio_encoder.unwrap();
+            let enc_codec_name = resolved_audio_encoder
+                .ok_or_else(|| anyhow!("未找到音频编码器"))?;
             let enc_codec = ffmpeg_next::codec::encoder::find_by_name(enc_codec_name)
                 .ok_or_else(|| anyhow!("未找到音频编码器: {}", enc_codec_name))?;
 
@@ -643,10 +578,7 @@ impl VideoToolEngine {
                         .add_stream(None)
                         .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
                     out_att.set_parameters(stream.parameters());
-                    unsafe {
-                        let avstream = out_att.as_mut_ptr();
-                        (*(*avstream).codecpar).codec_tag = 0;
-                    }
+                    reset_codec_tag(&mut out_att);
                     out_att.set_time_base(stream.time_base());
                     cover_stream_indices.push(output.nb_streams() as usize - 1);
                 }
@@ -719,31 +651,6 @@ impl VideoToolEngine {
             }
         };
 
-        let encode_and_write =
-            |encoder: &mut ffmpeg_next::codec::encoder::video::Encoder,
-             frame: Option<&ffmpeg_next::frame::Video>,
-             output: &mut ffmpeg_next::format::context::Output|
-             -> Result<()> {
-                if let Some(f) = frame {
-                    encoder
-                        .send_frame(f)
-                        .map_err(|e| anyhow!("发送帧到编码器失败: {}", e))?;
-                } else {
-                    encoder
-                        .send_eof()
-                        .map_err(|e| anyhow!("发送 EOF 到编码器失败: {}", e))?;
-                }
-                let mut encoded_packet = ffmpeg_next::Packet::empty();
-                while encoder.receive_packet(&mut encoded_packet).is_ok() {
-                    encoded_packet.set_stream(0);
-                    encoded_packet.rescale_ts(enc_tb, output.stream(0).unwrap().time_base());
-                    encoded_packet
-                        .write_interleaved(output)
-                        .map_err(|e| anyhow!("写入视频 packet 失败: {}", e))?;
-                }
-                Ok(())
-            };
-
         let mut cover_stream_counter: usize = 0;
 
         for (stream, packet) in input.packets() {
@@ -778,7 +685,7 @@ impl VideoToolEngine {
                     frame.set_pts(Some(frame_count as i64));
                     frame_count += 1;
 
-                    encode_and_write(&mut encoder, Some(&frame), &mut output)?;
+                    Self::encode_and_write(&mut encoder, Some(&frame), &mut output, enc_tb)?;
 
                     if frame_count % 30 == 0 && total_frames > 0 {
                         let progress = (frame_count as f32 / total_frames as f32).min(0.95);
@@ -811,7 +718,14 @@ impl VideoToolEngine {
                                 while enc.receive_packet(&mut encoded_packet).is_ok() {
                                     encoded_packet.set_stream(1);
                                     encoded_packet.set_position(-1);
-                                    let _ = encoded_packet.write_interleaved(&mut output);
+                                    if let Err(e) = encoded_packet.write_interleaved(&mut output) {
+                                        log_cb(VideoToolLog {
+                                            task_id: task_id.to_string(),
+                                            level: "warn".to_string(),
+                                            message: format!("写入音频 packet 失败: {}", e),
+                                            timestamp: now_ms(),
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -829,7 +743,14 @@ impl VideoToolEngine {
                             cover_packet.set_stream(out_idx);
                             cover_packet.rescale_ts(in_tb, out_tb);
                             cover_packet.set_position(-1);
-                            let _ = cover_packet.write_interleaved(&mut output);
+                            if let Err(e) = cover_packet.write_interleaved(&mut output) {
+                                log_cb(VideoToolLog {
+                                    task_id: task_id.to_string(),
+                                    level: "warn".to_string(),
+                                    message: format!("写入封面 packet 失败: {}", e),
+                                    timestamp: now_ms(),
+                                });
+                            }
                         }
                     }
                     cover_stream_counter += 1;
@@ -856,10 +777,10 @@ impl VideoToolEngine {
             frame.set_pts(Some(frame_count as i64));
             frame_count += 1;
 
-            encode_and_write(&mut encoder, Some(&frame), &mut output)?;
+            Self::encode_and_write(&mut encoder, Some(&frame), &mut output, enc_tb)?;
         }
 
-        encode_and_write(&mut encoder, None, &mut output)?;
+        Self::encode_and_write(&mut encoder, None, &mut output, enc_tb)?;
 
         if has_audio {
             if let (Some(ref mut dec), Some(ref mut enc)) = (&mut audio_dec, &mut audio_enc) {

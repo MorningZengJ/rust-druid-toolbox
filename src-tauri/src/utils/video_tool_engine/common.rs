@@ -1,6 +1,73 @@
 use super::VideoToolEngine;
 use anyhow::{anyhow, Result};
 
+/// 获取当前时间戳（毫秒）
+pub(super) fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+/// 根据输出格式查找可用的视频编码器
+pub(super) fn find_video_encoder_for_format(format: &str) -> Result<&'static str> {
+    let candidates: &[&str] = match format {
+        "flv" => &["libx264", "libx264rgb", "flv", "mpeg4"],
+        "webm" => &["libvpx", "libvpx-vp9", "libx264"],
+        _ => &["libx264", "libx264rgb", "libx265", "mpeg4"],
+    };
+    candidates
+        .iter()
+        .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
+        .copied()
+        .ok_or_else(move || {
+            anyhow!(
+                "未找到可用的视频编码器 ({})。请确保已安装包含 libx264 的 FFmpeg。\
+                可以从 https://ffmpeg.org/download.html 下载完整版 FFmpeg。",
+                format
+            )
+        })
+}
+
+/// 根据音频格式名称查找可用的音频编码器
+pub(super) fn find_audio_encoder_for_codec(codec_name: &str) -> Result<&'static str> {
+    let candidates: &[&str] = match codec_name {
+        "mp3" => &["libmp3lame", "mp3"],
+        "aac" => &["aac", "libfdk_aac"],
+        "wav" => &["pcm_s16le"],
+        "flac" => &["flac"],
+        "ogg" => &["libvorbis", "vorbis"],
+        "opus" => &["libopus", "opus"],
+        "alac" => &["alac"],
+        "ac3" => &["ac3"],
+        _ => {
+            // 直接尝试使用传入的编码器名称
+            return if ffmpeg_next::codec::encoder::find_by_name(codec_name).is_some() {
+                // 从已知静态列表中查找匹配项
+                let all_known = &["libmp3lame", "mp3", "aac", "libfdk_aac", "pcm_s16le",
+                    "flac", "libvorbis", "vorbis", "libopus", "opus", "alac", "ac3"];
+                all_known.iter().find(|&&n| n == codec_name).copied()
+                    .ok_or_else(|| anyhow!("编码器 '{}' 存在但不在已知列表中", codec_name))
+            } else {
+                Err(anyhow!("未找到可用的音频编码器: {}", codec_name))
+            };
+        }
+    };
+    candidates
+        .iter()
+        .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
+        .copied()
+        .ok_or_else(|| anyhow!("未找到可用的音频编码器: {}", codec_name))
+}
+
+/// 重置输出流的 codec_tag，避免容器格式兼容性问题
+pub(super) fn reset_codec_tag(stream: &mut ffmpeg_next::format::stream::StreamMut) {
+    unsafe {
+        let avstream = stream.as_mut_ptr();
+        (*(*avstream).codecpar).codec_tag = 0;
+    }
+}
+
 impl VideoToolEngine {
     /// 计算保持宽高比的缩放尺寸，返回 (缩放后宽度, 缩放后高度)
     pub(super) fn calculate_aspect_ratio_resize(
@@ -275,10 +342,7 @@ impl VideoToolEngine {
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加输出流失败: {}", e))?;
             out_stream.set_parameters(stream.parameters());
-            unsafe {
-                let avstream = out_stream.as_mut_ptr();
-                (*(*avstream).codecpar).codec_tag = 0;
-            }
+            reset_codec_tag(&mut out_stream);
             out_stream.set_time_base(stream.time_base());
             stream_mapping[idx] = Some(output.nb_streams() as usize - 1);
         }
@@ -296,10 +360,7 @@ impl VideoToolEngine {
             .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
         cover_stream.set_parameters(cover_params);
         cover_stream.set_time_base(ffmpeg_next::Rational::new(1, 90000));
-        unsafe {
-            let avstream = cover_stream.as_mut_ptr();
-            (*(*avstream).codecpar).codec_tag = 0;
-        }
+        reset_codec_tag(&mut cover_stream);
         unsafe {
             (*cover_stream.as_mut_ptr()).disposition =
                 ffmpeg_next::format::stream::Disposition::ATTACHED_PIC.bits();
@@ -314,7 +375,10 @@ impl VideoToolEngine {
             let in_idx = stream.index();
             if let Some(Some(out_idx)) = stream_mapping.get(in_idx) {
                 let in_tb = stream.time_base();
-                let out_tb = output.stream(*out_idx).unwrap().time_base();
+                let out_tb = output
+                    .stream(*out_idx)
+                    .ok_or_else(|| anyhow!("输出流索引越界"))?
+                    .time_base();
                 packet.rescale_ts(in_tb, out_tb);
                 packet.set_stream(*out_idx);
                 packet.set_position(-1);
@@ -382,6 +446,37 @@ impl VideoToolEngine {
         } else {
             format!("{:.2} GB", bytes as f64 / (1024.0 * 1024.0 * 1024.0))
         }
+    }
+
+    /// 编码视频帧并写入输出（frame 为 None 时发送 EOF）
+    pub(super) fn encode_and_write(
+        encoder: &mut ffmpeg_next::codec::encoder::video::Encoder,
+        frame: Option<&ffmpeg_next::frame::Video>,
+        output: &mut ffmpeg_next::format::context::Output,
+        enc_tb: ffmpeg_next::Rational,
+    ) -> Result<()> {
+        if let Some(f) = frame {
+            encoder
+                .send_frame(f)
+                .map_err(|e| anyhow!("发送帧到编码器失败: {}", e))?;
+        } else {
+            encoder
+                .send_eof()
+                .map_err(|e| anyhow!("发送 EOF 到编码器失败: {}", e))?;
+        }
+        let mut encoded_packet = ffmpeg_next::Packet::empty();
+        while encoder.receive_packet(&mut encoded_packet).is_ok() {
+            encoded_packet.set_stream(0);
+            let out_tb = output
+                .stream(0)
+                .ok_or_else(|| anyhow!("输出流索引越界"))?
+                .time_base();
+            encoded_packet.rescale_ts(enc_tb, out_tb);
+            encoded_packet
+                .write_interleaved(output)
+                .map_err(|e| anyhow!("写入视频 packet 失败: {}", e))?;
+        }
+        Ok(())
     }
 
     /// 创建 YUV420P 帧并填充黑边

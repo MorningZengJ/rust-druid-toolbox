@@ -244,6 +244,10 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   setErrorMessage: (msg) => set({ errorMessage: msg }),
 
   cleanup: async () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
     const { output } = get();
     if (output?.outputPath) {
       try {

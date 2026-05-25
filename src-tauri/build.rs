@@ -1,6 +1,6 @@
 fn main() {
     // FFmpeg static linking on Windows requires COM/DirectShow/MediaFoundation libs
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", feature = "video-frame"))]
     {
         println!("cargo:rustc-link-lib=dylib=strmiids");
         println!("cargo:rustc-link-lib=dylib=uuid");

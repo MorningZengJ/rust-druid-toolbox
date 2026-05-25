@@ -95,30 +95,28 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
     const newAudioCodec = codecs.includes(state.convertAudioCodec)
       ? state.convertAudioCodec
       : codecs[0];
-    set({ convertVideoFormat: fmt, convertAudioCodec: newAudioCodec });
+    const updates: Partial<ConvertSlice> = { convertVideoFormat: fmt, convertAudioCodec: newAudioCodec };
     if (state.convertTarget === "video") {
-      set({
-        convertFiles: state.convertFiles.map((f) => ({
-          ...f,
-          outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${fmt}`,
-        })),
-      });
+      updates.convertFiles = state.convertFiles.map((f) => ({
+        ...f,
+        outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${fmt}`,
+      }));
     }
+    set(updates);
   },
 
   setConvertAudioCodec: (codec) => set({ convertAudioCodec: codec }),
 
   setConvertAudioFormat: (fmt) => {
-    set({ convertAudioFormat: fmt });
     const state = get();
+    const updates: Partial<ConvertSlice> = { convertAudioFormat: fmt };
     if (state.convertTarget === "audio") {
-      set({
-        convertFiles: state.convertFiles.map((f) => ({
-          ...f,
-          outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${fmt}`,
-        })),
-      });
+      updates.convertFiles = state.convertFiles.map((f) => ({
+        ...f,
+        outputPath: `${f.inputPath.replace(/\.[^.]+$/, "")}_converted.${fmt}`,
+      }));
     }
+    set(updates);
   },
 
   setConvertAudioBitrate: (rate) => set({ convertAudioBitrate: rate }),

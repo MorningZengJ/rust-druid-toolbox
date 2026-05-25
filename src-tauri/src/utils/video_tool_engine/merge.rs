@@ -1,4 +1,5 @@
 use super::VideoToolEngine;
+use super::common::{now_ms, find_video_encoder_for_format, reset_codec_tag};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -17,12 +18,6 @@ impl VideoToolEngine {
 
         let task_id = uuid::Uuid::new_v4().to_string();
         let start = Instant::now();
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
 
         if params.input_paths.len() < 2 {
             return Err(anyhow!("至少需要两个视频文件才能合并"));
@@ -72,13 +67,6 @@ impl VideoToolEngine {
         P: FnMut(VideoToolProgress),
         L: FnMut(VideoToolLog),
     {
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
-
         log_cb(VideoToolLog {
             task_id: task_id.to_string(),
             level: "info".to_string(),
@@ -150,10 +138,7 @@ impl VideoToolEngine {
                     .add_stream(None)
                     .map_err(|e| anyhow!("添加输出流失败: {}", e))?;
                 out_stream.set_parameters(stream.parameters());
-                unsafe {
-                    let avstream = out_stream.as_mut_ptr();
-                    (*(*avstream).codecpar).codec_tag = 0;
-                }
+                reset_codec_tag(&mut out_stream);
                 out_stream.set_time_base(stream.time_base());
             }
         }
@@ -404,13 +389,6 @@ impl VideoToolEngine {
         P: FnMut(VideoToolProgress),
         L: FnMut(VideoToolLog),
     {
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
-
         log_cb(VideoToolLog {
             task_id: task_id.to_string(),
             level: "info".to_string(),
@@ -418,21 +396,7 @@ impl VideoToolEngine {
             timestamp: now_ms(),
         });
 
-        let codec_candidates: &[&str] = match params.output_format.as_str() {
-            "flv" => &["libx264", "libx264rgb", "flv", "mpeg4"],
-            "webm" => &["libvpx", "libvpx-vp9", "libx264"],
-            _ => &["libx264", "libx264rgb", "libx265", "mpeg4"],
-        };
-        let codec_name = codec_candidates
-            .iter()
-            .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-            .copied()
-            .ok_or_else(|| {
-                anyhow!(
-                    "未找到可用的视频编码器。请确保已安装包含 libx264 的 FFmpeg。\
-                    可以从 https://ffmpeg.org/download.html 下载完整版 FFmpeg。"
-                )
-            })?;
+        let codec_name = find_video_encoder_for_format(&params.output_format)?;
 
         log_cb(VideoToolLog {
             task_id: task_id.to_string(),
@@ -542,17 +506,14 @@ impl VideoToolEngine {
             let audio_stream = first_input
                 .streams()
                 .best(ffmpeg_next::media::Type::Audio)
-                .unwrap();
+                .ok_or_else(|| anyhow!("未找到音频流"))?;
             let audio_params = audio_stream.parameters();
             let audio_tb = audio_stream.time_base();
             let mut out_audio = output
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
             out_audio.set_parameters(audio_params);
-            unsafe {
-                let avstream = out_audio.as_mut_ptr();
-                (*(*avstream).codecpar).codec_tag = 0;
-            }
+            reset_codec_tag(&mut out_audio);
             out_audio.set_time_base(audio_tb);
         }
 
@@ -568,10 +529,7 @@ impl VideoToolEngine {
                         .add_stream(None)
                         .map_err(|e| anyhow!("添加封面流失败: {}", e))?;
                     out_att.set_parameters(stream.parameters());
-                    unsafe {
-                        let avstream = out_att.as_mut_ptr();
-                        (*(*avstream).codecpar).codec_tag = 0;
-                    }
+                    reset_codec_tag(&mut out_att);
                     out_att.set_time_base(stream.time_base());
                     cover_stream_indices.push(output.nb_streams() as usize - 1);
                 }
@@ -603,31 +561,6 @@ impl VideoToolEngine {
                 }
             }
         }
-
-        let encode_and_write =
-            |encoder: &mut ffmpeg_next::codec::encoder::video::Encoder,
-             frame: Option<&ffmpeg_next::frame::Video>,
-             output: &mut ffmpeg_next::format::context::Output|
-             -> Result<()> {
-                if let Some(f) = frame {
-                    encoder
-                        .send_frame(f)
-                        .map_err(|e| anyhow!("发送帧到编码器失败: {}", e))?;
-                } else {
-                    encoder
-                        .send_eof()
-                        .map_err(|e| anyhow!("发送 EOF 到编码器失败: {}", e))?;
-                }
-                let mut encoded_packet = ffmpeg_next::Packet::empty();
-                while encoder.receive_packet(&mut encoded_packet).is_ok() {
-                    encoded_packet.set_stream(0);
-                    encoded_packet.rescale_ts(enc_tb, output.stream(0).unwrap().time_base());
-                    encoded_packet
-                        .write_interleaved(output)
-                        .map_err(|e| anyhow!("写入视频 packet 失败: {}", e))?;
-                }
-                Ok(())
-            };
 
         for (i, input_path) in params.input_paths.iter().enumerate() {
             log_cb(VideoToolLog {
@@ -739,7 +672,7 @@ impl VideoToolEngine {
                         yuv_frame.set_pts(Some(frame_count as i64));
                         frame_count += 1;
 
-                        if let Err(e) = encode_and_write(&mut encoder, Some(&yuv_frame), &mut output) {
+                        if let Err(e) = Self::encode_and_write(&mut encoder, Some(&yuv_frame), &mut output, enc_tb) {
                             log_cb(VideoToolLog {
                                 task_id: task_id.to_string(),
                                 level: "error".to_string(),
@@ -795,7 +728,14 @@ impl VideoToolEngine {
                                 cover_packet.set_stream(out_idx);
                                 cover_packet.rescale_ts(in_tb, out_tb);
                                 cover_packet.set_position(-1);
-                                let _ = cover_packet.write_interleaved(&mut output);
+                                if let Err(e) = cover_packet.write_interleaved(&mut output) {
+                                    log_cb(VideoToolLog {
+                                        task_id: task_id.to_string(),
+                                        level: "warn".to_string(),
+                                        message: format!("写入封面 packet 失败: {}", e),
+                                        timestamp: now_ms(),
+                                    });
+                                }
                             }
                         }
                         cover_stream_counter += 1;
@@ -822,7 +762,7 @@ impl VideoToolEngine {
                 yuv_frame.set_pts(Some(frame_count as i64));
                 frame_count += 1;
 
-                encode_and_write(&mut encoder, Some(&yuv_frame), &mut output)?;
+                Self::encode_and_write(&mut encoder, Some(&yuv_frame), &mut output, enc_tb)?;
 
                 if frame_count % 30 == 0 && estimated_total_frames > 0 {
                     let progress = (frame_count as f32 / estimated_total_frames as f32).min(0.95);
@@ -850,7 +790,10 @@ impl VideoToolEngine {
             }
 
             if has_audio {
-                let out_tb = output.stream(1).unwrap().time_base();
+                let out_tb = output
+                    .stream(1)
+                    .ok_or_else(|| anyhow!("输出音频流索引越界"))?
+                    .time_base();
                 let mut audio_dts_offset: i64 = 0;
                 let mut first_audio = true;
 
@@ -894,7 +837,7 @@ impl VideoToolEngine {
 
         }
 
-        encode_and_write(&mut encoder, None, &mut output)?;
+        Self::encode_and_write(&mut encoder, None, &mut output, enc_tb)?;
 
         output
             .write_trailer()

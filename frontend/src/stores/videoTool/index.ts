@@ -86,12 +86,16 @@ export const useVideoToolStore = create<VideoToolState>((set, get) => ({
     );
     unlisteners.push(unlistenProgress);
 
+    const MAX_LOGS = 500;
     const unlistenLog = await listen<VideoToolLog>(
       "video-tool://log",
       (event) => {
         const log = event.payload;
         set((s) => {
-          const updates: Partial<VideoToolState> = { logs: [...s.logs, log] };
+          const newLogs = s.logs.length >= MAX_LOGS
+            ? [...s.logs.slice(s.logs.length - MAX_LOGS + 1), log]
+            : [...s.logs, log];
+          const updates: Partial<VideoToolState> = { logs: newLogs };
           if (log.taskId.startsWith("batch-") && log.level === "error") {
             const index = parseInt(log.taskId.replace("batch-", ""), 10);
             if (!isNaN(index) && index < s.convertFiles.length) {

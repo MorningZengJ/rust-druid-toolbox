@@ -1,4 +1,5 @@
 use super::VideoToolEngine;
+use super::common::{now_ms, find_video_encoder_for_format, reset_codec_tag};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -17,12 +18,6 @@ impl VideoToolEngine {
 
         let task_id = uuid::Uuid::new_v4().to_string();
         let start = Instant::now();
-        let now_ms = || {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
-        };
 
         if params.image_paths.is_empty() {
             return Err(anyhow!("至少需要一张图片"));
@@ -55,35 +50,10 @@ impl VideoToolEngine {
             timestamp: now_ms(),
         });
 
-        let codec_name = match params.output_format.as_str() {
-            "gif" => "gif",
-            "flv" => {
-                let candidates = ["libx264", "libx264rgb", "flv", "mpeg4"];
-                candidates
-                    .iter()
-                    .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-                    .copied()
-                    .ok_or_else(|| anyhow!("未找到可用的视频编码器"))?
-            }
-            "webm" => {
-                let candidates = ["libvpx", "libvpx-vp9", "libx264"];
-                candidates
-                    .iter()
-                    .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-                    .copied()
-                    .ok_or_else(|| anyhow!("未找到可用的视频编码器"))?
-            }
-            _ => {
-                let candidates = ["libx264", "libx264rgb", "libx265", "mpeg4"];
-                candidates
-                    .iter()
-                    .find(|&&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some())
-                    .copied()
-                    .ok_or_else(|| anyhow!(
-                        "未找到可用的视频编码器。请确保已安装包含 libx264 或 libx265 的 FFmpeg。\
-                        可以从 https://ffmpeg.org/download.html 下载完整版 FFmpeg。"
-                    ))?
-            }
+        let codec_name = if params.output_format == "gif" {
+            "gif"
+        } else {
+            find_video_encoder_for_format(&params.output_format)?
         };
 
         let mut output = ffmpeg_next::format::output_as(
@@ -134,10 +104,7 @@ impl VideoToolEngine {
                 .add_stream(None)
                 .map_err(|e| anyhow!("添加音频流失败: {}", e))?;
             out_audio.set_parameters(aparams);
-            unsafe {
-                let avstream = out_audio.as_mut_ptr();
-                (*(*avstream).codecpar).codec_tag = 0;
-            }
+            reset_codec_tag(&mut out_audio);
             out_audio.set_time_base(atb);
 
             audio_input = Some(ainput);
@@ -159,6 +126,11 @@ impl VideoToolEngine {
             ffmpeg_next::software::scaling::Flags::BILINEAR,
         )
         .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
+
+        let out_video_tb = output
+            .stream(0)
+            .ok_or_else(|| anyhow!("输出视频流索引越界"))?
+            .time_base();
 
         for (i, img_path) in params.image_paths.iter().enumerate() {
             let img = image::open(img_path)
@@ -198,7 +170,7 @@ impl VideoToolEngine {
             let mut encoded_packet = ffmpeg_next::Packet::empty();
             while encoder.receive_packet(&mut encoded_packet).is_ok() {
                 encoded_packet.set_stream(0);
-                encoded_packet.rescale_ts(time_base, output.stream(0).unwrap().time_base());
+                encoded_packet.rescale_ts(time_base, out_video_tb);
                 encoded_packet
                     .write_interleaved(&mut output)
                     .map_err(|e| anyhow!("写入视频 packet 失败: {}", e))?;
@@ -232,7 +204,8 @@ impl VideoToolEngine {
         }
 
         if let Some(mut ainput) = audio_input {
-            let audio_idx = audio_stream_idx.unwrap();
+            let audio_idx = audio_stream_idx
+                .ok_or_else(|| anyhow!("音频流索引未初始化"))?;
             log_cb(VideoToolLog {
                 task_id: task_id.clone(),
                 level: "info".to_string(),
@@ -246,7 +219,10 @@ impl VideoToolEngine {
                 }
                 packet.set_stream(1);
                 let in_tb = stream.time_base();
-                let out_tb = output.stream(1).unwrap().time_base();
+                let out_tb = output
+                    .stream(1)
+                    .ok_or_else(|| anyhow!("输出音频流索引越界"))?
+                    .time_base();
                 packet.rescale_ts(in_tb, out_tb);
                 packet.set_position(-1);
                 packet
