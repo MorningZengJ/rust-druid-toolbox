@@ -77,6 +77,7 @@ export interface VideoToolState {
   convertTarget: "video" | "audio";
   convertVideoFormat: string;
   convertAudioFormat: string;
+  convertAudioCodec: string;
   convertAudioBitrate: string;
   convertVideoBitrate: string;
   convertBatchResult: BatchConvertResult | null;
@@ -89,6 +90,7 @@ export interface VideoToolState {
   setConvertTarget: (t: "video" | "audio") => void;
   setConvertVideoFormat: (fmt: string) => void;
   setConvertAudioFormat: (fmt: string) => void;
+  setConvertAudioCodec: (codec: string) => void;
   setConvertAudioBitrate: (rate: string) => void;
   setConvertVideoBitrate: (rate: string) => void;
   runBatchConvert: () => Promise<void>;

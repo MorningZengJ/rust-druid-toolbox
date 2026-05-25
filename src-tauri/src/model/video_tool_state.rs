@@ -61,6 +61,8 @@ pub struct ConvertFormatParams {
     pub audio_bitrate: Option<String>,
     pub video_bitrate: Option<String>,
     pub resolution: Option<(u32, u32)>,
+    /// 视频模式下用户选择的音频编码器名称（如 "aac"、"mp3"）
+    pub audio_codec: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

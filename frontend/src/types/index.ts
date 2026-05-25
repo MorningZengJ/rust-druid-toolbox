@@ -200,6 +200,7 @@ export interface ConvertFormatParams {
   audioBitrate: string | null;
   videoBitrate: string | null;
   resolution: [number, number] | null;
+  audioCodec: string | null;
 }
 
 export interface ConvertFormatResult {

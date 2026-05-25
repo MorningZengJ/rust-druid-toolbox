@@ -40,6 +40,7 @@ import {
   AUDIO_FORMATS,
   AUDIO_BITRATES,
   MEDIA_EXTENSIONS,
+  VIDEO_AUDIO_CODECS,
 } from "./constants";
 import type { ConvertFileItem } from "@/types";
 
@@ -114,6 +115,7 @@ export function ConvertPanel() {
   const convertTarget = useVideoToolStore((s) => s.convertTarget);
   const convertVideoFormat = useVideoToolStore((s) => s.convertVideoFormat);
   const convertAudioFormat = useVideoToolStore((s) => s.convertAudioFormat);
+  const convertAudioCodec = useVideoToolStore((s) => s.convertAudioCodec);
   const convertAudioBitrate = useVideoToolStore((s) => s.convertAudioBitrate);
   const convertVideoBitrate = useVideoToolStore((s) => s.convertVideoBitrate);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
@@ -128,6 +130,7 @@ export function ConvertPanel() {
   const setConvertTarget = useVideoToolStore((s) => s.setConvertTarget);
   const setConvertVideoFormat = useVideoToolStore((s) => s.setConvertVideoFormat);
   const setConvertAudioFormat = useVideoToolStore((s) => s.setConvertAudioFormat);
+  const setConvertAudioCodec = useVideoToolStore((s) => s.setConvertAudioCodec);
   const setConvertAudioBitrate = useVideoToolStore((s) => s.setConvertAudioBitrate);
   const setConvertVideoBitrate = useVideoToolStore((s) => s.setConvertVideoBitrate);
   const runBatchConvert = useVideoToolStore((s) => s.runBatchConvert);
@@ -347,6 +350,20 @@ export function ConvertPanel() {
                       data={VIDEO_FORMATS.map((fmt) => ({
                         value: fmt,
                         label: fmt.toUpperCase(),
+                      }))}
+                    />
+                  </Box>
+                  <Box>
+                    <Text size="sm" fw={500}>
+                      音频编码
+                    </Text>
+                    <Select
+                      mt={4}
+                      value={convertAudioCodec}
+                      onChange={(v) => v && setConvertAudioCodec(v)}
+                      data={(VIDEO_AUDIO_CODECS[convertVideoFormat] ?? ["aac"]).map((c) => ({
+                        value: c,
+                        label: c.toUpperCase(),
                       }))}
                     />
                   </Box>

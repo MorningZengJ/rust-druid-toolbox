@@ -8,12 +8,14 @@ import type {
 } from "@/types";
 import type { VideoToolState } from "./types";
 import type { StateCreator } from "zustand";
+import { VIDEO_AUDIO_CODECS } from "@/pages/video-tool/constants";
 
 export interface ConvertSlice {
   convertFiles: ConvertFileItem[];
   convertTarget: "video" | "audio";
   convertVideoFormat: string;
   convertAudioFormat: string;
+  convertAudioCodec: string;
   convertAudioBitrate: string;
   convertVideoBitrate: string;
   convertBatchResult: BatchConvertResult | null;
@@ -26,6 +28,7 @@ export interface ConvertSlice {
   setConvertTarget: (t: "video" | "audio") => void;
   setConvertVideoFormat: (fmt: string) => void;
   setConvertAudioFormat: (fmt: string) => void;
+  setConvertAudioCodec: (codec: string) => void;
   setConvertAudioBitrate: (rate: string) => void;
   setConvertVideoBitrate: (rate: string) => void;
   runBatchConvert: () => Promise<void>;
@@ -36,6 +39,7 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
   convertTarget: "video",
   convertVideoFormat: "mp4",
   convertAudioFormat: "mp3",
+  convertAudioCodec: "aac",
   convertAudioBitrate: "192k",
   convertVideoBitrate: "",
   convertBatchResult: null,
@@ -86,8 +90,12 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
   },
 
   setConvertVideoFormat: (fmt) => {
-    set({ convertVideoFormat: fmt });
     const state = get();
+    const codecs = VIDEO_AUDIO_CODECS[fmt] ?? ["aac"];
+    const newAudioCodec = codecs.includes(state.convertAudioCodec)
+      ? state.convertAudioCodec
+      : codecs[0];
+    set({ convertVideoFormat: fmt, convertAudioCodec: newAudioCodec });
     if (state.convertTarget === "video") {
       set({
         convertFiles: state.convertFiles.map((f) => ({
@@ -97,6 +105,8 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
       });
     }
   },
+
+  setConvertAudioCodec: (codec) => set({ convertAudioCodec: codec }),
 
   setConvertAudioFormat: (fmt) => {
     set({ convertAudioFormat: fmt });
@@ -149,6 +159,7 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
             ? state.convertVideoBitrate
             : null,
         resolution: null,
+        audioCodec: state.convertTarget === "video" ? state.convertAudioCodec : null,
       }));
 
       const params: BatchConvertParams = { items };
