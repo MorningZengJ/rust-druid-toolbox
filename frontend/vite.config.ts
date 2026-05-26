@@ -13,6 +13,8 @@ export default defineConfig({
   // Tauri expects a fixed port, fail if it's not available
   server: {
     strictPort: true,
+    host: "127.0.0.1",
+    port: 5555,
   },
   // Env variables starting with TAURI_ are available
   envPrefix: ["VITE_", "TAURI_"],

@@ -54,8 +54,15 @@ frontend/                    # React 前端
       useWindowState.ts      # 窗口位置/尺寸持久化（Tauri store）
     stores/
       renameStore.ts         # 重命名页 Zustand store (375 行)
-      asciiArtStore.ts       # 字符画页 Zustand store (256 行)
-      videoToolStore.ts      # 视频工具页 Zustand store (653 行)
+      asciiArtStore.ts       # 字符画页 Zustand store (260 行)
+      videoToolStore.ts      # 重导出 useVideoToolStore（从 videoTool/ 目录）
+      videoTool/             # 视频工具页 Zustand store（slice 模式）
+        index.ts             # 主 store：shared 状态 + 事件监听 + slice 组合 (152 行)
+        types.ts             # VideoToolState 类型定义 (123 行)
+        mergeSlice.ts        # 合并功能 slice (71 行)
+        imagesSlice.ts       # 图片转视频 slice (103 行)
+        convertSlice.ts      # 格式转换 slice (173 行)
+        extractSlice.ts      # 抽帧 slice (190 行)
       themeStore.ts          # 主题状态 Zustand store（持久化到 LazyStore）
     components/
       ThemeProvider.tsx       # 主题包装组件（加载 store 主题 → MantineProvider + colorScheme 同步）
@@ -76,7 +83,7 @@ frontend/                    # React 前端
         VideoToolPage.tsx    # 视频工具页面（4 个 Tab：合并/图片转视频/格式转换/抽帧）
         MergePanel.tsx       # 视频合并面板（281 行）
         ImagesPanel.tsx      # 图片序列转视频面板（290 行）
-        ConvertPanel.tsx     # 格式转换面板（588 行）
+        ConvertPanel.tsx     # 格式转换面板（605 行）
         ExtractPanel.tsx     # 视频抽帧面板（483 行）
         ProgressPanel.tsx    # 进度/日志展示面板
         constants.ts         # 视频格式常量
@@ -102,7 +109,7 @@ src-tauri/                   # Tauri 后端（Rust）
       rule_template.rs       # RuleTemplate 枚举 6 变体 (33 行)
       ascii_art_state.rs     # AsciiArtParams/AsciiArtOutput 等 (115 行)
       video_frame_state.rs   # VideoInfo/ExtractedFrame/ExtractParams 等 (68 行，feature-gated)
-      video_tool_state.rs    # MergeVideosParams/ImagesToVideoParams/ConvertFormatParams 等 (142 行，feature-gated)
+      video_tool_state.rs    # MergeVideosParams/ImagesToVideoParams/ConvertFormatParams 等 (144 行，feature-gated)
     utils/
       mod.rs                 # 模块声明（video_frame_engine/video_tool_engine 有 feature gate）
       common_utils.rs        # CommonUtils: parent_path()/join_path() (19 行)
@@ -111,7 +118,12 @@ src-tauri/                   # Tauri 后端（Rust）
       rename_logic.rs        # apply_replace_rules()/validate_regex()，含 8 个单元测试 (98 行)
       ascii_art_engine.rs    # AsciiArtEngine: convert_from_image()，支持 PNG/SVG/Canvas 输出 (469 行)
       video_frame_engine.rs  # VideoFrameEngine: check_ffmpeg/probe_video/extract_frames (361 行，feature-gated)
-      video_tool_engine.rs   # VideoToolEngine: merge/convert/images-to-video (2810 行，feature-gated)
+      video_tool_engine/     # VideoToolEngine 子模块 (feature-gated)
+        mod.rs               # VideoToolEngine 空结构体 + 子模块声明 (6 行)
+        common.rs            # 共享工具函数：probe/codec 检测/分辨率计算/日志发送 (561 行)
+        merge.rs             # merge_videos() 流复制 + 重编码 (910 行)
+        convert.rs           # convert_format() + batch_convert_format() (849 行)
+        images_to_video.rs   # images_to_video() 图片序列转视频 (270 行)
   Cargo.toml                 # 依赖见下方表格
   tauri.conf.json            # 窗口 800x600，最小 600x400
   build.rs                   # tauri_build::build() + Windows 系统库链接（FFmpeg 静态编译）
@@ -221,9 +233,9 @@ src-tauri/                   # Tauri 后端（Rust）
 
 ## 已知风险
 
-- **video_tool_engine.rs 过大（2810 行）**：严重超出 500 行限制，需拆分为多个子模块（merge_engine / convert_engine / images_to_video_engine / common）
-- **videoToolStore.ts 过大（653 行）**：超出 500 行限制，需按功能拆分
-- **ConvertPanel.tsx 过大（588 行）**：接近 500 行限制，需考虑拆分
+- **video_tool_engine/merge.rs 过大（910 行）**：超出 500 行限制，需进一步拆分
+- **video_tool_engine/convert.rs 过大（849 行）**：超出 500 行限制，需进一步拆分
+- **ConvertPanel.tsx 过大（605 行）**：超出 500 行限制，需考虑拆分
 - **PreviewPanel.tsx 过大（460 行）**：接近 500 行限制
 - **ExtractPanel.tsx 过大（483 行）**：接近 500 行限制
 - **测试覆盖不足**：仅 rename_logic.rs 有单元测试，前端无测试
