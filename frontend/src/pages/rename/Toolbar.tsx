@@ -28,21 +28,34 @@ export default function Toolbar() {
       px="sm"
       py={6}
       style={{
-        borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-        backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
+        borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
       }}
     >
-      <Tooltip label="选择目录">
-        <ActionIcon variant="outline" size="sm" onClick={chooseDirectory}>
-          <FolderOpen size={16} />
-        </ActionIcon>
-      </Tooltip>
+      <Group gap={4}>
+        <Tooltip label="选择目录" withArrow>
+          <ActionIcon
+            variant="light"
+            color={theme.primaryColor}
+            size="sm"
+            radius="md"
+            onClick={chooseDirectory}
+          >
+            <FolderOpen size={16} />
+          </ActionIcon>
+        </Tooltip>
 
-      <Tooltip label="上级目录">
-        <ActionIcon variant="outline" size="sm" onClick={parentDirectory}>
-          <ArrowUp size={16} />
-        </ActionIcon>
-      </Tooltip>
+        <Tooltip label="上级目录" withArrow>
+          <ActionIcon
+            variant="default"
+            size="sm"
+            radius="md"
+            onClick={parentDirectory}
+          >
+            <ArrowUp size={16} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
 
       <TextInput
         style={{ flex: 1 }}
@@ -51,13 +64,24 @@ export default function Toolbar() {
         onChange={(e) => setDirPath(e.currentTarget.value)}
         onKeyDown={handlePathKeyDown}
         placeholder="输入目录路径，按 Enter 加载"
-        styles={{ input: { fontFamily: "monospace" } }}
+        radius="md"
+        styles={{
+          input: {
+            fontFamily: "monospace",
+            backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
+            borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+            "&:focus": {
+              borderColor: theme.colors[theme.primaryColor][isDark ? 5 : 4],
+            },
+          },
+        }}
       />
 
-      <Tooltip label="撤销规则修改">
+      <Tooltip label="撤销规则修改" withArrow>
         <ActionIcon
-          variant="outline"
+          variant="default"
           size="sm"
+          radius="md"
           onClick={undoRuleChange}
           disabled={ruleHistory.length === 0}
         >

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flex, Box, Button, Text, ActionIcon, useComputedColorScheme, useMantineTheme } from "@mantine/core";
+import { Flex, Box, Text, useComputedColorScheme, useMantineTheme, Tooltip } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import {
   PenLine,
@@ -18,10 +18,10 @@ import SettingsPage from "@/pages/settings/SettingsPage";
 
 type Page = "rename" | "ascii-art" | "video-tool" | "settings";
 
-const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
-  { id: "rename", label: "重命名", icon: <PenLine size={20} /> },
-  { id: "ascii-art", label: "字符画", icon: <ImageIcon size={20} /> },
-  { id: "video-tool", label: "视频工具", icon: <Wrench size={20} /> },
+const navItems: { id: Page; label: string; icon: React.ReactNode; description: string }[] = [
+  { id: "rename", label: "重命名", icon: <PenLine size={20} />, description: "批量文件重命名" },
+  { id: "ascii-art", label: "字符画", icon: <ImageIcon size={20} />, description: "图片转字符画" },
+  { id: "video-tool", label: "视频工具", icon: <Wrench size={20} />, description: "视频处理工具" },
 ];
 
 function App() {
@@ -39,79 +39,284 @@ function App() {
 
   return (
     <ModalsProvider>
-    <Flex h="100vh" w="100vw" style={{ overflow: "hidden" }}>
-      {/* Navigation sidebar */}
-      <Flex
-        direction="column"
-        align="center"
-        w={90}
-        py="md"
-        style={{
-          borderRight: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-          backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
-        }}
-      >
-        <Text fw={700} size="lg" mb="xl">
-          Toolbox
-        </Text>
-
-        <Flex direction="column" gap={4} style={{ flex: 1 }}>
-          {navItems.map((item) => (
-            <Button
-              key={item.id}
-              variant={activePage === item.id ? "light" : "subtle"}
-              w={70}
-              h="auto"
-              py={12}
-              px={0}
-              style={{ flexDirection: "column", gap: 4 }}
-              onClick={() => setActivePage(item.id)}
+      <Flex h="100vh" w="100vw" style={{ overflow: "hidden" }}>
+        {/* Navigation sidebar */}
+        <Flex
+          direction="column"
+          w={80}
+          py="md"
+          style={{
+            borderRight: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+            backgroundColor: isDark ? theme.colors.dark[8] : theme.colors.gray[0],
+            position: "relative",
+            zIndex: 10,
+          }}
+        >
+          {/* Logo */}
+          <Flex direction="column" align="center" mb="xl" px="xs">
+            <Box
+              w={36}
+              h={36}
+              style={{
+                borderRadius: 10,
+                background: `linear-gradient(135deg, ${theme.colors[theme.primaryColor][5]}, ${theme.colors[theme.primaryColor][7]})`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 2px 8px ${theme.colors[theme.primaryColor][5]}40`,
+              }}
             >
-              {item.icon}
-              <Text size="xs">{item.label}</Text>
-            </Button>
-          ))}
+              <Text size="sm" fw={700} c="white" style={{ fontFamily: "monospace" }}>D</Text>
+            </Box>
+          </Flex>
+
+          {/* Main nav items */}
+          <Flex direction="column" gap={2} px="xs" style={{ flex: 1 }}>
+            {navItems.map((item) => {
+              const isActive = activePage === item.id;
+              return (
+                <Tooltip
+                  key={item.id}
+                  label={item.description}
+                  position="right"
+                  withArrow
+                  offset={12}
+                >
+                  <Box
+                    onClick={() => setActivePage(item.id)}
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "10px 8px",
+                      borderRadius: theme.radius.md,
+                      cursor: "pointer",
+                      backgroundColor: isActive
+                        ? isDark
+                          ? "rgba(255, 255, 255, 0.06)"
+                          : "rgba(0, 0, 0, 0.04)"
+                        : "transparent",
+                      transition: "all 150ms ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = isDark
+                          ? "rgba(255, 255, 255, 0.04)"
+                          : "rgba(0, 0, 0, 0.03)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }
+                    }}
+                  >
+                    {/* Active indicator bar */}
+                    {isActive && (
+                      <Box
+                        style={{
+                          position: "absolute",
+                          left: -12,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: 3,
+                          height: 20,
+                          borderRadius: "0 2px 2px 0",
+                          backgroundColor: theme.colors[theme.primaryColor][5],
+                        }}
+                      />
+                    )}
+                    <Box
+                      style={{
+                        color: isActive
+                          ? theme.colors[theme.primaryColor][isDark ? 4 : 6]
+                          : isDark
+                            ? theme.colors.dark[2]
+                            : theme.colors.gray[6],
+                        transition: "color 150ms ease",
+                      }}
+                    >
+                      {item.icon}
+                    </Box>
+                    <Text
+                      size="xs"
+                      fw={isActive ? 600 : 400}
+                      style={{
+                        color: isActive
+                          ? isDark
+                            ? theme.colors.dark[0]
+                            : theme.colors.gray[8]
+                          : isDark
+                            ? theme.colors.dark[2]
+                            : theme.colors.gray[6],
+                        transition: "color 150ms ease",
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                  </Box>
+                </Tooltip>
+              );
+            })}
+          </Flex>
+
+          {/* Bottom section */}
+          <Flex direction="column" gap={2} px="xs">
+            <Box
+              style={{
+                width: 24,
+                height: 1,
+                backgroundColor: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)",
+                margin: "4px auto 8px",
+              }}
+            />
+            <Tooltip label={isDark ? "切换亮色模式" : "切换暗色模式"} position="right" withArrow offset={12}>
+              <Box
+                onClick={handleToggleColorScheme}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "10px 8px",
+                  borderRadius: theme.radius.md,
+                  cursor: "pointer",
+                  backgroundColor: "transparent",
+                  transition: "all 150ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDark
+                    ? "rgba(255, 255, 255, 0.04)"
+                    : "rgba(0, 0, 0, 0.03)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                <Box
+                  style={{
+                    color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
+                    transition: "color 150ms ease",
+                  }}
+                >
+                  {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                </Box>
+                <Text
+                  size="xs"
+                  fw={400}
+                  style={{
+                    color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
+                    transition: "color 150ms ease",
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {isDark ? "亮色" : "暗色"}
+                </Text>
+              </Box>
+            </Tooltip>
+            <Tooltip label="设置" position="right" withArrow offset={12}>
+              <Box
+                onClick={() => setActivePage("settings")}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "10px 8px",
+                  borderRadius: theme.radius.md,
+                  cursor: "pointer",
+                  backgroundColor: activePage === "settings"
+                    ? isDark
+                      ? "rgba(255, 255, 255, 0.06)"
+                      : "rgba(0, 0, 0, 0.04)"
+                    : "transparent",
+                  transition: "all 150ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (activePage !== "settings") {
+                    e.currentTarget.style.backgroundColor = isDark
+                      ? "rgba(255, 255, 255, 0.04)"
+                      : "rgba(0, 0, 0, 0.03)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activePage !== "settings") {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                {activePage === "settings" && (
+                  <Box
+                    style={{
+                      position: "absolute",
+                      left: -12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: 3,
+                      height: 20,
+                      borderRadius: "0 2px 2px 0",
+                      backgroundColor: theme.colors[theme.primaryColor][5],
+                    }}
+                  />
+                )}
+                <Box
+                  style={{
+                    color: activePage === "settings"
+                      ? theme.colors[theme.primaryColor][isDark ? 4 : 6]
+                      : isDark
+                        ? theme.colors.dark[2]
+                        : theme.colors.gray[6],
+                    transition: "color 150ms ease",
+                  }}
+                >
+                  <Settings size={20} />
+                </Box>
+                <Text
+                  size="xs"
+                  fw={activePage === "settings" ? 600 : 400}
+                  style={{
+                    color: activePage === "settings"
+                      ? isDark
+                        ? theme.colors.dark[0]
+                        : theme.colors.gray[8]
+                      : isDark
+                        ? theme.colors.dark[2]
+                        : theme.colors.gray[6],
+                    transition: "color 150ms ease",
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  设置
+                </Text>
+              </Box>
+            </Tooltip>
+          </Flex>
         </Flex>
 
-        <Flex direction="column" gap={4}>
-          <ActionIcon
-            variant="subtle"
-            size="lg"
-            onClick={handleToggleColorScheme}
-          >
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </ActionIcon>
-          <Button
-            variant={activePage === "settings" ? "light" : "subtle"}
-            w={70}
-            h="auto"
-            py={12}
-            px={0}
-            style={{ flexDirection: "column", gap: 4 }}
-            onClick={() => setActivePage("settings")}
-          >
-            <Settings size={20} />
-            <Text size="xs">设置</Text>
-          </Button>
-        </Flex>
+        {/* Main content */}
+        <Box style={{ flex: 1, overflow: "hidden" }}>
+          <Box h="100%" p="md" style={{ display: activePage === "rename" ? "block" : "none" }}>
+            <RenamePage />
+          </Box>
+          <Box h="100%" p="md" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
+            <AsciiArtPage />
+          </Box>
+          <Box h="100%" p="md" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
+            <VideoToolPage />
+          </Box>
+          <Box h="100%" p="md" style={{ display: activePage === "settings" ? "block" : "none" }}>
+            <SettingsPage />
+          </Box>
+        </Box>
       </Flex>
-
-      {/* Main content */}
-      <Box style={{ flex: 1, overflow: "hidden" }}>
-        <Box h="100%" p="md" style={{ display: activePage === "rename" ? "block" : "none" }}>
-          <RenamePage />
-        </Box>
-        <Box h="100%" p="md" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
-          <AsciiArtPage />
-        </Box>
-        <Box h="100%" p="md" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
-          <VideoToolPage />
-        </Box>
-        <Box h="100%" p="md" style={{ display: activePage === "settings" ? "block" : "none" }}>
-          <SettingsPage />
-        </Box>
-      </Box>
-    </Flex>
     </ModalsProvider>
   );
 }

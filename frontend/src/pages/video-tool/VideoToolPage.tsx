@@ -34,12 +34,24 @@ export default function VideoToolPage() {
     return (
       <Center h="100%">
         <Stack align="center" gap="md">
-          <AlertCircle size={48} color="gray" />
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              backgroundColor: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <AlertCircle size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
+          </div>
           <Text size="lg" fw={600}>FFmpeg 未安装</Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="dimmed" ta="center" maw={360}>
             视频工具需要 FFmpeg 支持，请先安装 FFmpeg 并确保其在系统 PATH 中。
           </Text>
-          <Button mt="md" onClick={checkFfmpeg}>
+          <Button mt="md" onClick={checkFfmpeg} radius="md">
             重新检测
           </Button>
         </Stack>
@@ -57,15 +69,36 @@ export default function VideoToolPage() {
     return (
       <Center h="100%">
         <Stack align="center" gap="md">
-          <AlertCircle size={48} color="gray" />
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              backgroundColor: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <AlertCircle size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
+          </div>
           <Text size="lg" fw={600}>缺少视频编码器</Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="dimmed" ta="center" maw={400}>
             FFmpeg 已安装，但未找到可用的视频编码器（libx264/libx265/mpeg4）。
             <br />
             请安装包含完整编码器的 FFmpeg 版本。
           </Text>
-          <Box ta="left" mt="md">
-            <Text size="xs" fw={500}>编码器状态：</Text>
+          <Box
+            ta="left"
+            mt="md"
+            p="md"
+            style={{
+              borderRadius: theme.radius.md,
+              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+              backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+            }}
+          >
+            <Text size="xs" fw={600} mb="xs">编码器状态：</Text>
             {Object.entries(encoderStatus).map(([name, available]) => (
               <Group key={name} gap="xs">
                 <Text size="xs" c={available ? "green" : "red"}>
@@ -75,7 +108,7 @@ export default function VideoToolPage() {
               </Group>
             ))}
           </Box>
-          <Button mt="md" onClick={checkEncoders}>
+          <Button mt="md" onClick={checkEncoders} radius="md">
             重新检测
           </Button>
         </Stack>
@@ -91,7 +124,7 @@ export default function VideoToolPage() {
         height: "100%",
         overflow: "hidden",
         borderRadius: theme.radius.lg,
-        border: `1px solid ${theme.colors.dark[4]}`,
+        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
         backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
       }}
     >

@@ -1,5 +1,5 @@
 import { Button, Group, Text, Stack, useMantineTheme, useComputedColorScheme } from "@mantine/core";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, ListChecks } from "lucide-react";
 import { useRenameStore } from "@/stores/renameStore";
 import RuleCard from "./RuleCard";
 
@@ -19,11 +19,17 @@ export default function RuleList() {
         align="center"
         px="sm"
         py={6}
-        style={{ borderBottom: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}` }}
+        style={{
+          borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
+          backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
+        }}
       >
-        <Text size="xs" fw={500} c="dimmed">
-          替换规则 ({replaceInfos.length})
-        </Text>
+        <Group gap={6} align="center">
+          <ListChecks size={14} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[6] }} />
+          <Text size="xs" fw={600} c="dimmed">
+            替换规则 ({replaceInfos.length})
+          </Text>
+        </Group>
         <Group gap={4}>
           <Button
             variant="subtle"
@@ -31,6 +37,8 @@ export default function RuleList() {
             leftSection={<Trash size={12} />}
             onClick={clearAllRules}
             disabled={replaceInfos.length === 0}
+            radius="md"
+            color="gray"
           >
             清空
           </Button>
@@ -39,6 +47,7 @@ export default function RuleList() {
             size="compact-xs"
             leftSection={<Plus size={12} />}
             onClick={addReplaceInfo}
+            radius="md"
           >
             添加
           </Button>

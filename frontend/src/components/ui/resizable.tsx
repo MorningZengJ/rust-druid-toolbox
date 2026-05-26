@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react"
-import { Box, useMantineTheme } from "@mantine/core"
+import { Box, useMantineTheme, useComputedColorScheme } from "@mantine/core"
 import { GripVerticalIcon } from "lucide-react"
 import * as ResizablePrimitive from "react-resizable-panels"
 
@@ -34,6 +34,8 @@ function ResizableHandle({
   style?: React.CSSProperties
 }) {
   const theme = useMantineTheme()
+  const colorScheme = useComputedColorScheme()
+  const isDark = colorScheme === "dark"
   const [hovered, setHovered] = useState(false)
   const onMouseEnter = useCallback(() => setHovered(true), [])
   const onMouseLeave = useCallback(() => setHovered(false), [])
@@ -61,10 +63,15 @@ function ResizableHandle({
           top: 0,
           bottom: 0,
           left: "50%",
-          width: hovered ? 1 : 0,
-          backgroundColor: hovered ? theme.colors.gray[4] : "transparent",
-          transition: "width 0.15s ease, background-color 0.15s ease",
+          width: hovered ? 2 : 1,
+          backgroundColor: hovered
+            ? theme.colors[theme.primaryColor][isDark ? 5 : 4]
+            : isDark
+              ? "rgba(255, 255, 255, 0.06)"
+              : "rgba(0, 0, 0, 0.08)",
+          transition: "width 150ms ease, background-color 150ms ease",
           transform: "translateX(-50%)",
+          borderRadius: 1,
         }}
       />
       {withHandle && (
@@ -72,18 +79,31 @@ function ResizableHandle({
           style={{
             zIndex: 10,
             display: "flex",
-            height: 24,
-            width: 12,
+            height: 28,
+            width: 14,
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 4,
-            border: hovered ? `1px solid ${theme.colors.gray[4]}` : "1px solid transparent",
-            backgroundColor: hovered ? theme.colors.gray[2] : "transparent",
-            opacity: hovered ? 1 : 0,
-            transition: "opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease",
+            borderRadius: 6,
+            border: hovered
+              ? `1px solid ${theme.colors[theme.primaryColor][isDark ? 5 : 4]}40`
+              : `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+            backgroundColor: hovered
+              ? isDark
+                ? "rgba(255, 255, 255, 0.06)"
+                : "rgba(0, 0, 0, 0.04)"
+              : "transparent",
+            opacity: hovered ? 1 : 0.4,
+            transition: "opacity 150ms ease, background-color 150ms ease, border-color 150ms ease",
           }}
         >
-          <GripVerticalIcon size={10} style={{ opacity: hovered ? 0.6 : 0 }} />
+          <GripVerticalIcon
+            size={10}
+            style={{
+              opacity: hovered ? 0.8 : 0.4,
+              color: isDark ? theme.colors.dark[2] : theme.colors.gray[5],
+              transition: "opacity 150ms ease",
+            }}
+          />
         </Box>
       )}
     </ResizablePrimitive.Separator>

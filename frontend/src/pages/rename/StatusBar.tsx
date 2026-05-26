@@ -39,8 +39,8 @@ export default function StatusBar() {
       px="sm"
       py={6}
       style={{
-        borderTop: `1px solid ${isDark ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-        backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
+        borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
       }}
     >
       <Group gap="sm">
@@ -49,19 +49,19 @@ export default function StatusBar() {
         </Text>
 
         {hasChanges && (
-          <Badge variant="light" size="sm">
+          <Badge variant="light" size="sm" radius="sm">
             {activeRules.length} 条规则
           </Badge>
         )}
 
         {hasConflicts && (
-          <Badge color="red" variant="filled" size="sm" leftSection={<AlertTriangle size={12} />}>
+          <Badge color="red" variant="filled" size="sm" radius="sm" leftSection={<AlertTriangle size={12} />}>
             {conflicts.length} 个冲突
           </Badge>
         )}
 
         {status && (
-          <Badge variant="filled" size="sm" leftSection={<CheckCircle size={12} />}>
+          <Badge variant="filled" size="sm" radius="sm" leftSection={<CheckCircle size={12} />}>
             完成: {status.success}/{status.total}
             {status.errors.length > 0 && `, ${status.errors.length} 个错误`}
           </Badge>
@@ -73,6 +73,7 @@ export default function StatusBar() {
         leftSection={<Play size={14} />}
         disabled={!hasChanges || hasConflicts || filterFileList.length === 0}
         onClick={handleExecute}
+        radius="md"
       >
         执行重命名
       </Button>

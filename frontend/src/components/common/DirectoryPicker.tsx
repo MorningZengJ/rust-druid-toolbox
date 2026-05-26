@@ -1,4 +1,4 @@
-import { Group, TextInput, ActionIcon } from "@mantine/core";
+import { Group, TextInput, ActionIcon, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { FolderOpen } from "lucide-react";
 
 interface DirectoryPickerProps {
@@ -12,6 +12,10 @@ export function DirectoryPicker({
   onChange,
   placeholder = "选择或输入路径",
 }: DirectoryPickerProps) {
+  const theme = useMantineTheme();
+  const colorScheme = useComputedColorScheme();
+  const isDark = colorScheme === "dark";
+
   const handleBrowse = async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
     const selected = await open({ directory: true });
@@ -28,8 +32,24 @@ export function DirectoryPicker({
         value={value}
         onChange={(e) => onChange(e.currentTarget.value)}
         placeholder={placeholder}
+        styles={{
+          input: {
+            fontFamily: "monospace",
+            backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+            borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+            "&:focus": {
+              borderColor: theme.colors[theme.primaryColor][isDark ? 5 : 4],
+            },
+          },
+        }}
       />
-      <ActionIcon variant="outline" size="md" onClick={handleBrowse}>
+      <ActionIcon
+        variant="light"
+        color={theme.primaryColor}
+        size="md"
+        radius="md"
+        onClick={handleBrowse}
+      >
         <FolderOpen size={14} />
       </ActionIcon>
     </Group>

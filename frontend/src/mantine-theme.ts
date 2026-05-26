@@ -66,13 +66,34 @@ const rose: MantineColorsTuple = [
   "#7a0025",
 ];
 
+// Refined dark mode surface colors (avoid pure black, rich dark tones)
+const dark: MantineColorsTuple = [
+  "#C1C2C5",   // 0: lightest text
+  "#A6A7AB",   // 1: secondary text
+  "#909296",   // 2: muted text
+  "#5C5F66",   // 3: disabled text
+  "#373A40",   // 4: borders
+  "#2C2E33",   // 5: elevated surface
+  "#25262B",   // 6: card surface
+  "#1A1B1E",   // 7: base surface
+  "#141517",   // 8: deep surface
+  "#101113",   // 9: deepest background
+];
+
 const MANTINE_THEME = createTheme({
   primaryColor: "blue",
-  colors: { blue, green, purple, orange, rose },
+  colors: { blue, green, purple, orange, rose, dark },
   fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
   defaultRadius: "md",
   headings: {
     fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+  },
+  shadows: {
+    xs: "0 1px 2px rgba(0, 0, 0, 0.05)",
+    sm: "0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+    md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+    xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
   },
 });
 

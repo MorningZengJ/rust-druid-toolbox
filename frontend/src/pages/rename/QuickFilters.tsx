@@ -25,28 +25,31 @@ export default function QuickFilters() {
 
   return (
     <Group gap={6} align="center">
-      <Text size="xs" fw={500} c="dimmed" mr={4}>筛选:</Text>
+      <Text size="xs" fw={600} c="dimmed" mr={4}>筛选:</Text>
       <Button
-        variant={isActive("all") ? "filled" : "outline"}
+        variant={isActive("all") ? "light" : "default"}
         size="compact-xs"
         leftSection={<Layers size={12} />}
         onClick={() => toggleQuickFilter("all")}
+        radius="md"
       >
         全部
       </Button>
       <Button
-        variant={isActive("folder") ? "filled" : "outline"}
+        variant={isActive("folder") ? "light" : "default"}
         size="compact-xs"
         leftSection={<Folder size={12} />}
         onClick={() => toggleQuickFilter("folder")}
+        radius="md"
       >
         文件夹
       </Button>
       <Button
-        variant={isActive("file") ? "filled" : "outline"}
+        variant={isActive("file") ? "light" : "default"}
         size="compact-xs"
         leftSection={<File size={12} />}
         onClick={() => toggleQuickFilter("file")}
+        radius="md"
       >
         文件
       </Button>
@@ -56,6 +59,7 @@ export default function QuickFilters() {
           variant={isActive({ extension: ext }) ? "filled" : "outline"}
           style={{ cursor: "pointer" }}
           onClick={() => toggleQuickFilter({ extension: ext })}
+          radius="sm"
         >
           {ext}
         </Badge>

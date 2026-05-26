@@ -78,7 +78,7 @@ export default function AsciiArtPage() {
         height: "100%",
         overflow: "hidden",
         borderRadius: theme.radius.lg,
-        border: `1px solid ${theme.colors.dark[4]}`,
+        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
         backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
       }}
       onPaste={(e) => e.preventDefault()}
