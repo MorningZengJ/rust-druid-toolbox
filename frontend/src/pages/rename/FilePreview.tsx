@@ -202,7 +202,9 @@ export default function FilePreview() {
                   backgroundColor: rowBg,
                 }}
               >
-                <FileIcon isDir={file.isDir} extension={file.extension} />
+                <Box w={16} style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FileIcon isDir={file.isDir} extension={file.extension} />
+                </Box>
                 <Text
                   size="sm"
                   truncate
@@ -245,11 +247,13 @@ export default function FilePreview() {
                 >
                   {file.size}
                 </Text>
-                {hasConflict && (
-                  <Badge color="red" variant="filled" size="sm" style={{ flexShrink: 0 }}>
-                    冲突
-                  </Badge>
-                )}
+                <Box w={48} style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+                  {hasConflict && (
+                    <Badge color="red" variant="filled" size="sm">
+                      冲突
+                    </Badge>
+                  )}
+                </Box>
               </Flex>
             );
           }}
