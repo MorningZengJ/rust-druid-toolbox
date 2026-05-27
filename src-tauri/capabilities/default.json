@@ -20,7 +20,12 @@
     "dialog:allow-confirm",
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text",
-    "opener:allow-open-path",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "**" }
+      ]
+    },
     "store:default"
   ]
 }
