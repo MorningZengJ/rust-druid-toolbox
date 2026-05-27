@@ -1,10 +1,41 @@
-import { Badge, Text, Group, Flex, Box, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { useMemo, useCallback, useState } from "react";
+import {
+  Badge,
+  Text,
+  Group,
+  Flex,
+  Box,
+  useMantineTheme,
+  useComputedColorScheme,
+} from "@mantine/core";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type ColumnDef,
+  type SortingState,
+  type ColumnSizingState,
+  type SortingFn,
+} from "@tanstack/react-table";
+import { Virtuoso } from "react-virtuoso";
 import { useRenameStore } from "@/stores/renameStore";
 import { renameLogic } from "@/lib/renameLogic";
-import { Virtuoso } from "react-virtuoso";
 import FileIcon from "@/components/FileIcon";
-import type { FileInfo, SortField, SortColumn } from "@/types";
+import type { FileInfo, SortField } from "@/types";
+
+interface FileRow extends FileInfo {
+  newName: string;
+  hasConflict: boolean;
+  originalIndex: number;
+}
+
+// Custom multi-sort function that respects priority order
+const multiSortFn: SortingFn<FileRow> = (rowA, rowB, columnId) => {
+  // This is handled by getSortedRowModel with multi-sort
+  return 0;
+};
 
 export default function FilePreview() {
   const filterFileList = useRenameStore((s) => s.filterFileList);
@@ -22,68 +53,238 @@ export default function FilePreview() {
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
-  const activeRules = replaceInfos.filter((r) => r.enable);
-  const displayedFiles = filterFileList.slice(0, displayLimit);
+  // Column sizing state
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({
+    icon: 32,
+    name: 200,
+    newName: 200,
+    extension: 60,
+    size: 80,
+    conflict: 48,
+  });
+
+  const activeRules = useMemo(
+    () => replaceInfos.filter((r) => r.enable),
+    [replaceInfos]
+  );
 
   // Build conflict index set for quick lookup
-  const conflictIndices = new Set<number>();
-  for (const conflict of conflicts) {
-    for (const idx of conflict.sourceIndices) {
-      conflictIndices.add(idx);
+  const conflictIndices = useMemo(() => {
+    const indices = new Set<number>();
+    for (const conflict of conflicts) {
+      for (const idx of conflict.sourceIndices) {
+        indices.add(idx);
+      }
     }
-  }
+    return indices;
+  }, [conflicts]);
 
-  const getNewName = (name: string) => {
-    if (activeRules.length === 0) return name;
-    return renameLogic.applyReplaceRules(name, activeRules);
-  };
+  // Prepare display data with computed fields
+  const displayedFiles = useMemo(() => {
+    const files = filterFileList.slice(0, displayLimit);
+    return files.map((file, index) => {
+      const newName =
+        activeRules.length === 0
+          ? file.name
+          : renameLogic.applyReplaceRules(file.name, activeRules);
+      return {
+        ...file,
+        newName,
+        hasConflict: conflictIndices.has(index),
+        originalIndex: index,
+      };
+    });
+  }, [filterFileList, displayLimit, activeRules, conflictIndices]);
+
+  // TanStack Table sorting state
+  const sorting: SortingState = useMemo(
+    () =>
+      sortColumns.map((c) => ({
+        id: c.field,
+        desc: c.direction === "desc",
+      })),
+    [sortColumns]
+  );
+
+  const handleSortingChange = useCallback(
+    (updater: SortingState | ((old: SortingState) => SortingState)) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+      setSortColumns(
+        newSorting.map((s) => ({
+          field: s.id as SortField,
+          direction: s.desc ? "desc" : "asc",
+        }))
+      );
+    },
+    [sorting, setSortColumns]
+  );
 
   const hasMore = displayLimit < filterFileList.length;
 
-  const handleDoubleClick = async (file: FileInfo) => {
-    if (file.isDir) {
-      await loadFiles(file.path);
-    } else {
-      try {
-        const { openPath } = await import("@tauri-apps/plugin-opener");
-        await openPath(file.path);
-      } catch (e) {
-        console.error("打开文件失败:", e);
+  const handleDoubleClick = useCallback(
+    async (file: FileInfo) => {
+      if (file.isDir) {
+        await loadFiles(file.path);
+      } else {
+        try {
+          const { openPath } = await import("@tauri-apps/plugin-opener");
+          await openPath(file.path);
+        } catch (e) {
+          console.error("打开文件失败:", e);
+        }
       }
-    }
-  };
+    },
+    [loadFiles]
+  );
 
-  const handleSortClick = (field: SortField) => {
-    const existing = sortColumns.find((c) => c.field === field);
-    let newColumns: SortColumn[];
+  const getRowBg = useCallback(
+    (row: FileRow) => {
+      if (row.hasConflict) {
+        return isDark ? "rgba(239, 68, 68, 0.08)" : "rgba(239, 68, 68, 0.05)";
+      }
+      if (selectedFile?.path === row.path) {
+        return isDark
+          ? "rgba(255, 255, 255, 0.04)"
+          : "rgba(0, 0, 0, 0.03)";
+      }
+      return "transparent";
+    },
+    [isDark, selectedFile]
+  );
 
-    if (!existing) {
-      newColumns = [...sortColumns, { field, direction: "asc" }];
-    } else if (existing.direction === "asc") {
-      newColumns = sortColumns.map((c) =>
-        c.field === field ? { ...c, direction: "desc" } : c
-      );
-    } else {
-      newColumns = sortColumns.filter((c) => c.field !== field);
-    }
+  const getNewTextColor = useCallback(
+    (row: FileRow) => {
+      const changed = row.newName !== row.name;
+      if (!changed) return isDark ? theme.colors.dark[2] : theme.colors.gray[6];
+      if (row.hasConflict) return theme.colors.red[isDark ? 4 : 7];
+      return theme.colors.green[isDark ? 4 : 8];
+    },
+    [isDark, theme]
+  );
 
-    setSortColumns(newColumns);
-  };
+  // Column definitions
+  const columns = useMemo<ColumnDef<FileRow>[]>(
+    () => [
+      {
+        id: "icon",
+        header: "",
+        enableSorting: false,
+        enableResizing: false,
+        cell: ({ row }) => (
+          <Box
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <FileIcon isDir={row.original.isDir} extension={row.original.extension} />
+          </Box>
+        ),
+      },
+      {
+        accessorKey: "name",
+        header: "名称",
+        enableSorting: true,
+        cell: ({ row }) => (
+          <Text truncate size="sm" style={{ fontFamily: "monospace" }}>
+            {row.original.name}
+          </Text>
+        ),
+      },
+      {
+        id: "newName",
+        header: "新名称",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Text
+            truncate
+            size="sm"
+            fw={row.original.hasConflict ? 600 : undefined}
+            c={getNewTextColor(row.original)}
+            style={{ fontFamily: "monospace" }}
+          >
+            {row.original.newName}
+          </Text>
+        ),
+      },
+      {
+        accessorKey: "extension",
+        header: "类型",
+        enableSorting: true,
+        cell: ({ row }) => (
+          <Text size="xs" c="dimmed" ta="center">
+            {row.original.isDir ? "" : row.original.extension}
+          </Text>
+        ),
+      },
+      {
+        accessorKey: "size",
+        header: "大小",
+        enableSorting: true,
+        cell: ({ row }) => (
+          <Text size="xs" c="dimmed" ta="right" style={{ fontFamily: "monospace" }}>
+            {row.original.size}
+          </Text>
+        ),
+      },
+      {
+        id: "conflict",
+        header: "",
+        enableSorting: false,
+        enableResizing: false,
+        cell: ({ row }) =>
+          row.original.hasConflict ? (
+            <Badge color="red" variant="filled" size="sm" radius="sm">
+              冲突
+            </Badge>
+          ) : null,
+      },
+    ],
+    [getNewTextColor]
+  );
 
-  const getSortIndicator = (field: SortField) => {
-    const col = sortColumns.find((c) => c.field === field);
-    if (!col) return null;
-    const idx = sortColumns.indexOf(col);
-    const Icon = col.direction === "asc" ? ChevronUp : ChevronDown;
-    return (
-      <Group gap={1} align="center" ml={2} style={{ display: "inline-flex" }}>
-        <Icon size={12} />
-        {sortColumns.length > 1 && (
-          <Text size="xs" c="dimmed">{idx + 1}</Text>
-        )}
-      </Group>
-    );
-  };
+  const table = useReactTable({
+    data: displayedFiles,
+    columns,
+    state: { sorting, columnSizing },
+    onSortingChange: handleSortingChange,
+    onColumnSizingChange: setColumnSizing,
+    columnResizeMode: "onChange",
+    enableMultiSort: true,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  const rows = table.getRowModel().rows;
+  const headerGroup = table.getHeaderGroups()[0];
+
+  // Handle sorting - always multi-sort (click to add/toggle/remove)
+  const handleHeaderClick = useCallback(
+    (header: (typeof headerGroup.headers)[0]) => {
+      if (!header.column.getCanSort()) return;
+
+      const currentSort = header.column.getIsSorted();
+      if (currentSort === "asc") {
+        // Ascending → Descending
+        header.column.toggleSorting(true, true);
+      } else if (currentSort === "desc") {
+        // Descending → Remove
+        const newSorting = sorting.filter((s) => s.id !== header.column.id);
+        setSortColumns(
+          newSorting.map((s) => ({
+            field: s.id as SortField,
+            direction: s.desc ? "desc" : "asc",
+          }))
+        );
+      } else {
+        // Not sorted → Add ascending
+        header.column.toggleSorting(false, true);
+      }
+    },
+    [sorting, setSortColumns]
+  );
 
   return (
     <Flex
@@ -103,112 +304,119 @@ export default function FilePreview() {
         py={6}
         style={{
           borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
-          backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
+          backgroundColor: isDark
+            ? "rgba(255, 255, 255, 0.02)"
+            : "rgba(0, 0, 0, 0.01)",
         }}
       >
         <Text size="xs" fw={600} c="dimmed">
           文件预览 ({filterFileList.length})
         </Text>
-        {hasMore && (
-          <Text
-            size="xs"
-            c={theme.primaryColor}
-            style={{ cursor: "pointer", textDecoration: "underline" }}
-            onClick={loadMore}
-          >
-            加载更多 (显示 {displayLimit}/{filterFileList.length})
-          </Text>
-        )}
+        <Group gap="xs">
+          {sortColumns.length > 1 && (
+            <Text size="xs" c="dimmed">
+              多列排序
+            </Text>
+          )}
+          {hasMore && (
+            <Text
+              size="xs"
+              c={theme.primaryColor}
+              style={{ cursor: "pointer", textDecoration: "underline" }}
+              onClick={loadMore}
+            >
+              加载更多 ({displayLimit}/{filterFileList.length})
+            </Text>
+          )}
+        </Group>
       </Group>
+
+      {/* Table Header - outside Virtuoso */}
+      <Flex
+        align="center"
+        px="sm"
+        py={4}
+        style={{
+          borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
+          fontSize: 12,
+          fontWeight: 500,
+          color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
+          backgroundColor: isDark
+            ? "rgba(255, 255, 255, 0.02)"
+            : "rgba(0, 0, 0, 0.01)",
+        }}
+      >
+        {headerGroup.headers.map((header) => (
+          <Box
+            key={header.id}
+            style={{
+              width: header.getSize(),
+              flexShrink: 0,
+              position: "relative",
+            }}
+          >
+            <Flex
+              align="center"
+              gap={4}
+              style={{
+                cursor: header.column.getCanSort() ? "pointer" : "default",
+                userSelect: "none",
+              }}
+              onClick={() => handleHeaderClick(header)}
+            >
+              <Text size="xs" fw={600} truncate>
+                {flexRender(header.column.columnDef.header, header.getContext())}
+              </Text>
+              {header.column.getCanSort() && (
+                <SortIndicator
+                  sorted={header.column.getIsSorted()}
+                  sortIndex={header.column.getSortIndex()}
+                  showIndex={sortColumns.length > 1}
+                />
+              )}
+            </Flex>
+            {/* Resize handle */}
+            {header.column.getCanResize() && (
+              <Box
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  cursor: "col-resize",
+                  userSelect: "none",
+                  touchAction: "none",
+                }}
+                onMouseDown={header.getResizeHandler()}
+                onTouchStart={header.getResizeHandler()}
+              />
+            )}
+          </Box>
+        ))}
+      </Flex>
 
       <Box style={{ flex: 1, overflow: "hidden" }}>
         {filterFileList.length === 0 ? (
           <Flex h="100%" align="center" justify="center">
-            <Text size="sm" c="dimmed">选择目录以加载文件列表</Text>
+            <Text size="sm" c="dimmed">
+              选择目录以加载文件列表
+            </Text>
           </Flex>
         ) : (
           <Virtuoso
             style={{ height: "100%" }}
-            totalCount={displayedFiles.length}
+            totalCount={rows.length}
             endReached={hasMore ? loadMore : undefined}
-            components={{
-              Header: () => (
-                <Flex
-                  align="center"
-                  gap={8}
-                  px="sm"
-                  py={4}
-                  style={{
-                    borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
-                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
-                  }}
-                >
-                  <Box w={16} style={{ flexShrink: 0 }} />
-                  <Text
-                    size="xs"
-                    fw={600}
-                    style={{ flex: 1, minWidth: 0, cursor: "pointer", userSelect: "none" }}
-                    onClick={() => handleSortClick("name")}
-                  >
-                    名称 {getSortIndicator("name")}
-                  </Text>
-                  <Text size="xs" fw={600} style={{ flex: 1, minWidth: 0 }}>新名称</Text>
-                  <Text
-                    size="xs"
-                    fw={600}
-                    w={60}
-                    ta="center"
-                    style={{ flexShrink: 0, cursor: "pointer", userSelect: "none" }}
-                    onClick={() => handleSortClick("extension")}
-                  >
-                    类型 {getSortIndicator("extension")}
-                  </Text>
-                  <Text
-                    size="xs"
-                    fw={600}
-                    w={80}
-                    ta="right"
-                    style={{ flexShrink: 0, cursor: "pointer", userSelect: "none" }}
-                    onClick={() => handleSortClick("size")}
-                  >
-                    大小 {getSortIndicator("size")}
-                  </Text>
-                  <Box w={48} style={{ flexShrink: 0 }} />
-                </Flex>
-              ),
-            }}
             itemContent={(index) => {
-              const file = displayedFiles[index];
-              const newName = getNewName(file.name);
-              const changed = newName !== file.name;
-              const hasConflict = conflictIndices.has(index);
+              const row = rows[index];
+              if (!row) return null;
+              const file = row.original;
               const isSelected = selectedFile?.path === file.path;
-
-              const rowBg = hasConflict
-                ? isDark
-                  ? "rgba(239, 68, 68, 0.08)"
-                  : "rgba(239, 68, 68, 0.05)"
-                : isSelected
-                  ? isDark
-                    ? "rgba(255, 255, 255, 0.04)"
-                    : "rgba(0, 0, 0, 0.03)"
-                  : "transparent";
-
-              const newTextColor = changed
-                ? hasConflict
-                  ? theme.colors.red[isDark ? 4 : 7]
-                  : theme.colors.green[isDark ? 4 : 8]
-                : isDark
-                  ? theme.colors.dark[2]
-                  : theme.colors.gray[6];
 
               return (
                 <Flex
                   align="center"
-                  gap={8}
                   px="sm"
                   py={6}
                   onClick={() => setSelectedFile(isSelected ? null : file)}
@@ -217,74 +425,34 @@ export default function FilePreview() {
                     cursor: "pointer",
                     borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.03)"}`,
                     fontSize: 14,
-                    backgroundColor: rowBg,
+                    backgroundColor: getRowBg(file),
                     transition: "background-color 100ms ease",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected && !hasConflict) {
+                    if (!isSelected && !file.hasConflict) {
                       e.currentTarget.style.backgroundColor = isDark
                         ? "rgba(255, 255, 255, 0.03)"
                         : "rgba(0, 0, 0, 0.02)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isSelected && !hasConflict) {
+                    if (!isSelected && !file.hasConflict) {
                       e.currentTarget.style.backgroundColor = "transparent";
                     }
                   }}
                 >
-                  <Box w={16} style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <FileIcon isDir={file.isDir} extension={file.extension} />
-                  </Box>
-                  <Text
-                    size="sm"
-                    truncate
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {file.name}
-                  </Text>
-                  <Text
-                    size="sm"
-                    truncate
-                    fw={changed && hasConflict ? 600 : undefined}
-                    c={newTextColor}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {newName}
-                  </Text>
-                  <Text
-                    size="xs"
-                    c="dimmed"
-                    w={60}
-                    ta="center"
-                    style={{ flexShrink: 0 }}
-                  >
-                    {file.isDir ? "" : file.extension}
-                  </Text>
-                  <Text
-                    size="xs"
-                    c="dimmed"
-                    w={80}
-                    ta="right"
-                    style={{ flexShrink: 0, fontFamily: "monospace" }}
-                  >
-                    {file.size}
-                  </Text>
-                  <Box w={48} style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
-                    {hasConflict && (
-                      <Badge color="red" variant="filled" size="sm" radius="sm">
-                        冲突
-                      </Badge>
-                    )}
-                  </Box>
+                  {row.getVisibleCells().map((cell) => (
+                    <Box
+                      key={cell.id}
+                      style={{
+                        width: cell.column.getSize(),
+                        flexShrink: 0,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Box>
+                  ))}
                 </Flex>
               );
             }}
@@ -292,5 +460,28 @@ export default function FilePreview() {
         )}
       </Box>
     </Flex>
+  );
+}
+
+function SortIndicator({
+  sorted,
+  sortIndex,
+  showIndex,
+}: {
+  sorted: false | "asc" | "desc";
+  sortIndex: number;
+  showIndex: boolean;
+}) {
+  if (!sorted) return null;
+  const Icon = sorted === "asc" ? ChevronUp : ChevronDown;
+  return (
+    <Group gap={1} align="center" style={{ display: "inline-flex" }}>
+      <Icon size={12} />
+      {showIndex && sortIndex >= 0 && (
+        <Text size="xs" c="dimmed">
+          {sortIndex + 1}
+        </Text>
+      )}
+    </Group>
   );
 }
