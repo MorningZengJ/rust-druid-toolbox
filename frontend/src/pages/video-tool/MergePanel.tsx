@@ -262,7 +262,7 @@ export function MergePanel() {
               fullWidth
               onClick={runMerge}
               disabled={isProcessing || mergeInputPaths.length < 2}
-              leftSection={isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+              leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
             >
               合并
             </Button>

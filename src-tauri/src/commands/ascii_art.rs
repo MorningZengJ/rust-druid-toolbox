@@ -11,7 +11,9 @@ fn get_ascii_art_temp_dir() -> PathBuf {
 fn cleanup_ascii_art_dir() {
     let dir = get_ascii_art_temp_dir();
     if dir.exists() {
-        let _ = std::fs::remove_dir_all(&dir);
+        if let Err(e) = std::fs::remove_dir_all(&dir) {
+            eprintln!("清理 ASCII art 临时目录失败: {}", e);
+        }
     }
 }
 

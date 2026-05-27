@@ -1,4 +1,5 @@
 use super::VideoToolEngine;
+use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 
 /// 获取当前时间戳（毫秒）
@@ -298,6 +299,45 @@ impl VideoToolEngine {
         Ok(())
     }
 
+    /// 写入封面 packet（附加图片流）
+    pub(super) fn try_write_cover(
+        packet: &ffmpeg_next::Packet,
+        stream: &ffmpeg_next::format::stream::Stream,
+        mt: ffmpeg_next::media::Type,
+        cover_indices: &[usize],
+        cover_idx: &mut usize,
+        output: &mut ffmpeg_next::format::context::Output,
+        log_cb: &mut impl FnMut(VideoToolLog),
+        task_id: &str,
+    ) {
+        let is_cover = mt == ffmpeg_next::media::Type::Attachment
+            || stream
+                .disposition()
+                .contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+        if !is_cover {
+            return;
+        }
+        if let Some(&out_idx) = cover_indices.get(*cover_idx) {
+            if let Some(out_st) = output.stream(out_idx) {
+                let in_tb = stream.time_base();
+                let out_tb = out_st.time_base();
+                let mut pkt = packet.clone();
+                pkt.set_stream(out_idx);
+                pkt.rescale_ts(in_tb, out_tb);
+                pkt.set_position(-1);
+                if let Err(e) = pkt.write_interleaved(output) {
+                    log_cb(VideoToolLog {
+                        task_id: task_id.to_string(),
+                        level: "warn".to_string(),
+                        message: format!("写入封面 packet 失败: {}", e),
+                        timestamp: now_ms(),
+                    });
+                }
+            }
+        }
+        *cover_idx += 1;
+    }
+
     /// 创建 YUV420P 帧并填充黑边
     pub(super) fn scale_and_pad_frame(
         decoded: &ffmpeg_next::frame::Video,
@@ -376,5 +416,34 @@ impl VideoToolEngine {
         }
 
         Ok(yuv_frame)
+    }
+
+    // ── 日志辅助函数 ──
+
+    pub(super) fn log_info(log_cb: &mut impl FnMut(VideoToolLog), task_id: &str, msg: &str) {
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "info".to_string(),
+            message: msg.to_string(),
+            timestamp: now_ms(),
+        });
+    }
+
+    pub(super) fn log_warn(log_cb: &mut impl FnMut(VideoToolLog), task_id: &str, msg: &str) {
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "warn".to_string(),
+            message: msg.to_string(),
+            timestamp: now_ms(),
+        });
+    }
+
+    pub(super) fn log_error(log_cb: &mut impl FnMut(VideoToolLog), task_id: &str, msg: &str) {
+        log_cb(VideoToolLog {
+            task_id: task_id.to_string(),
+            level: "error".to_string(),
+            message: msg.to_string(),
+            timestamp: now_ms(),
+        });
     }
 }

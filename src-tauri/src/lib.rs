@@ -13,7 +13,9 @@ pub fn run() {
             // Clean up ASCII art temp directory on startup
             let temp_dir = std::env::temp_dir().join("druid_ascii_art");
             if temp_dir.exists() {
-                let _ = std::fs::remove_dir_all(&temp_dir);
+                if let Err(e) = std::fs::remove_dir_all(&temp_dir) {
+                    eprintln!("清理临时目录失败: {}", e);
+                }
             }
             Ok(())
         });

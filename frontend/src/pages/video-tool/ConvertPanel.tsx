@@ -215,7 +215,7 @@ export function ConvertPanel() {
                 disabled={isProcessing || convertFiles.length === 0}
                 leftSection={
                   isProcessing ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
                   ) : (
                     <Play size={16} />
                   )

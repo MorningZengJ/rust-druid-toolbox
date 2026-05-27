@@ -197,7 +197,8 @@ impl VideoToolEngine {
         let mut encoded_packet = ffmpeg_next::Packet::empty();
         while encoder.receive_packet(&mut encoded_packet).is_ok() {
             encoded_packet.set_stream(0);
-            encoded_packet.rescale_ts(time_base, output.stream(0).unwrap().time_base());
+            let out_tb = output.stream(0).ok_or_else(|| anyhow!("输出流索引越界"))?.time_base();
+            encoded_packet.rescale_ts(time_base, out_tb);
             encoded_packet
                 .write_interleaved(&mut output)
                 .map_err(|e| anyhow!("写入视频 packet 失败: {}", e))?;

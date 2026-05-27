@@ -1,3 +1,7 @@
+/* 全局基础样式
+   注意：以下伪元素选择器 (::-webkit-scrollbar, ::selection, :focus-visible)
+   无法通过 Mantine inline styles 或 globalStyles 实现，必须使用 CSS */
+
 html,
 body,
 #root {
@@ -7,25 +11,10 @@ body,
   overflow: hidden;
 }
 
-body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-}
-
-/* Smooth transitions for theme switching */
-*,
-*::before,
-*::after {
-  transition-property: background-color, border-color, color, box-shadow;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
 }
 
 /* Selection styling */
@@ -67,16 +56,4 @@ body {
 
 [data-mantine-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
-}
-
-/* Smooth page transitions */
-.page-enter {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.page-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 200ms ease, transform 200ms ease;
 }

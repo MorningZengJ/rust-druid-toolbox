@@ -16,7 +16,7 @@ export function FileRow({
   const theme = useMantineTheme();
   const statusIcon = {
     pending: <Circle size={10} color={theme.colors.gray[5]} fill={theme.colors.gray[5]} />,
-    converting: <Loader2 size={12} className="animate-spin" color={theme.colors.blue[6]} />,
+    converting: <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} color={theme.colors.blue[6]} />,
     done: <CheckCircle2 size={12} color={theme.colors.green[6]} />,
     error: <XCircle size={12} color={theme.colors.red[6]} />,
   };

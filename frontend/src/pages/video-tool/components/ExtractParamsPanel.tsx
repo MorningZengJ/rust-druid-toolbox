@@ -208,7 +208,7 @@ export function ExtractParamsPanel({
             fullWidth
             disabled={!extractVideoPath || isExtracting}
             onClick={runExtractFrames}
-            leftSection={isExtracting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            leftSection={isExtracting ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={14} />}
           >
             {isExtracting ? (
               <>

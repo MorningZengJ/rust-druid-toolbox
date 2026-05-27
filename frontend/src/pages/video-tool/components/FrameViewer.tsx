@@ -86,7 +86,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
 
         {extractFrames.length > 0 ? (
           extractSelectedFrame !== null && extractFrames[extractSelectedFrame] ? (
-            <ResizablePanelGroup orientation="horizontal" className="h-full">
+            <ResizablePanelGroup orientation="horizontal" style={{ height: "100%" }}>
               <ResizablePanel defaultSize={60} minSize={30}>
                 <ScrollArea style={{ height: "100%" }}>
                   <Flex wrap="wrap" justify="center" gap="xs" p="sm">

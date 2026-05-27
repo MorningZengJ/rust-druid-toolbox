@@ -271,7 +271,7 @@ export function ImagesPanel() {
               fullWidth
               onClick={runImagesToVideo}
               disabled={isProcessing || imagesInputPaths.length === 0}
-              leftSection={isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+              leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
             >
               生成视频
             </Button>

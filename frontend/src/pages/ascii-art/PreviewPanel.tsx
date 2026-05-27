@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import {
   Flex,
   Box,
@@ -9,6 +8,7 @@ import {
 } from "@mantine/core";
 import { Loader2, Image as ImageIcon } from "lucide-react";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
+import { exportAsciiArtPng, writeCanvasToPng } from "@/lib/asciiArtApi";
 import { usePanZoom } from "./hooks/usePanZoom";
 import { useCanvasRenderer } from "./hooks/useCanvasRenderer";
 import { PreviewToolbar } from "./components/PreviewToolbar";
@@ -57,15 +57,9 @@ export function PreviewPanel() {
       if (!filePath) return;
 
       if (params.renderMode === "png") {
-        await invoke("export_ascii_art", { params, imagePath, format: "png", path: filePath });
+        await exportAsciiArtPng(params, imagePath, filePath);
       } else if (canvasRef.current) {
-        const blob = await new Promise<Blob | null>((resolve) =>
-          canvasRef.current!.toBlob(resolve, "image/png")
-        );
-        if (!blob) return;
-        const buffer = await blob.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buffer));
-        await invoke("write_binary_file", { path: filePath, contents: bytes });
+        await writeCanvasToPng(canvasRef.current, filePath);
       }
     } catch (e) {
       useAsciiArtStore.getState().setErrorMessage(`导出PNG失败: ${e}`);
