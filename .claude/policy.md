@@ -1,27 +1,10 @@
-# 开发策略
+# 开发规范
 
 ## 文件/函数限制
 
 - 单文件尽量 <= 500 行，超过 300 行时优先考虑拆分
 - 单函数尽量 <= 50 行
 - 避免超长 impl
-
-## 构建与运行
-
-- **Tauri 开发**: `npm run tauri dev`（项目根目录）
-- **前端构建**: `cd frontend && npm run build`
-- **Tauri 构建**: `npx tauri build`
-- **Rust 检查**: `cargo check --manifest-path src-tauri/Cargo.toml`
-- **Rust 测试**: `cargo test --manifest-path src-tauri/Cargo.toml`
-- **FFmpeg 编译检查**: `cargo check --manifest-path src-tauri/Cargo.toml --features video-frame`
-- **平台**: Windows 为主（`#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]`）
-
-## 环境要求
-
-- **PowerShell 执行策略**: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
-- **LLVM**: `winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements`（FFmpeg 编译需要）
-- **vcpkg FFmpeg 静态库**: `C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md`
-- **图标生成**: `npm run tauri icon <your-icon.png>`
 
 ## 代码规范
 
@@ -36,6 +19,7 @@
 - **页面切换**: App.tsx 通过 display 属性切换页面（非路由），新增页面需在 App.tsx 中注册
 - **API 调用**: invoke 必须统一封装，页面不得直接调用后端 command
 - **UI 与状态逻辑分离**: hooks/composables 独立
+- **表格**: 使用 @tanstack/react-table 实现复杂表格功能（排序、筛选、列配置等）
 
 ### 后端（Rust + Tauri）
 
@@ -58,6 +42,7 @@
 - 暗色模式通过 `useMantineColorScheme()` 管理
 - 保留 `react-resizable-panels`（Mantine 无可调整面板组件）
 - 保留 `react-virtuoso`（Mantine 无虚拟滚动组件）
+- 保留 `@tanstack/react-table`（Mantine 无高级表格组件）
 
 ## 文件操作安全
 
@@ -71,12 +56,6 @@
 - **前端**: 暂无测试框架，手动验证关键交互流程
 - **端到端**: `npm run tauri dev` 手动验证所有功能
 
-## Git 规范
-
-- 主分支：main（远程），master（本地当前分支）
-- 提交信息使用中文，简洁描述变更内容
-- 远程仓库：git@github.com:MorningZengJ/rust-druid-toolbox.git
-
 ## 禁止事项
 
 - 禁止在前端写自定义 CSS 文件（使用 Mantine 组件和 style props）
@@ -86,18 +65,51 @@
 - 禁止静默忽略文件系统错误（如 `let _ = fs::rename(...)`）
 - 禁止新增路由库（当前使用 display 切换，无路由需求）
 
-## 开发策略
+## 技术方案决策流程
 
-新增功能时：
+新增功能时，必须按以下顺序评估：
 
-- 优先新建模块，不要持续扩展已有大文件
-- 优先抽离公共逻辑，保持模块自治
+1. **当前项目是否已有现成能力** — 搜索现有模块、工具函数、组件、store action
+2. **是否已有可复用公共模块** — 检查 components/common/、utils/、hooks/、lib/ 等
+3. **是否存在成熟稳定的第三方生态方案** — 优先选择社区主流、长期维护、生态稳定的库
+4. **是否可以通过轻量封装实现需求** — 基于现有依赖做简单扩展
+5. **最后才允许从零实现** — 仅当前四步都无法满足时
 
-生成代码前：
+禁止默认直接手写完整功能。优先保证可维护性、一致性、可扩展性、长期演进能力和 AI 后续协作稳定性，而不是短期"能运行"。
+
+## 生态方案优先级
+
+对于以下通用基础能力，**优先使用成熟生态方案**，避免长期维护自定义实现：
+
+- 虚拟渲染 → react-virtuoso
+- 表格管理 → @tanstack/react-table
+- 状态管理 → Zustand
+- UI 组件库 → Mantine UI
+- 图标库 → lucide-react
+- 面板布局 → react-resizable-panels
+
+如需引入新的通用能力（如拖拽、动画、命令系统、表单校验、序列化等），必须先评估成熟生态方案，而非手写实现。
+
+## 依赖治理规则
+
+引入新依赖前必须评估：
+
+1. **是否已有同类依赖** — 避免功能重叠
+2. **是否能复用现有技术栈** — 优先与 Mantine/Zustand/Tauri 生态兼容的方案
+3. **包体积影响** — 评估是否明显增加构建产物大小
+4. **社区活跃度** — GitHub stars、最近提交频率、issue 响应速度
+5. **维护状态** — 是否有活跃维护者、是否定期发布新版本
+6. **生态兼容性** — 与 React 19、Vite、TypeScript 的兼容性
+7. **长期维护成本** — 是否有 breaking change 风险
+8. **安全风险** — 是否有已知漏洞、依赖链是否安全
+9. **是否存在更轻量方案** — 能满足需求时优先选择更轻量方案
+
+避免无节制引入依赖。
+
+## 生成代码前的检查清单
 
 1. 先分析影响范围
 2. 给出模块拆分方案
 3. 判断是否需要新增文件
 4. 避免造成架构膨胀
-
-不要为了速度牺牲架构质量。
+5. 不要为了速度牺牲架构质量
