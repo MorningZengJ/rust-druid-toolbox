@@ -22,6 +22,7 @@ export function PreviewPanel() {
   const exportOutput = useAsciiArtStore((s) => s.exportOutput);
   const activeTab = useAsciiArtStore((s) => s.activeTab);
   const setActiveTab = useAsciiArtStore((s) => s.setActiveTab);
+  const loadImageFromFile = useAsciiArtStore((s) => s.loadImageFromFile);
   const theme = useMantineTheme();
 
   const {
@@ -143,7 +144,14 @@ export function PreviewPanel() {
                 }}
               />
             ) : (
-              <Flex direction="column" align="center" gap="xs" c="dimmed">
+              <Flex
+                direction="column"
+                align="center"
+                gap="xs"
+                c="dimmed"
+                style={{ cursor: "pointer" }}
+                onDoubleClick={loadImageFromFile}
+              >
                 <ImageIcon size={48} />
                 <Text size="sm">双击选择图片</Text>
                 <Text size="xs">支持拖拽或 Ctrl+V 粘贴</Text>
@@ -174,8 +182,15 @@ export function PreviewPanel() {
                 canvasRef={canvasRef}
               />
             ) : (
-              <Flex h="100%" align="center" justify="center" c="dimmed">
-                <Text size="sm">请先加载图片</Text>
+              <Flex
+                h="100%"
+                align="center"
+                justify="center"
+                c="dimmed"
+                style={{ cursor: "pointer" }}
+                onDoubleClick={loadImageFromFile}
+              >
+                <Text size="sm">双击选择图片</Text>
               </Flex>
             )}
           </Box>
