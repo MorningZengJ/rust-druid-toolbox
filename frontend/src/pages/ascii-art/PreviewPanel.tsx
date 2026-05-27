@@ -1,11 +1,5 @@
 import { useCallback } from "react";
-import {
-  Flex,
-  Box,
-  Text,
-  Progress,
-  useMantineTheme,
-} from "@mantine/core";
+import { Flex, Box, Text, Progress, useMantineTheme } from "@mantine/core";
 import { Loader2, Image as ImageIcon } from "lucide-react";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
 import { exportAsciiArtPng, writeCanvasToPng } from "@/lib/asciiArtApi";
@@ -21,7 +15,9 @@ export function PreviewPanel() {
   const isConverting = useAsciiArtStore((s) => s.isConverting);
   const errorMessage = useAsciiArtStore((s) => s.errorMessage);
   const progress = useAsciiArtStore((s) => s.progress);
-  const estimatedTimeRemaining = useAsciiArtStore((s) => s.estimatedTimeRemaining);
+  const estimatedTimeRemaining = useAsciiArtStore(
+    (s) => s.estimatedTimeRemaining,
+  );
   const copyToClipboard = useAsciiArtStore((s) => s.copyToClipboard);
   const exportOutput = useAsciiArtStore((s) => s.exportOutput);
   const activeTab = useAsciiArtStore((s) => s.activeTab);
@@ -69,6 +65,7 @@ export function PreviewPanel() {
   return (
     <Flex
       direction="column"
+      h="100%"
       style={{
         flex: 1,
         overflow: "hidden",
@@ -91,9 +88,7 @@ export function PreviewPanel() {
         onExportPng={handleExportPng}
       />
 
-      {isConverting && (
-        <Progress value={progress} size="xs" radius={0} />
-      )}
+      {isConverting && <Progress value={progress} size="xs" radius={0} />}
 
       <Box
         ref={displayRef}
@@ -101,11 +96,12 @@ export function PreviewPanel() {
           flex: 1,
           overflow: "hidden",
           position: "relative",
-          background: params.background === "white"
-            ? "#fff"
-            : params.background === "transparent"
-              ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px"
-              : "#000",
+          background:
+            params.background === "white"
+              ? "#fff"
+              : params.background === "transparent"
+                ? "repeating-conic-gradient(#808080 0% 25%, #000 0% 50%) 50% / 20px 20px"
+                : "#000",
         }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -158,7 +154,13 @@ export function PreviewPanel() {
           <Box h="100%" style={{ overflow: "hidden" }} p="md">
             {isConverting ? (
               <Flex h="100%" align="center" justify="center" c="dimmed">
-                <Loader2 size={24} style={{ animation: "spin 1s linear infinite", marginRight: 8 }} />
+                <Loader2
+                  size={24}
+                  style={{
+                    animation: "spin 1s linear infinite",
+                    marginRight: 8,
+                  }}
+                />
                 <Text size="sm">正在转换...</Text>
               </Flex>
             ) : output ? (
