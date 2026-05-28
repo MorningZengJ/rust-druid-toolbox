@@ -17,7 +17,6 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnSizingState,
-  type SortingFn,
 } from "@tanstack/react-table";
 import { Virtuoso } from "react-virtuoso";
 import { useRenameStore } from "@/stores/renameStore";
@@ -30,12 +29,6 @@ interface FileRow extends FileInfo {
   hasConflict: boolean;
   originalIndex: number;
 }
-
-// Custom multi-sort function that respects priority order
-const multiSortFn: SortingFn<FileRow> = (rowA, rowB, columnId) => {
-  // This is handled by getSortedRowModel with multi-sort
-  return 0;
-};
 
 export default function FilePreview() {
   const filterFileList = useRenameStore((s) => s.filterFileList);
