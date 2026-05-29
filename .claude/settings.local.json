@@ -81,7 +81,10 @@
       "Bash(find /c/Users/zengc -name \"wix314-binaries.zip\" 2>/dev/null | head -5)",
       "Bash(npx tauri *)",
       "Bash(npx vite *)",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(netstat -ano)"
     ]
   }
 }
