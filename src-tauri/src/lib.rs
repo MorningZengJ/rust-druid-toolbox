@@ -29,6 +29,8 @@ pub fn run() {
     let builder = builder.invoke_handler(tauri::generate_handler![
         // Rename commands
         commands::rename::list_files,
+        commands::rename::list_files_quick,
+        commands::rename::list_files_with_size,
         commands::rename::preview_renames,
         commands::rename::detect_conflicts,
         commands::rename::execute_renames,
@@ -62,6 +64,8 @@ pub fn run() {
     let builder = builder.invoke_handler(tauri::generate_handler![
         // Rename commands
         commands::rename::list_files,
+        commands::rename::list_files_quick,
+        commands::rename::list_files_with_size,
         commands::rename::preview_renames,
         commands::rename::detect_conflicts,
         commands::rename::execute_renames,

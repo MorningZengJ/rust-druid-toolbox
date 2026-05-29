@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import type {
   FileInfo,
   ReplaceInfo,
@@ -30,6 +31,8 @@ interface RenameState {
   filterCollapsed: boolean;
   rulesCollapsed: boolean[];
   selectedFile: FileInfo | null;
+  loading: boolean;
+  loadingProgress: { processed: number; total: number; phase: string } | null;
 
   // Actions
   setDirPath: (path: string) => void;
@@ -53,6 +56,7 @@ interface RenameState {
   toggleRuleCollapse: (index: number) => void;
   clearStatus: () => void;
   clearError: () => void;
+  cleanupLoading: () => void;
   chooseDirectory: () => Promise<void>;
   parentDirectory: () => Promise<void>;
 }
@@ -75,25 +79,73 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   filterCollapsed: false,
   rulesCollapsed: [],
   selectedFile: null,
+  loading: false,
+  loadingProgress: null,
 
   // Actions
   setDirPath: (path) => set({ dirPath: path }),
 
   loadFiles: async (path) => {
+    // Cancel any previous loading and remove old listeners
+    get().cleanupLoading();
+
+    set({ loading: true, loadingProgress: null, dirPath: path });
+
+    // Listen for progress events
+    const unlistenProgress = await listen<{ processed: number; total: number; phase: string; path: string }>(
+      "load-files-progress",
+      (event) => {
+        if (event.payload.path === get().dirPath) {
+          set({
+            loadingProgress: {
+              processed: event.payload.processed,
+              total: event.payload.total,
+              phase: event.payload.phase,
+            },
+          });
+        }
+      }
+    );
+
     try {
-      const files = await invoke<FileInfo[]>("list_files", { path });
+      // Phase 1: fast load without directory sizes
+      const files = await invoke<FileInfo[]>("list_files_quick", { path });
+
+      // Check if path changed during the async call
+      if (get().dirPath !== path) return;
+
       set({
-        dirPath: path,
         fileList: files,
         filterFileList: files,
         displayLimit: 500,
         selectedFile: null,
         status: null,
+        loadingProgress: { processed: 0, total: 0, phase: "scanning" },
       });
-      // Auto-detect conflicts after loading
+
+      // Phase 2: calculate directory sizes with progress
+      const filesWithSize = await invoke<FileInfo[]>("list_files_with_size", {
+        files,
+        dirPath: path,
+      });
+
+      // Check if path changed during the async call
+      if (get().dirPath !== path) return;
+
+      set({
+        fileList: filesWithSize,
+        filterFileList: filesWithSize,
+        loading: false,
+        loadingProgress: null,
+      });
+
       get().detectConflicts();
     } catch (e) {
-      set({ errorMessage: `加载文件失败: ${e}` });
+      if (get().dirPath === path) {
+        set({ errorMessage: `加载文件失败: ${e}`, loading: false, loadingProgress: null });
+      }
+    } finally {
+      unlistenProgress();
     }
   },
 
@@ -302,6 +354,10 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   },
 
   clearError: () => set({ errorMessage: null }),
+
+  cleanupLoading: () => {
+    set({ loading: false, loadingProgress: null });
+  },
 }));
 
 // Helper function to apply filters

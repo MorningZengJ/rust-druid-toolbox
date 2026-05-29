@@ -1,3 +1,8 @@
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+
+use tauri::AppHandle;
+
 use crate::model::{
     file_info::FileInfo, rename_result::RenameResult, replace_info::ReplaceInfo,
     rule_template::RuleTemplate,
@@ -8,6 +13,23 @@ use crate::utils::{common_utils::CommonUtils, file_utils::FileUtils, rename_logi
 #[tauri::command]
 pub fn list_files(path: String) -> Vec<FileInfo> {
     FileUtils::list_files(&path)
+}
+
+/// List files quickly without directory size calculation
+#[tauri::command]
+pub fn list_files_quick(path: String) -> Vec<FileInfo> {
+    FileUtils::list_files_quick(&path)
+}
+
+/// Calculate directory sizes with progress events
+#[tauri::command]
+pub fn list_files_with_size(
+    app: AppHandle,
+    files: Vec<FileInfo>,
+    dir_path: String,
+) -> Vec<FileInfo> {
+    let cancelled = Arc::new(AtomicBool::new(false));
+    FileUtils::list_files_with_size(&app, files, &dir_path, cancelled)
 }
 
 /// Preview rename results for a set of files and rules
