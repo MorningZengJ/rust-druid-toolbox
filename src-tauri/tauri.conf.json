@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "Toolbox",
-  "version": "0.1.0",
-  "identifier": "com.gayhub.morningzeng.toolbox",
+  "productName": "MToolbox",
+  "version": "0.1.1",
+  "identifier": "com.morningzeng.mtoolbox",
   "build": {
     "frontendDist": "../frontend/dist",
     "devUrl": "http://127.0.0.1:5555",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Toolbox",
+        "title": "MToolbox",
         "width": 800,
         "height": 600,
         "minWidth": 600,

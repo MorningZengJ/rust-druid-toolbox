@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    druid_toolbox_lib::run()
+    tauri_toolbox_lib::run()
 }

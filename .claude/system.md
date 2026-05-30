@@ -2,7 +2,7 @@
 
 ## 项目身份
 
-- **名称**: druid-toolbox
+- **名称**: tauri-toolbox
 - **版本**: 0.1.0
 - **架构**: Tauri v2 + React 19 + TypeScript + Vite + Mantine UI
 - **后端**: Rust (edition 2021)，Tauri IPC 命令
