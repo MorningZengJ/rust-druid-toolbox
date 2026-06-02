@@ -11,6 +11,9 @@ export interface ImagesSlice {
   imagesOutputFormat: string;
   imagesResolution: [number, number] | null;
   imagesAudioPath: string | null;
+  imagesVideoCodec: string;
+  imagesVideoBitrate: string;
+  imagesQualityPreset: string;
   imagesResult: ImagesToVideoResult | null;
   setImagesFolderPath: (path: string) => void;
   loadImagesFromFolder: (folderPath?: string) => Promise<void>;
@@ -19,6 +22,9 @@ export interface ImagesSlice {
   setImagesOutputFormat: (fmt: string) => void;
   setImagesResolution: (res: [number, number] | null) => void;
   setImagesAudioPath: (path: string | null) => void;
+  setImagesVideoCodec: (codec: string) => void;
+  setImagesVideoBitrate: (rate: string) => void;
+  setImagesQualityPreset: (preset: string) => void;
   runImagesToVideo: () => Promise<void>;
 }
 
@@ -30,6 +36,9 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
   imagesOutputFormat: "mp4",
   imagesResolution: null,
   imagesAudioPath: null,
+  imagesVideoCodec: "libx264",
+  imagesVideoBitrate: "",
+  imagesQualityPreset: "balanced",
   imagesResult: null,
 
   setImagesFolderPath: (path) => set({ imagesFolderPath: path }),
@@ -62,6 +71,9 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
   setImagesOutputFormat: (fmt) => set({ imagesOutputFormat: fmt }),
   setImagesResolution: (res) => set({ imagesResolution: res }),
   setImagesAudioPath: (path) => set({ imagesAudioPath: path }),
+  setImagesVideoCodec: (codec) => set({ imagesVideoCodec: codec }),
+  setImagesVideoBitrate: (rate) => set({ imagesVideoBitrate: rate }),
+  setImagesQualityPreset: (preset) => set({ imagesQualityPreset: preset }),
 
   runImagesToVideo: async () => {
     const state = get();
@@ -90,6 +102,9 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
         resolution: state.imagesResolution,
         audioPath: state.imagesAudioPath,
         loopCount: null,
+        videoCodec: state.imagesVideoCodec || undefined,
+        videoBitrate: state.imagesVideoBitrate || undefined,
+        qualityPreset: state.imagesQualityPreset || undefined,
       };
       const result = await invoke<ImagesToVideoResult>("images_to_video", { params });
       set({ imagesResult: result });

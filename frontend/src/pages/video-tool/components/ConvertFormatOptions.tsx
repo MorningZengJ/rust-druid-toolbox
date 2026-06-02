@@ -1,4 +1,4 @@
-import { Box, Button, Group, Select, Text, TextInput } from "@mantine/core";
+import { Box, Button, Group, Select, Text } from "@mantine/core";
 import { FileVideo, Music } from "lucide-react";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import {
@@ -7,6 +7,7 @@ import {
   AUDIO_BITRATES,
   VIDEO_AUDIO_CODECS,
 } from "../constants";
+import { CodecSelector } from "./CodecSelector";
 
 export function ConvertFormatOptions() {
   const convertTarget = useVideoToolStore((s) => s.convertTarget);
@@ -15,12 +16,16 @@ export function ConvertFormatOptions() {
   const convertAudioCodec = useVideoToolStore((s) => s.convertAudioCodec);
   const convertAudioBitrate = useVideoToolStore((s) => s.convertAudioBitrate);
   const convertVideoBitrate = useVideoToolStore((s) => s.convertVideoBitrate);
+  const convertVideoCodec = useVideoToolStore((s) => s.convertVideoCodec);
+  const convertQualityPreset = useVideoToolStore((s) => s.convertQualityPreset);
   const setConvertTarget = useVideoToolStore((s) => s.setConvertTarget);
   const setConvertVideoFormat = useVideoToolStore((s) => s.setConvertVideoFormat);
   const setConvertAudioFormat = useVideoToolStore((s) => s.setConvertAudioFormat);
   const setConvertAudioCodec = useVideoToolStore((s) => s.setConvertAudioCodec);
   const setConvertAudioBitrate = useVideoToolStore((s) => s.setConvertAudioBitrate);
   const setConvertVideoBitrate = useVideoToolStore((s) => s.setConvertVideoBitrate);
+  const setConvertVideoCodec = useVideoToolStore((s) => s.setConvertVideoCodec);
+  const setConvertQualityPreset = useVideoToolStore((s) => s.setConvertQualityPreset);
 
   return (
     <>
@@ -64,6 +69,18 @@ export function ConvertFormatOptions() {
               }))}
             />
           </Box>
+
+          <CodecSelector
+            codec={convertVideoCodec}
+            onCodecChange={setConvertVideoCodec}
+            qualityPreset={convertQualityPreset}
+            onQualityPresetChange={setConvertQualityPreset}
+            videoBitrate={convertVideoBitrate}
+            onVideoBitrateChange={setConvertVideoBitrate}
+            showStreamCopy={false}
+            showBitrate={true}
+          />
+
           <Box>
             <Text size="sm" fw={500}>
               音频编码
@@ -76,19 +93,6 @@ export function ConvertFormatOptions() {
                 value: c,
                 label: c.toUpperCase(),
               }))}
-            />
-          </Box>
-          <Box>
-            <Text size="sm" fw={500}>
-              视频码率（可选）
-            </Text>
-            <TextInput
-              mt={4}
-              value={convertVideoBitrate}
-              onChange={(e) =>
-                setConvertVideoBitrate(e.currentTarget.value)
-              }
-              placeholder="如 5M, 2000k"
             />
           </Box>
         </>

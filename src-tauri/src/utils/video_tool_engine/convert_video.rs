@@ -58,10 +58,17 @@ impl VideoToolEngine {
         let x_off = if needs_padding { (config.width - scaled_w) / 2 } else { 0 };
         let y_off = if needs_padding { (config.height - scaled_h) / 2 } else { 0 };
 
+        // 放大用 LANCZOS（高质量），缩小用 BILINEAR（足够且更快）
+        let is_upscale = scaled_w > decoder.width() || scaled_h > decoder.height();
+        let scale_algo = if is_upscale {
+            ffmpeg_next::software::scaling::Flags::LANCZOS
+        } else {
+            ffmpeg_next::software::scaling::Flags::BILINEAR
+        };
         let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
             decoder.format(), decoder.width(), decoder.height(),
             ffmpeg_next::format::Pixel::YUV420P, scaled_w, scaled_h,
-            ffmpeg_next::software::scaling::Flags::BILINEAR,
+            scale_algo,
         ).map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
 
         if needs_padding {

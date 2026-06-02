@@ -8,6 +8,9 @@ export interface MergeSlice {
   mergeOutputPath: string;
   mergeOutputFormat: string;
   mergeReencode: boolean;
+  mergeVideoCodec: string;
+  mergeVideoBitrate: string;
+  mergeQualityPreset: string;
   mergeResult: MergeVideosResult | null;
   mergeProgressDetail: {
     currentFileIndex: number;
@@ -22,6 +25,9 @@ export interface MergeSlice {
   setMergeOutputPath: (path: string) => void;
   setMergeOutputFormat: (fmt: string) => void;
   setMergeReencode: (v: boolean) => void;
+  setMergeVideoCodec: (v: string) => void;
+  setMergeVideoBitrate: (v: string) => void;
+  setMergeQualityPreset: (v: string) => void;
   runMerge: () => Promise<void>;
 }
 
@@ -30,6 +36,9 @@ export const createMergeSlice: StateCreator<VideoToolState, [], [], MergeSlice> 
   mergeOutputPath: "",
   mergeOutputFormat: "mp4",
   mergeReencode: false,
+  mergeVideoCodec: "libx264",
+  mergeVideoBitrate: "",
+  mergeQualityPreset: "balanced",
   mergeResult: null,
   mergeProgressDetail: null,
 
@@ -37,6 +46,9 @@ export const createMergeSlice: StateCreator<VideoToolState, [], [], MergeSlice> 
   setMergeOutputPath: (path) => set({ mergeOutputPath: path }),
   setMergeOutputFormat: (fmt) => set({ mergeOutputFormat: fmt }),
   setMergeReencode: (v) => set({ mergeReencode: v }),
+  setMergeVideoCodec: (v) => set({ mergeVideoCodec: v }),
+  setMergeVideoBitrate: (v) => set({ mergeVideoBitrate: v }),
+  setMergeQualityPreset: (v) => set({ mergeQualityPreset: v }),
 
   runMerge: async () => {
     const state = get();
@@ -58,6 +70,9 @@ export const createMergeSlice: StateCreator<VideoToolState, [], [], MergeSlice> 
         outputPath: state.mergeOutputPath,
         outputFormat: state.mergeOutputFormat,
         reencode: state.mergeReencode,
+        videoCodec: state.mergeVideoCodec || undefined,
+        videoBitrate: state.mergeVideoBitrate || undefined,
+        qualityPreset: state.mergeQualityPreset || undefined,
       };
       const result = await invoke<MergeVideosResult>("merge_videos", { params });
       set({ mergeResult: result });

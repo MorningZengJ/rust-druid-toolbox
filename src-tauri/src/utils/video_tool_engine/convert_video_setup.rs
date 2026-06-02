@@ -1,5 +1,8 @@
 use super::VideoToolEngine;
-use super::common::{find_audio_encoder_for_codec, find_video_encoder_for_format, reset_codec_tag};
+use super::common::{
+    apply_quality_config, find_audio_encoder_for_codec, find_video_encoder_for_format,
+    get_quality_config, reset_codec_tag,
+};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 
@@ -14,6 +17,8 @@ pub(super) struct ConvertVideoConfig {
     pub bit_rate: usize,
     pub has_audio: bool,
     pub audio_codec_name: String,
+    pub quality_preset: Option<String>,
+    pub custom_bitrate: Option<usize>,
 }
 
 impl VideoToolEngine {
@@ -24,7 +29,7 @@ impl VideoToolEngine {
             _ => unreachable!(),
         };
 
-        let codec_name = find_video_encoder_for_format(&format_str)?;
+        let codec_name = find_video_encoder_for_format(&format_str, params.video_codec.as_deref())?;
 
         let input = ffmpeg_next::format::input(&params.input_path)
             .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
@@ -75,6 +80,11 @@ impl VideoToolEngine {
             .is_some();
         let audio_codec_name = params.audio_codec.as_deref().unwrap_or("aac").to_string();
 
+        let custom_bitrate = params
+            .video_bitrate
+            .as_deref()
+            .and_then(Self::parse_bitrate);
+
         Ok(ConvertVideoConfig {
             format_str,
             codec_name,
@@ -85,6 +95,8 @@ impl VideoToolEngine {
             bit_rate,
             has_audio,
             audio_codec_name,
+            quality_preset: params.quality_preset.clone(),
+            custom_bitrate,
         })
     }
 
@@ -119,10 +131,17 @@ impl VideoToolEngine {
         enc_ctx.set_height(config.height);
         enc_ctx.set_time_base(config.enc_tb);
         enc_ctx.set_format(ffmpeg_next::format::Pixel::YUV420P);
-        enc_ctx.set_bit_rate(config.bit_rate);
-        if config.codec_name.starts_with("libx264") || config.codec_name.starts_with("libx265") {
-            enc_ctx.set_gop((config.fps * 10.0) as u32);
-        }
+
+        // 应用质量配置
+        let quality = get_quality_config(config.quality_preset.as_deref());
+        apply_quality_config(
+            &mut enc_ctx,
+            config.codec_name,
+            &quality,
+            config.bit_rate,
+            config.fps,
+            config.custom_bitrate,
+        );
 
         let encoder = enc_ctx
             .open_as(codec)

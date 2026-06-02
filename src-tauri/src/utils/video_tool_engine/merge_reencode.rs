@@ -42,7 +42,10 @@ impl VideoToolEngine {
             timestamp: now_ms(),
         });
 
-        let codec_name = find_video_encoder_for_format(&params.output_format)?;
+        let codec_name = find_video_encoder_for_format(
+            &params.output_format,
+            params.video_codec.as_deref(),
+        )?;
         Self::log_info(log_cb, task_id, &format!("使用编码器: {}", codec_name));
 
         let probe = Self::probe_first_input(params)?;
@@ -149,10 +152,17 @@ impl VideoToolEngine {
         let x_off = if needs_padding { (probe.width - scaled_w) / 2 } else { 0 };
         let y_off = if needs_padding { (probe.height - scaled_h) / 2 } else { 0 };
 
+        // 放大用 LANCZOS（高质量），缩小用 BILINEAR（足够且更快）
+        let is_upscale = scaled_w > decoder.width() || scaled_h > decoder.height();
+        let scale_algo = if is_upscale {
+            ffmpeg_next::software::scaling::Flags::LANCZOS
+        } else {
+            ffmpeg_next::software::scaling::Flags::BILINEAR
+        };
         let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
             decoder.format(), decoder.width(), decoder.height(),
             ffmpeg_next::format::Pixel::YUV420P, scaled_w, scaled_h,
-            ffmpeg_next::software::scaling::Flags::BILINEAR,
+            scale_algo,
         )
         .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
 

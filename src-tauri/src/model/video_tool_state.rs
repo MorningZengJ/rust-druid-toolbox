@@ -10,6 +10,12 @@ pub struct MergeVideosParams {
     pub output_path: PathBuf,
     pub output_format: String,
     pub reencode: bool,
+    /// 编码器名称: "copy"/"libx264"/"libx265"/"ffv1"/"libvpx-vp9"/"mpeg4"
+    pub video_codec: Option<String>,
+    /// 自定义视频码率，如 "5M"、"2000k"
+    pub video_bitrate: Option<String>,
+    /// 质量预设: "high"/"balanced"/"fast"
+    pub quality_preset: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -32,6 +38,12 @@ pub struct ImagesToVideoParams {
     pub resolution: Option<(u32, u32)>,
     pub audio_path: Option<PathBuf>,
     pub loop_count: Option<i32>,
+    /// 编码器名称: "libx264"/"libx265"/"ffv1"/"libvpx-vp9"/"mpeg4"
+    pub video_codec: Option<String>,
+    /// 自定义视频码率，如 "5M"、"2000k"
+    pub video_bitrate: Option<String>,
+    /// 质量预设: "high"/"balanced"/"fast"
+    pub quality_preset: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -63,6 +75,10 @@ pub struct ConvertFormatParams {
     pub resolution: Option<(u32, u32)>,
     /// 视频模式下用户选择的音频编码器名称（如 "aac"、"mp3"）
     pub audio_codec: Option<String>,
+    /// 编码器名称: "libx264"/"libx265"/"ffv1"/"libvpx-vp9"/"mpeg4"
+    pub video_codec: Option<String>,
+    /// 质量预设: "high"/"balanced"/"fast"
+    pub quality_preset: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

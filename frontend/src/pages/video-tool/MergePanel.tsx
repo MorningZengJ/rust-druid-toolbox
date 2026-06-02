@@ -30,6 +30,7 @@ import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { VIDEO_EXTENSIONS, VIDEO_FORMATS } from "./constants";
 import { ProgressPanel } from "./ProgressPanel";
+import { CodecSelector } from "./components/CodecSelector";
 
 export function MergePanel() {
   const theme = useMantineTheme();
@@ -37,11 +38,17 @@ export function MergePanel() {
   const mergeOutputPath = useVideoToolStore((s) => s.mergeOutputPath);
   const mergeOutputFormat = useVideoToolStore((s) => s.mergeOutputFormat);
   const mergeReencode = useVideoToolStore((s) => s.mergeReencode);
+  const mergeVideoCodec = useVideoToolStore((s) => s.mergeVideoCodec);
+  const mergeVideoBitrate = useVideoToolStore((s) => s.mergeVideoBitrate);
+  const mergeQualityPreset = useVideoToolStore((s) => s.mergeQualityPreset);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const setMergeInputs = useVideoToolStore((s) => s.setMergeInputs);
   const setMergeOutputPath = useVideoToolStore((s) => s.setMergeOutputPath);
   const setMergeOutputFormat = useVideoToolStore((s) => s.setMergeOutputFormat);
   const setMergeReencode = useVideoToolStore((s) => s.setMergeReencode);
+  const setMergeVideoCodec = useVideoToolStore((s) => s.setMergeVideoCodec);
+  const setMergeVideoBitrate = useVideoToolStore((s) => s.setMergeVideoBitrate);
+  const setMergeQualityPreset = useVideoToolStore((s) => s.setMergeQualityPreset);
   const runMerge = useVideoToolStore((s) => s.runMerge);
   const [isDragOver, setIsDragOver] = useState(false);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -241,6 +248,17 @@ export function MergePanel() {
               />
               <Text size="xs">重编码模式（处理不同编码格式，速度较慢）</Text>
             </Group>
+
+            <CodecSelector
+              codec={mergeVideoCodec}
+              onCodecChange={setMergeVideoCodec}
+              qualityPreset={mergeQualityPreset}
+              onQualityPresetChange={setMergeQualityPreset}
+              videoBitrate={mergeVideoBitrate}
+              onVideoBitrateChange={setMergeVideoBitrate}
+              showStreamCopy={true}
+              showBitrate={true}
+            />
 
             <Box>
               <Text size="sm" fw={500}>输出路径</Text>

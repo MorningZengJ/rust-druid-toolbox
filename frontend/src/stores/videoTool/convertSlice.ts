@@ -18,6 +18,8 @@ export interface ConvertSlice {
   convertAudioCodec: string;
   convertAudioBitrate: string;
   convertVideoBitrate: string;
+  convertVideoCodec: string;
+  convertQualityPreset: string;
   convertBatchResult: BatchConvertResult | null;
   convertBatchProgress: BatchProgress | null;
   convertCurrentFileProgress: number;
@@ -31,6 +33,8 @@ export interface ConvertSlice {
   setConvertAudioCodec: (codec: string) => void;
   setConvertAudioBitrate: (rate: string) => void;
   setConvertVideoBitrate: (rate: string) => void;
+  setConvertVideoCodec: (codec: string) => void;
+  setConvertQualityPreset: (preset: string) => void;
   runBatchConvert: () => Promise<void>;
 }
 
@@ -42,6 +46,8 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
   convertAudioCodec: "aac",
   convertAudioBitrate: "192k",
   convertVideoBitrate: "",
+  convertVideoCodec: "libx264",
+  convertQualityPreset: "balanced",
   convertBatchResult: null,
   convertBatchProgress: null,
   convertCurrentFileProgress: 0,
@@ -121,6 +127,8 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
 
   setConvertAudioBitrate: (rate) => set({ convertAudioBitrate: rate }),
   setConvertVideoBitrate: (rate) => set({ convertVideoBitrate: rate }),
+  setConvertVideoCodec: (codec) => set({ convertVideoCodec: codec }),
+  setConvertQualityPreset: (preset) => set({ convertQualityPreset: preset }),
 
   runBatchConvert: async () => {
     const state = get();
@@ -158,6 +166,8 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
             : null,
         resolution: null,
         audioCodec: state.convertTarget === "video" ? state.convertAudioCodec : null,
+        videoCodec: state.convertTarget === "video" ? state.convertVideoCodec : undefined,
+        qualityPreset: state.convertTarget === "video" ? state.convertQualityPreset : undefined,
       }));
 
       const params: BatchConvertParams = { items };

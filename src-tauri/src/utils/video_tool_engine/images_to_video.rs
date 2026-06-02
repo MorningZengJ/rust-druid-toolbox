@@ -1,5 +1,5 @@
 use super::VideoToolEngine;
-use super::common::{now_ms, find_video_encoder_for_format, reset_codec_tag};
+use super::common::{apply_quality_config, find_video_encoder_for_format, get_quality_config, now_ms, reset_codec_tag};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -53,7 +53,7 @@ impl VideoToolEngine {
         let codec_name = if params.output_format == "gif" {
             "gif"
         } else {
-            find_video_encoder_for_format(&params.output_format)?
+            find_video_encoder_for_format(&params.output_format, params.video_codec.as_deref())?
         };
 
         let mut output = ffmpeg_next::format::output_as(
@@ -77,9 +77,24 @@ impl VideoToolEngine {
         encoder_ctx.set_height(height);
         encoder_ctx.set_time_base(ffmpeg_next::Rational::new(1, params.fps as i32));
         encoder_ctx.set_format(ffmpeg_next::format::Pixel::YUV420P);
+
+        // 应用质量配置
         if codec_name != "gif" {
-            encoder_ctx.set_bit_rate(4_000_000);
+            let quality = get_quality_config(params.quality_preset.as_deref());
+            let custom_bitrate = params
+                .video_bitrate
+                .as_deref()
+                .and_then(Self::parse_bitrate);
+            apply_quality_config(
+                &mut encoder_ctx,
+                codec_name,
+                &quality,
+                4_000_000,
+                params.fps,
+                custom_bitrate,
+            );
         }
+
         out_video.set_time_base(ffmpeg_next::Rational::new(1, params.fps as i32));
 
         let mut encoder = encoder_ctx

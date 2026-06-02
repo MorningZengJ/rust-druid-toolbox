@@ -30,30 +30,37 @@ impl VideoToolEngine {
             timestamp: now_ms(),
         });
 
-        if params.reencode {
-            return Self::merge_reencode(params, &task_id, start, &mut progress_cb, &mut log_cb);
-        }
+        let use_stream_copy = params
+            .video_codec
+            .as_deref()
+            .map(|c| c == "copy")
+            .unwrap_or(false);
 
-        match Self::merge_concat(params, &task_id, start, &mut progress_cb, &mut log_cb) {
-            Ok(result) => Ok(result),
-            Err(e) => {
-                let err_msg = e.to_string();
-                log_cb(VideoToolLog {
-                    task_id: task_id.clone(),
-                    level: "warn".to_string(),
-                    message: format!("快速合并失败 ({}), 自动切换到重编码模式", err_msg),
-                    timestamp: now_ms(),
-                });
-                progress_cb(VideoToolProgress {
-                    task_id: task_id.clone(),
-                    progress: 0.0,
-                    current_step: "reencoding".to_string(),
-                    elapsed_ms: start.elapsed().as_millis() as u64,
-                    ..Default::default()
-                });
-                Self::merge_reencode(params, &task_id, start, &mut progress_cb, &mut log_cb)
+        // 用户明确选择流复制，或未选编码器且未勾选重编码
+        if use_stream_copy || (!params.reencode && params.video_codec.is_none()) {
+            match Self::merge_concat(params, &task_id, start, &mut progress_cb, &mut log_cb) {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    let err_msg = e.to_string();
+                    log_cb(VideoToolLog {
+                        task_id: task_id.clone(),
+                        level: "warn".to_string(),
+                        message: format!("快速合并失败 ({}), 自动切换到重编码模式", err_msg),
+                        timestamp: now_ms(),
+                    });
+                    progress_cb(VideoToolProgress {
+                        task_id: task_id.clone(),
+                        progress: 0.0,
+                        current_step: "reencoding".to_string(),
+                        elapsed_ms: start.elapsed().as_millis() as u64,
+                        ..Default::default()
+                    });
+                }
             }
         }
+
+        // 重编码模式
+        Self::merge_reencode(params, &task_id, start, &mut progress_cb, &mut log_cb)
     }
 
     fn merge_concat<P, L>(

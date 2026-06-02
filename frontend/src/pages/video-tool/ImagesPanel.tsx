@@ -28,6 +28,7 @@ import {
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ProgressPanel } from "./ProgressPanel";
+import { CodecSelector } from "./components/CodecSelector";
 
 export function ImagesPanel() {
   const theme = useMantineTheme();
@@ -42,6 +43,9 @@ export function ImagesPanel() {
   const imagesOutputFormat = useVideoToolStore((s) => s.imagesOutputFormat);
   const imagesResolution = useVideoToolStore((s) => s.imagesResolution);
   const imagesAudioPath = useVideoToolStore((s) => s.imagesAudioPath);
+  const imagesVideoCodec = useVideoToolStore((s) => s.imagesVideoCodec);
+  const imagesVideoBitrate = useVideoToolStore((s) => s.imagesVideoBitrate);
+  const imagesQualityPreset = useVideoToolStore((s) => s.imagesQualityPreset);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const loadImagesFromFolder = useVideoToolStore((s) => s.loadImagesFromFolder);
   const setImagesOutputPath = useVideoToolStore((s) => s.setImagesOutputPath);
@@ -49,6 +53,9 @@ export function ImagesPanel() {
   const setImagesOutputFormat = useVideoToolStore((s) => s.setImagesOutputFormat);
   const setImagesResolution = useVideoToolStore((s) => s.setImagesResolution);
   const setImagesAudioPath = useVideoToolStore((s) => s.setImagesAudioPath);
+  const setImagesVideoCodec = useVideoToolStore((s) => s.setImagesVideoCodec);
+  const setImagesVideoBitrate = useVideoToolStore((s) => s.setImagesVideoBitrate);
+  const setImagesQualityPreset = useVideoToolStore((s) => s.setImagesQualityPreset);
   const runImagesToVideo = useVideoToolStore((s) => s.runImagesToVideo);
 
   useEffect(() => {
@@ -186,6 +193,19 @@ export function ImagesPanel() {
                 ]}
               />
             </Box>
+
+            {imagesOutputFormat !== "gif" && (
+              <CodecSelector
+                codec={imagesVideoCodec}
+                onCodecChange={setImagesVideoCodec}
+                qualityPreset={imagesQualityPreset}
+                onQualityPresetChange={setImagesQualityPreset}
+                videoBitrate={imagesVideoBitrate}
+                onVideoBitrateChange={setImagesVideoBitrate}
+                showStreamCopy={false}
+                showBitrate={true}
+              />
+            )}
 
             <Box>
               <Group gap="xs" mb="xs">

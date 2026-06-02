@@ -1,5 +1,5 @@
 use super::VideoToolEngine;
-use super::common::reset_codec_tag;
+use super::common::{apply_quality_config, get_quality_config, reset_codec_tag};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::path::Path;
@@ -117,10 +117,22 @@ impl VideoToolEngine {
         encoder_ctx.set_height(probe.height);
         encoder_ctx.set_time_base(probe.enc_tb);
         encoder_ctx.set_format(ffmpeg_next::format::Pixel::YUV420P);
-        encoder_ctx.set_bit_rate(2_000_000);
-        if codec_name.starts_with("libx264") || codec_name.starts_with("libx265") {
-            encoder_ctx.set_gop((probe.fps * 10.0) as u32);
-        }
+
+        // 应用质量配置
+        let quality = get_quality_config(params.quality_preset.as_deref());
+        let fallback_bitrate = 2_000_000;
+        let custom_bitrate = params
+            .video_bitrate
+            .as_deref()
+            .and_then(Self::parse_bitrate);
+        apply_quality_config(
+            &mut encoder_ctx,
+            codec_name,
+            &quality,
+            fallback_bitrate,
+            probe.fps,
+            custom_bitrate,
+        );
 
         let encoder = encoder_ctx
             .open_as(codec)

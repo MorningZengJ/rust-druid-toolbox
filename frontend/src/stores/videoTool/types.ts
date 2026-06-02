@@ -38,6 +38,9 @@ export interface VideoToolState {
   mergeOutputPath: string;
   mergeOutputFormat: string;
   mergeReencode: boolean;
+  mergeVideoCodec: string;
+  mergeVideoBitrate: string;
+  mergeQualityPreset: string;
   mergeResult: MergeVideosResult | null;
   mergeProgressDetail: {
     currentFileIndex: number;
@@ -52,6 +55,9 @@ export interface VideoToolState {
   setMergeOutputPath: (path: string) => void;
   setMergeOutputFormat: (fmt: string) => void;
   setMergeReencode: (v: boolean) => void;
+  setMergeVideoCodec: (v: string) => void;
+  setMergeVideoBitrate: (v: string) => void;
+  setMergeQualityPreset: (v: string) => void;
   runMerge: () => Promise<void>;
 
   // Images state
@@ -62,6 +68,9 @@ export interface VideoToolState {
   imagesOutputFormat: string;
   imagesResolution: [number, number] | null;
   imagesAudioPath: string | null;
+  imagesVideoCodec: string;
+  imagesVideoBitrate: string;
+  imagesQualityPreset: string;
   imagesResult: ImagesToVideoResult | null;
   setImagesFolderPath: (path: string) => void;
   loadImagesFromFolder: (folderPath?: string) => Promise<void>;
@@ -70,6 +79,9 @@ export interface VideoToolState {
   setImagesOutputFormat: (fmt: string) => void;
   setImagesResolution: (res: [number, number] | null) => void;
   setImagesAudioPath: (path: string | null) => void;
+  setImagesVideoCodec: (codec: string) => void;
+  setImagesVideoBitrate: (rate: string) => void;
+  setImagesQualityPreset: (preset: string) => void;
   runImagesToVideo: () => Promise<void>;
 
   // Convert state (batch)
@@ -80,6 +92,8 @@ export interface VideoToolState {
   convertAudioCodec: string;
   convertAudioBitrate: string;
   convertVideoBitrate: string;
+  convertVideoCodec: string;
+  convertQualityPreset: string;
   convertBatchResult: BatchConvertResult | null;
   convertBatchProgress: BatchProgress | null;
   convertCurrentFileProgress: number;
@@ -93,6 +107,8 @@ export interface VideoToolState {
   setConvertAudioCodec: (codec: string) => void;
   setConvertAudioBitrate: (rate: string) => void;
   setConvertVideoBitrate: (rate: string) => void;
+  setConvertVideoCodec: (codec: string) => void;
+  setConvertQualityPreset: (preset: string) => void;
   runBatchConvert: () => Promise<void>;
 
   // Extract (抽帧) state

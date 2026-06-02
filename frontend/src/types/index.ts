@@ -164,6 +164,9 @@ export interface MergeVideosParams {
   outputPath: string;
   outputFormat: string;
   reencode: boolean;
+  videoCodec?: string;
+  videoBitrate?: string;
+  qualityPreset?: string;
 }
 
 export interface MergeVideosResult {
@@ -180,6 +183,9 @@ export interface ImagesToVideoParams {
   resolution: [number, number] | null;
   audioPath: string | null;
   loopCount: number | null;
+  videoCodec?: string;
+  videoBitrate?: string;
+  qualityPreset?: string;
 }
 
 export interface ImagesToVideoResult {
@@ -201,6 +207,8 @@ export interface ConvertFormatParams {
   videoBitrate: string | null;
   resolution: [number, number] | null;
   audioCodec: string | null;
+  videoCodec?: string;
+  qualityPreset?: string;
 }
 
 export interface ConvertFormatResult {
