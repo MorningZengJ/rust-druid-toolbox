@@ -52,6 +52,7 @@ pub fn run() {
         commands::video_frame::stop_frame_watcher,
         // Video tool commands
         commands::video_tool::check_video_encoders,
+        commands::video_tool::check_audio_encoders,
         commands::video_tool::merge_videos,
         commands::video_tool::images_to_video,
         commands::video_tool::convert_format,

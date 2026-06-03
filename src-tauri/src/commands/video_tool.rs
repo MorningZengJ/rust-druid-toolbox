@@ -10,6 +10,30 @@ pub fn check_video_encoders() -> Vec<(String, bool)> {
         .collect()
 }
 
+/// 检查音频编码器可用性，返回格式名称和是否可用的列表
+#[tauri::command]
+pub fn check_audio_encoders() -> Vec<(String, bool)> {
+    let format_encoders: &[(&str, &[&str])] = &[
+        ("mp3", &["libmp3lame", "mp3"]),
+        ("aac", &["aac", "libfdk_aac"]),
+        ("wav", &["pcm_s16le"]),
+        ("flac", &["flac"]),
+        ("ogg", &["libvorbis", "vorbis"]),
+        ("opus", &["libopus", "opus"]),
+        ("alac", &["alac"]),
+        ("ac3", &["ac3"]),
+    ];
+    format_encoders
+        .iter()
+        .map(|(format, encoders)| {
+            let available = encoders.iter().any(|&name| {
+                ffmpeg_next::codec::encoder::find_by_name(name).is_some()
+            });
+            (format.to_string(), available)
+        })
+        .collect()
+}
+
 #[tauri::command]
 pub async fn merge_videos(
     params: MergeVideosParams,
