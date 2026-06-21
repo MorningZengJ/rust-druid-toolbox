@@ -3,10 +3,10 @@
 **基于 Tauri v2 的轻量级 Windows 桌面工具箱**
 
 [![Version](https://img.shields.io/github/v/release/MorningZengJ/rust-druid-toolbox)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/MorningZengJ/rust-druid-toolbox/total)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
 
-[English](README.md) | 中文
+[English](../../README.md) | 中文
 
 ---
 
@@ -131,7 +131,7 @@ gh release create vx.x.x --title "MToolbox vx.x.x" --notes "更新说明" \
 
 ## 许可证
 
-本项目基于 MIT 许可证开源 - 详见 [LICENSE](LICENSE) 文件。
+本项目基于 MIT 许可证开源 - 详见 [LICENSE](../../LICENSE) 文件。
 
 ## 联系方式
 

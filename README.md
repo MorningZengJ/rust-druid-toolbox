@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/MorningZengJ/rust-druid-toolbox/total)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
 
-English | [中文](README_CN.md)
+English | [中文](docs/i18n/README_CN.md)
 
 </div>
 
