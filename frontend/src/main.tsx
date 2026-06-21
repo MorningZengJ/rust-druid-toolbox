@@ -2,28 +2,21 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize, LogicalPosition } from "@tauri-apps/api/dpi";
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { settingsStore } from "./lib/store";
+import { validateWindowState } from "./lib/configValidator";
 import ThemeProvider from "./components/ThemeProvider";
 import App from "./App";
 import "./i18n";
 import "@mantine/core/styles.css";
 import "./globals.css";
 
-interface WindowState {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  isMaximized: boolean;
-}
-
-const store = new LazyStore("settings.json");
-
 async function init() {
   const win = getCurrentWindow();
 
   try {
-    const windowState = await store.get<WindowState>("windowState");
+    const raw = await settingsStore.get("windowState");
+    const windowState = validateWindowState(raw);
+
     if (windowState) {
       if (windowState.isMaximized) {
         await win.maximize();
@@ -35,6 +28,7 @@ async function init() {
         await win.setSize(new LogicalSize(windowState.width, windowState.height));
       }
     }
+    // 校验失败时不做任何操作，使用 tauri.conf.json 的默认值
   } catch (e) {
     console.error("Failed to load window state:", e);
   }

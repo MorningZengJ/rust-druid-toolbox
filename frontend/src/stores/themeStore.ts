@@ -1,10 +1,14 @@
 import { create } from "zustand";
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { settingsStore } from "../lib/store";
+import {
+  validateColorMode,
+  validateColorTheme,
+  validateCustomPrimary,
+  type ColorTheme,
+} from "../lib/configValidator";
 
 export type ColorMode = "light" | "dark" | "system";
-export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
-
-const persistStore = new LazyStore("settings.json");
+export type { ColorTheme };
 
 interface ThemeState {
   colorMode: ColorMode;
@@ -25,37 +29,37 @@ export const useThemeStore = create<ThemeState>((set) => ({
 
   setColorMode: (mode) => {
     set({ colorMode: mode });
-    persistStore.set("colorMode", mode);
+    settingsStore.set("colorMode", mode);
   },
 
   setColorTheme: (theme) => {
     set({ colorTheme: theme });
-    persistStore.set("colorTheme", theme);
+    settingsStore.set("colorTheme", theme);
     if (theme !== "default") {
       set({ customPrimary: undefined });
-      persistStore.set("customPrimary", undefined);
+      settingsStore.set("customPrimary", undefined);
     }
   },
 
   setCustomPrimary: (hex) => {
     set({ customPrimary: hex });
-    persistStore.set("customPrimary", hex);
+    settingsStore.set("customPrimary", hex);
     if (hex) {
       set({ colorTheme: "default" });
-      persistStore.set("colorTheme", "default");
+      settingsStore.set("colorTheme", "default");
     }
   },
 
   loadFromStore: async () => {
-    const [savedMode, savedTheme, savedCustom] = await Promise.all([
-      persistStore.get<ColorMode>("colorMode"),
-      persistStore.get<ColorTheme>("colorTheme"),
-      persistStore.get<string>("customPrimary"),
+    const [rawMode, rawTheme, rawCustom] = await Promise.all([
+      settingsStore.get("colorMode"),
+      settingsStore.get("colorTheme"),
+      settingsStore.get("customPrimary"),
     ]);
     set({
-      colorMode: savedMode ?? "system",
-      colorTheme: savedTheme ?? "default",
-      customPrimary: savedCustom,
+      colorMode: validateColorMode(rawMode),
+      colorTheme: validateColorTheme(rawTheme),
+      customPrimary: validateCustomPrimary(rawCustom),
       loaded: true,
     });
   },

@@ -1,11 +1,10 @@
 import { create } from "zustand";
-import { LazyStore } from "@tauri-apps/plugin-store";
 import { getVersion } from "@tauri-apps/api/app";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { settingsStore } from "../lib/store";
+import { validateAutoCheck } from "../lib/configValidator";
 import type { UpdateStatus, UpdateProgress } from "@/types";
-
-const persistStore = new LazyStore("settings.json");
 
 interface UpdateState {
   currentVersion: string;
@@ -35,13 +34,13 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
   loaded: false,
 
   init: async () => {
-    const [version, savedAutoCheck] = await Promise.all([
+    const [version, rawAutoCheck] = await Promise.all([
       getVersion(),
-      persistStore.get<boolean>("autoCheckUpdate"),
+      settingsStore.get("autoCheckUpdate"),
     ]);
     set({
       currentVersion: version,
-      autoCheck: savedAutoCheck ?? false,
+      autoCheck: validateAutoCheck(rawAutoCheck),
       loaded: true,
     });
   },
@@ -128,6 +127,6 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 
   setAutoCheck: (enabled) => {
     set({ autoCheck: enabled });
-    persistStore.set("autoCheckUpdate", enabled);
+    settingsStore.set("autoCheckUpdate", enabled);
   },
 }));
