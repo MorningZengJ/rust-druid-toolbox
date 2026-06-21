@@ -18,5 +18,16 @@
   "UNSUPPORTED_FORMAT": "Unsupported format: {{format}}",
   "VIDEO_FILE": "Video File",
   "AUDIO_FILE": "Audio File",
-  "IMAGE_FILE": "Image File"
+  "IMAGE_FILE": "Image File",
+  "loadImageFailed": "Failed to load image: {{error}}",
+  "convertFailed": "Conversion failed: {{error}}",
+  "copyFailed": "Copy failed: {{error}}",
+  "exportFailed": "Export failed: {{error}}",
+  "loadFilesFailed": "Failed to load files: {{error}}",
+  "applyTemplateFailed": "Failed to apply template: {{error}}",
+  "detectConflictsFailed": "Failed to detect conflicts: {{error}}",
+  "executeRenameFailed": "Failed to execute rename: {{error}}",
+  "selectDirectoryFailed": "Failed to select directory: {{error}}",
+  "getParentFailed": "Failed to get parent directory: {{error}}",
+  "openFileFailed": "Failed to open file: {{error}}"
 }

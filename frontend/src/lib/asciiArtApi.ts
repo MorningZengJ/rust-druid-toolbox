@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/i18n";
 import type { AsciiArtParams } from "@/types";
 
 /**
@@ -27,7 +28,7 @@ export async function writeCanvasToPng(
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png")
   );
-  if (!blob) throw new Error("Canvas 转换为 PNG 失败");
+  if (!blob) throw new Error(i18n.t("asciiArt:errors.canvasToPngFailed"));
   const buffer = await blob.arrayBuffer();
   const bytes = Array.from(new Uint8Array(buffer));
   await invoke("write_binary_file", { path: outputPath, contents: bytes });

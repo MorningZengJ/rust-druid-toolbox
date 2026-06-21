@@ -124,7 +124,13 @@
     "convertFailed": "转换失败: {{error}}",
     "extractFailed": "提取帧失败: {{error}}",
     "loadVideoFailed": "加载视频失败: {{error}}",
-    "readFolderFailed": "读取文件夹失败: {{error}}"
+    "readFolderFailed": "读取文件夹失败: {{error}}",
+    "addFilesFirst": "请添加需要转换的文件",
+    "batchConvertFailed": "批量转换失败: {{error}}",
+    "selectFolderFirst": "请先选择图片文件夹",
+    "noImagesInFolder": "文件夹中未找到图片文件",
+    "setOutputPath": "请设置输出路径",
+    "minTwoVideos": "至少需要选择两个视频文件"
   },
   "codec": {
     "copy": {
@@ -165,5 +171,20 @@
       "label": "快速",
       "tooltip": "CRF 28，编码速度快，文件较小，适合预览或对画质要求不高的场景。"
     }
+  },
+  "codecSelector": {
+    "title": "编码方式",
+    "qualityPreset": "质量预设",
+    "customBitrate": "自定义码率（可选，覆盖预设）",
+    "bitratePlaceholder": "例如: 2000k, 5M"
+  },
+  "common": {
+    "mediaFiles": "媒体文件",
+    "releaseToAdd": "释放文件以添加",
+    "formatConversion": "格式转换",
+    "inputFiles": "输入文件 ({{count}})",
+    "add": "添加",
+    "log": "日志",
+    "logEmpty": "暂无日志"
   }
 }

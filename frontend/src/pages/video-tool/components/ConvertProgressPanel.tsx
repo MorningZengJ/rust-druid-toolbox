@@ -1,9 +1,11 @@
 import { Box, Flex, Stack, Text, Progress, ScrollArea, useMantineTheme } from "@mantine/core";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 
 export function ConvertProgressPanel() {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const convertBatchProgress = useVideoToolStore((s) => s.convertBatchProgress);
@@ -35,7 +37,7 @@ export function ConvertProgressPanel() {
         style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}
       >
         <Text size="sm" fw={500}>
-          进度
+          {t("convertProgress.title")}
         </Text>
       </Box>
       <Box p="md">
@@ -43,7 +45,7 @@ export function ConvertProgressPanel() {
           <Box mb="md">
             <Flex justify="space-between" mb={4}>
               <Text size="xs">
-                总进度 {convertBatchProgress.currentIndex}/{convertBatchProgress.totalCount} 文件
+                {t("convertProgress.batchProgress", { current: convertBatchProgress.currentIndex, total: convertBatchProgress.totalCount })}
               </Text>
               <Text size="xs">
                 {Math.round(convertBatchProgress.overallProgress * 100)}%
@@ -62,7 +64,7 @@ export function ConvertProgressPanel() {
           <Box mb="md">
             <Flex justify="space-between" mb={4}>
               <Text size="xs" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                当前文件: {convertBatchProgress.currentFileName}
+                {t("convertProgress.currentFile", { name: convertBatchProgress.currentFileName })}
               </Text>
               <Text size="xs">
                 {Math.round(convertCurrentFileProgress * 100)}%
@@ -120,8 +122,7 @@ export function ConvertProgressPanel() {
                   style={{ flexShrink: 0 }}
                 />
                 <Text size="sm" c="yellow">
-                  转换完成: {convertBatchResult.successCount} 成功,{" "}
-                  {convertBatchResult.failCount} 失败
+                  {t("convertProgress.completedWithResult", { success: convertBatchResult.successCount, fail: convertBatchResult.failCount })}
                 </Text>
               </>
             ) : (
@@ -132,7 +133,7 @@ export function ConvertProgressPanel() {
                   style={{ flexShrink: 0 }}
                 />
                 <Text size="sm" c="green">
-                  转换完成: {convertBatchResult.successCount} 个文件全部成功
+                  {t("convertProgress.completedAllSuccess", { count: convertBatchResult.successCount })}
                 </Text>
               </>
             )}
@@ -150,7 +151,7 @@ export function ConvertProgressPanel() {
       >
         <Box px="md" py="xs">
           <Text size="sm" fw={500}>
-            日志
+            {t("convertProgress.log")}
           </Text>
         </Box>
         <ScrollArea style={{ flex: 1 }} px="md" pb="md">
@@ -175,7 +176,7 @@ export function ConvertProgressPanel() {
             ))}
             {logs.length === 0 && (
               <Text size="xs" c="dimmed">
-                等待操作...
+                {t("convertProgress.waiting")}
               </Text>
             )}
             <div ref={logEndRef} />

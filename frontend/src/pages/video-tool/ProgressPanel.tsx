@@ -3,12 +3,12 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 
-function formatEta(ms: number): string {
+function formatEta(ms: number, t: (key: string, options?: any) => string): string {
   const totalSec = Math.ceil(ms / 1000);
-  if (totalSec < 60) return `${totalSec}秒`;
+  if (totalSec < 60) return t("common.time.seconds", { count: totalSec });
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
-  return `${min}分${sec}秒`;
+  return t("common.time.minutesSeconds", { minutes: min, seconds: sec });
 }
 
 export function ProgressPanel() {
@@ -58,7 +58,7 @@ export function ProgressPanel() {
             )}
             {mergeProgressDetail.etaMs > 0 && (
               <Text size="xs" c="dimmed">
-                {t("progress.timeRemaining", { time: formatEta(mergeProgressDetail.etaMs) })}
+                {t("progress.timeRemaining", { time: formatEta(mergeProgressDetail.etaMs, t) })}
               </Text>
             )}
           </Stack>

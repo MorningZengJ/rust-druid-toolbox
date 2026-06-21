@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/i18n";
 import type { MergeVideosParams, MergeVideosResult } from "@/types";
 import type { VideoToolState } from "./types";
 import type { StateCreator } from "zustand";
@@ -53,11 +54,11 @@ export const createMergeSlice: StateCreator<VideoToolState, [], [], MergeSlice> 
   runMerge: async () => {
     const state = get();
     if (state.mergeInputPaths.length < 2) {
-      set({ errorMessage: "至少需要选择两个视频文件" });
+      set({ errorMessage: i18n.t("videoTool:errors.minTwoVideos") });
       return;
     }
     if (!state.mergeOutputPath) {
-      set({ errorMessage: "请设置输出路径" });
+      set({ errorMessage: i18n.t("videoTool:errors.setOutputPath") });
       return;
     }
 
@@ -77,7 +78,7 @@ export const createMergeSlice: StateCreator<VideoToolState, [], [], MergeSlice> 
       const result = await invoke<MergeVideosResult>("merge_videos", { params });
       set({ mergeResult: result });
     } catch (e) {
-      set({ errorMessage: `合并失败: ${e}` });
+      set({ errorMessage: i18n.t("videoTool:errors.mergeFailed", { error: String(e) }) });
     } finally {
       set({ isProcessing: false });
       get().unregisterEventListeners();

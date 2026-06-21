@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import i18n from "@/i18n";
 import type {
   FileInfo,
   ReplaceInfo,
@@ -142,7 +143,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
       get().detectConflicts();
     } catch (e) {
       if (get().dirPath === path) {
-        set({ errorMessage: `加载文件失败: ${e}`, loading: false, loadingProgress: null });
+        set({ errorMessage: i18n.t("errors:loadFilesFailed", { error: String(e) }), loading: false, loadingProgress: null });
       }
     } finally {
       unlistenProgress();
@@ -245,7 +246,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
       });
       get().detectConflicts();
     } catch (e) {
-      set({ errorMessage: `应用模板失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:applyTemplateFailed", { error: String(e) }) });
     }
   },
 
@@ -289,7 +290,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         })),
       });
     } catch (e) {
-      set({ errorMessage: `检测冲突失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:detectConflictsFailed", { error: String(e) }) });
     }
   },
 
@@ -305,7 +306,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
       // Reload files after rename
       get().loadFiles(dirPath);
     } catch (e) {
-      set({ errorMessage: `执行重命名失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:executeRenameFailed", { error: String(e) }) });
     }
   },
 
@@ -336,7 +337,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         get().loadFiles(selected as string);
       }
     } catch (e) {
-      set({ errorMessage: `选择目录失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:selectDirectoryFailed", { error: String(e) }) });
     }
   },
 
@@ -349,7 +350,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         get().loadFiles(parent);
       }
     } catch (e) {
-      set({ errorMessage: `获取上级目录失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:getParentFailed", { error: String(e) }) });
     }
   },
 

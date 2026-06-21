@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/i18n";
 import type {
   ConvertFormatParams,
   BatchConvertParams,
@@ -133,7 +134,7 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
   runBatchConvert: async () => {
     const state = get();
     if (state.convertFiles.length === 0) {
-      set({ errorMessage: "请添加需要转换的文件" });
+      set({ errorMessage: i18n.t("videoTool:errors.addFilesFirst") });
       return;
     }
 
@@ -174,7 +175,7 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
       const result = await invoke<BatchConvertResult>("batch_convert_format", { params });
       set({ convertBatchResult: result });
     } catch (e) {
-      set({ errorMessage: `批量转换失败: ${e}` });
+      set({ errorMessage: i18n.t("videoTool:errors.batchConvertFailed", { error: String(e) }) });
     } finally {
       set({ isProcessing: false });
       get().unregisterEventListeners();

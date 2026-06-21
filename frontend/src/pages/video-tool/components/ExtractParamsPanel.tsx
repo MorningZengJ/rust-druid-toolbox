@@ -18,6 +18,7 @@ import {
   Loader2,
   Film,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { formatTime } from "@/utils/formatTime";
 import type { ExtractMode, OutputFormat } from "@/types";
@@ -27,6 +28,7 @@ export function ExtractParamsPanel({
 }: {
   logSection: React.ReactNode;
 }) {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const extractVideoPath = useVideoToolStore((s) => s.extractVideoPath);
   const extractVideoInfo = useVideoToolStore((s) => s.extractVideoInfo);
@@ -62,7 +64,7 @@ export function ExtractParamsPanel({
       }}
     >
       <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
-        <Text size="xs" fw={500} c="dimmed">参数设置</Text>
+        <Text size="xs" fw={500} c="dimmed">{t("extract.params")}</Text>
       </Flex>
 
       <Box style={{ flex: 1, overflowY: "auto" }}>
@@ -76,23 +78,23 @@ export function ExtractParamsPanel({
                 </Text>
               </Group>
               <Box style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-                <Text size="xs" c="dimmed">分辨率: {extractVideoInfo.width}x{extractVideoInfo.height}</Text>
-                <Text size="xs" c="dimmed">帧率: {extractVideoInfo.fps.toFixed(1)} fps</Text>
-                <Text size="xs" c="dimmed">时长: {extractVideoInfo.duration.toFixed(1)}s</Text>
-                <Text size="xs" c="dimmed">总帧数: {extractVideoInfo.totalFrames}</Text>
+                <Text size="xs" c="dimmed">{t("extract.videoInfo.resolution", { width: extractVideoInfo.width, height: extractVideoInfo.height })}</Text>
+                <Text size="xs" c="dimmed">{t("extract.videoInfo.fps", { fps: extractVideoInfo.fps.toFixed(1) })}</Text>
+                <Text size="xs" c="dimmed">{t("extract.videoInfo.duration", { duration: extractVideoInfo.duration.toFixed(1) })}</Text>
+                <Text size="xs" c="dimmed">{t("extract.videoInfo.totalFrames", { count: extractVideoInfo.totalFrames })}</Text>
               </Box>
             </Box>
           )}
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">帧图存放路径</Text>
+            <Text size="xs" fw={500} c="dimmed">{t("extract.outputPath")}</Text>
             <Group gap={4}>
               <TextInput
                 size="xs"
                 style={{ flex: 1 }}
                 value={extractOutputDir}
                 onChange={(e) => setExtractOutputDir(e.currentTarget.value)}
-                placeholder="选择或输入路径"
+                placeholder={t("extract.outputPathPlaceholder")}
               />
               <Button variant="outline" size="compact-sm" style={{ width: 32, height: 32, padding: 0 }} onClick={handleBrowseOutputDir}>
                 <FolderOpen size={14} />
@@ -101,16 +103,16 @@ export function ExtractParamsPanel({
           </Stack>
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">提取模式</Text>
+            <Text size="xs" fw={500} c="dimmed">{t("extract.extractMode")}</Text>
             <Select
               size="xs"
               value={extractParams.mode}
               onChange={(v) => v && setExtractParams({ mode: v as ExtractMode })}
               data={[
-                { value: "allFrames", label: "全部帧" },
-                { value: "byInterval", label: "按间隔" },
-                { value: "byCount", label: "按数量" },
-                { value: "byTimePoints", label: "按时间点" },
+                { value: "allFrames", label: t("extract.modes.allFrames") },
+                { value: "byInterval", label: t("extract.modes.byInterval") },
+                { value: "byCount", label: t("extract.modes.byCount") },
+                { value: "byTimePoints", label: t("extract.modes.byTimePoints") },
               ]}
             />
           </Stack>
@@ -118,7 +120,7 @@ export function ExtractParamsPanel({
           {extractParams.mode === "byInterval" && (
             <Stack gap={4}>
               <Text size="xs" fw={500} c="dimmed">
-                间隔: {extractParams.intervalSecs.toFixed(1)} 秒
+                {t("extract.interval", { value: extractParams.intervalSecs.toFixed(1) })}
               </Text>
               <Slider
                 value={extractParams.intervalSecs}
@@ -132,7 +134,7 @@ export function ExtractParamsPanel({
 
           {extractParams.mode === "byCount" && (
             <Stack gap={4}>
-              <Text size="xs" fw={500} c="dimmed">帧数量</Text>
+              <Text size="xs" fw={500} c="dimmed">{t("extract.frameCount")}</Text>
               <NumberInput
                 size="xs"
                 value={extractParams.frameCount}
@@ -146,7 +148,7 @@ export function ExtractParamsPanel({
           {extractParams.mode === "byTimePoints" && (
             <Stack gap={4}>
               <Text size="xs" fw={500} c="dimmed">
-                时间点（秒，逗号分隔）
+                {t("extract.timePoints")}
               </Text>
               <TextInput
                 size="xs"
@@ -163,7 +165,7 @@ export function ExtractParamsPanel({
           )}
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">输出格式</Text>
+            <Text size="xs" fw={500} c="dimmed">{t("extract.outputFormat")}</Text>
             <Select
               size="xs"
               value={extractParams.outputFormat}
@@ -178,7 +180,7 @@ export function ExtractParamsPanel({
           {extractParams.outputFormat === "jpeg" && (
             <Stack gap={4}>
               <Text size="xs" fw={500} c="dimmed">
-                JPEG 质量: {extractParams.jpegQuality}
+                {t("extract.jpegQuality", { value: extractParams.jpegQuality })}
               </Text>
               <Slider
                 value={extractParams.jpegQuality}
@@ -192,11 +194,11 @@ export function ExtractParamsPanel({
 
           <Stack gap={4}>
             <Text size="xs" fw={500} c="dimmed">
-              缩放宽度（留空不缩放）
+              {t("extract.scaleWidth")}
             </Text>
             <NumberInput
               size="xs"
-              placeholder="原始宽度"
+              placeholder={t("extract.scaleWidthPlaceholder")}
               value={extractParams.resizeWidth ?? undefined}
               onChange={(v) => {
                 setExtractParams({ resizeWidth: typeof v === "number" ? v : undefined });
@@ -212,13 +214,13 @@ export function ExtractParamsPanel({
           >
             {isExtracting ? (
               <>
-                提取中 {extractProgress.toFixed(0)}%
+                {t("extract.extracting", { progress: extractProgress.toFixed(0) })}
                 {extractEstimatedTimeRemaining !== null && extractEstimatedTimeRemaining > 0 && (
-                  <Text span ml={4}>· 剩余 {formatTime(extractEstimatedTimeRemaining)}</Text>
+                  <Text span ml={4}>· {t("extract.timeRemaining", { time: formatTime(extractEstimatedTimeRemaining) })}</Text>
                 )}
               </>
             ) : (
-              "提取帧"
+              t("extract.startExtract")
             )}
           </Button>
 

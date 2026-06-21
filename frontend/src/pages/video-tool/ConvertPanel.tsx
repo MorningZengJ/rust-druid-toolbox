@@ -22,6 +22,7 @@ import {
   Upload,
   FolderOpen,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -31,6 +32,7 @@ import { ConvertFormatOptions } from "./components/ConvertFormatOptions";
 import { ConvertProgressPanel } from "./components/ConvertProgressPanel";
 
 export function ConvertPanel() {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const convertFiles = useVideoToolStore((s) => s.convertFiles);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
@@ -80,7 +82,7 @@ export function ConvertPanel() {
     const { open } = await import("@tauri-apps/plugin-dialog");
     const selected = await open({
       multiple: true,
-      filters: [{ name: "媒体文件", extensions: MEDIA_EXTENSIONS }],
+      filters: [{ name: t("common.mediaFiles"), extensions: MEDIA_EXTENSIONS }],
     });
     if (selected) {
       const paths = Array.isArray(selected) ? selected : [selected];
@@ -140,7 +142,7 @@ export function ConvertPanel() {
               <Stack align="center" gap="xs" c="blue">
                 <Upload size={32} />
                 <Text size="sm" fw={500}>
-                  释放文件以添加
+                  {t("common.releaseToAdd")}
                 </Text>
               </Stack>
             </Flex>
@@ -151,7 +153,7 @@ export function ConvertPanel() {
             style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}
           >
             <Text size="sm" fw={500}>
-              格式转换
+              {t("common.formatConversion")}
             </Text>
           </Box>
 
@@ -160,19 +162,19 @@ export function ConvertPanel() {
               <Box>
                 <Group justify="space-between" mb="xs">
                   <Text size="sm" fw={500}>
-                    输入文件 ({convertFiles.length})
+                    {t("common.inputFiles", { count: convertFiles.length })}
                   </Text>
                   <Group gap={4}>
                     <Button size="compact-sm" variant="outline" onClick={addFiles}>
                       <Group gap={4}>
                         <Plus size={12} />
-                        <Text size="xs">添加</Text>
+                        <Text size="xs">{t("common.add")}</Text>
                       </Group>
                     </Button>
                     <Button size="compact-sm" variant="outline" onClick={addFolder}>
                       <Group gap={4}>
                         <FolderOpen size={12} />
-                        <Text size="xs">文件夹</Text>
+                        <Text size="xs">{t("common.folder")}</Text>
                       </Group>
                     </Button>
                   </Group>
@@ -199,7 +201,7 @@ export function ConvertPanel() {
                         }}
                       >
                         <Text size="xs" c="dimmed">
-                          拖拽媒体文件或文件夹到此处，或点击"添加"
+                          {t("common.dropHint")}
                         </Text>
                       </Box>
                     )}
@@ -221,7 +223,7 @@ export function ConvertPanel() {
                   )
                 }
               >
-                {isProcessing ? "转换中..." : "开始转换"}
+                {isProcessing ? t("convert.processing") : t("convert.startConvert")}
               </Button>
             </Stack>
           </ScrollArea>

@@ -103,5 +103,24 @@
     "videoTool": "视频工具",
     "videoToolDesc": "视频处理工具",
     "settings": "设置"
+  },
+  "colors": {
+    "default": "默认",
+    "blue": "蓝色",
+    "green": "绿色",
+    "purple": "紫色",
+    "orange": "橙色",
+    "rose": "玫红"
+  },
+  "time": {
+    "seconds": "{{count}}秒",
+    "minutesSeconds": "{{minutes}}分{{seconds}}秒",
+    "minutes": "{{minutes}}分"
+  },
+  "fileTypes": {
+    "image": "图片文件",
+    "video": "视频文件",
+    "audio": "音频文件",
+    "media": "媒体文件"
   }
 }

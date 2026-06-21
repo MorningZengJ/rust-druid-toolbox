@@ -11,12 +11,14 @@ import {
   ResizableHandle,
   useDefaultLayout,
 } from "@/components/ui/resizable";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ExtractParamsPanel } from "./components/ExtractParamsPanel";
 import { FrameViewer } from "./components/FrameViewer";
 
 export function ExtractPanel() {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const extractLogs = useVideoToolStore((s) => s.extractLogs);
   const loadVideo = useVideoToolStore((s) => s.loadVideo);
@@ -67,7 +69,7 @@ export function ExtractPanel() {
   const logSection = (
     <Box style={{ height: 140, flexShrink: 0, borderTop: `1px solid ${borderColor}` }}>
       <Flex align="center" px="sm" py={6} style={{ borderBottom: `1px solid ${borderColor}` }}>
-        <Text size="xs" fw={500} c="dimmed">日志</Text>
+        <Text size="xs" fw={500} c="dimmed">{t("common.log")}</Text>
       </Flex>
       <Box style={{ height: "calc(100% - 28px)", overflowY: "auto" }} p="xs">
         {extractLogs.length > 0 ? (
@@ -86,7 +88,7 @@ export function ExtractPanel() {
           </>
         ) : (
           <Flex h="100%" align="center" justify="center">
-            <Text size="xs" c="dimmed">暂无日志</Text>
+            <Text size="xs" c="dimmed">{t("common.logEmpty")}</Text>
           </Flex>
         )}
       </Box>

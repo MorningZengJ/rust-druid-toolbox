@@ -12,10 +12,12 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { convertFileSrc } from "@tauri-apps/api/core";
 
 export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const extractVideoPath = useVideoToolStore((s) => s.extractVideoPath);
   const extractFrames = useVideoToolStore((s) => s.extractFrames);
@@ -40,7 +42,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
     >
       <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
         <Text size="xs" fw={500} c="dimmed">
-          {extractFrames.length > 0 ? `提取的帧 (${extractFrames.length})` : "视频抽帧"}
+          {extractFrames.length > 0 ? t("extract.viewFrames", { count: extractFrames.length }) : t("frameViewer.title")}
         </Text>
       </Flex>
 
@@ -79,7 +81,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
           >
             <Stack align="center" gap="xs" c="blue">
               <Upload size={48} />
-              <Text size="sm" fw={500}>松开以加载视频</Text>
+              <Text size="sm" fw={500}>{t("frameViewer.dropHint")}</Text>
             </Stack>
           </Flex>
         )}
@@ -129,9 +131,9 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
                       style={{ width: "100%", borderRadius: 4, border: `1px solid ${borderColor}`, display: "block" }}
                     />
                     <Stack gap={2} mt="xs">
-                      <Text size="xs" c="dimmed">帧索引: {extractFrames[extractSelectedFrame].index}</Text>
-                      <Text size="xs" c="dimmed">时间戳: {extractFrames[extractSelectedFrame].timestamp.toFixed(3)}s</Text>
-                      <Text size="xs" c="dimmed">文件名: {extractFrames[extractSelectedFrame].filename}</Text>
+                      <Text size="xs" c="dimmed">{t("extract.frameIndex", { index: extractFrames[extractSelectedFrame].index })}</Text>
+                      <Text size="xs" c="dimmed">{t("extract.timestamp", { time: extractFrames[extractSelectedFrame].timestamp.toFixed(3) })}</Text>
+                      <Text size="xs" c="dimmed">{t("extract.filename", { name: extractFrames[extractSelectedFrame].filename })}</Text>
                     </Stack>
                   </Box>
                 </ScrollArea>
@@ -170,7 +172,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
         ) : (
           <Flex h="100%" align="center" justify="center">
             <Text size="sm" c="dimmed">
-              {extractVideoPath ? "设置参数后点击\"提取帧\"" : "双击或拖拽视频文件到此处"}
+              {extractVideoPath ? t("extract.setParamsHint") : t("extract.dropVideoHint")}
             </Text>
           </Flex>
         )}

@@ -126,7 +126,7 @@ export default function FilePreview() {
           const { openPath } = await import("@tauri-apps/plugin-opener");
           await openPath(file.path);
         } catch (e) {
-          console.error("打开文件失败:", e);
+          console.error("Failed to open file:", e);
         }
       }
     },

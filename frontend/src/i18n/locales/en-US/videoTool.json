@@ -124,7 +124,13 @@
     "convertFailed": "Convert failed: {{error}}",
     "extractFailed": "Frame extraction failed: {{error}}",
     "loadVideoFailed": "Failed to load video: {{error}}",
-    "readFolderFailed": "Failed to read folder: {{error}}"
+    "readFolderFailed": "Failed to read folder: {{error}}",
+    "addFilesFirst": "Please add files to convert",
+    "batchConvertFailed": "Batch convert failed: {{error}}",
+    "selectFolderFirst": "Please select image folder first",
+    "noImagesInFolder": "No images found in folder",
+    "setOutputPath": "Please set output path",
+    "minTwoVideos": "At least two video files are required"
   },
   "codec": {
     "copy": {
@@ -165,5 +171,20 @@
       "label": "Fast",
       "tooltip": "CRF 28, fast encoding speed, smaller files, suitable for preview or scenarios with lower quality requirements."
     }
+  },
+  "codecSelector": {
+    "title": "Codec",
+    "qualityPreset": "Quality Preset",
+    "customBitrate": "Custom Bitrate (optional, overrides preset)",
+    "bitratePlaceholder": "e.g.: 2000k, 5M"
+  },
+  "common": {
+    "mediaFiles": "Media Files",
+    "releaseToAdd": "Release to add files",
+    "formatConversion": "Format Conversion",
+    "inputFiles": "Input Files ({{count}})",
+    "add": "Add",
+    "log": "Log",
+    "logEmpty": "No logs"
   }
 }

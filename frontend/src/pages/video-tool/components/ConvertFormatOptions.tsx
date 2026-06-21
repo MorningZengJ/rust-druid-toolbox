@@ -1,5 +1,6 @@
 import { Box, Button, Group, Select, Text } from "@mantine/core";
 import { FileVideo, Music } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import {
   VIDEO_FORMATS,
@@ -10,6 +11,7 @@ import {
 import { CodecSelector } from "./CodecSelector";
 
 export function ConvertFormatOptions() {
+  const { t } = useTranslation("videoTool");
   const convertTarget = useVideoToolStore((s) => s.convertTarget);
   const convertVideoFormat = useVideoToolStore((s) => s.convertVideoFormat);
   const convertAudioFormat = useVideoToolStore((s) => s.convertAudioFormat);
@@ -31,7 +33,7 @@ export function ConvertFormatOptions() {
     <>
       <Box>
         <Text size="sm" fw={500}>
-          转换目标
+          {t("convert.target")}
         </Text>
         <Group mt={4} gap="xs">
           <Button
@@ -40,7 +42,7 @@ export function ConvertFormatOptions() {
             leftSection={<FileVideo size={16} />}
             onClick={() => setConvertTarget("video")}
           >
-            视频格式
+            {t("convert.videoFormat")}
           </Button>
           <Button
             variant={convertTarget === "audio" ? "filled" : "outline"}
@@ -48,7 +50,7 @@ export function ConvertFormatOptions() {
             leftSection={<Music size={16} />}
             onClick={() => setConvertTarget("audio")}
           >
-            提取音频
+            {t("convert.audioFormat")}
           </Button>
         </Group>
       </Box>
@@ -57,7 +59,7 @@ export function ConvertFormatOptions() {
         <>
           <Box>
             <Text size="sm" fw={500}>
-              输出格式
+              {t("convert.outputFormat")}
             </Text>
             <Select
               mt={4}
@@ -83,7 +85,7 @@ export function ConvertFormatOptions() {
 
           <Box>
             <Text size="sm" fw={500}>
-              音频编码
+              {t("convert.audioCodec")}
             </Text>
             <Select
               mt={4}
@@ -100,7 +102,7 @@ export function ConvertFormatOptions() {
         <>
           <Box>
             <Text size="sm" fw={500}>
-              输出格式
+              {t("convert.outputFormat")}
             </Text>
             <Select
               mt={4}
@@ -114,7 +116,7 @@ export function ConvertFormatOptions() {
           </Box>
           <Box>
             <Text size="sm" fw={500}>
-              音频码率
+              {t("convert.audioBitrate")}
             </Text>
             <Select
               mt={4}

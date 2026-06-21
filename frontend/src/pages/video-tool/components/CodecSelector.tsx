@@ -1,6 +1,7 @@
 import { Box, Select, Text, TextInput, Tooltip, Group } from "@mantine/core";
 import type { ComboboxLikeRenderOptionInput, ComboboxItem } from "@mantine/core";
 import { Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   VIDEO_CODECS,
   CONVERT_VIDEO_CODECS,
@@ -58,6 +59,7 @@ export function CodecSelector({
   showStreamCopy = false,
   showBitrate = true,
 }: CodecSelectorProps) {
+  const { t } = useTranslation("videoTool");
   const codecs = showStreamCopy ? VIDEO_CODECS : CONVERT_VIDEO_CODECS;
   const isLossless = codec === "ffv1" || codec === "copy";
   const selectedCodec = codecs.find((c) => c.value === codec);
@@ -67,7 +69,7 @@ export function CodecSelector({
     <>
       <Box>
         <Text size="sm" fw={500}>
-          编码方式
+          {t("codecSelector.title")}
         </Text>
         {selectedCodec && (
           <Text size="xs" c="dimmed" mt={2}>
@@ -89,7 +91,7 @@ export function CodecSelector({
       {!isLossless && (
         <Box>
           <Text size="sm" fw={500}>
-            质量预设
+            {t("codecSelector.qualityPreset")}
           </Text>
           {selectedPreset && (
             <Text size="xs" c="dimmed" mt={2}>
@@ -112,13 +114,13 @@ export function CodecSelector({
       {showBitrate && !isLossless && (
         <Box>
           <Text size="sm" fw={500}>
-            自定义码率（可选，覆盖预设）
+            {t("codecSelector.customBitrate")}
           </Text>
           <TextInput
             mt={4}
             value={videoBitrate}
             onChange={(e) => onVideoBitrateChange(e.currentTarget.value)}
-            placeholder="如 5M, 2000k"
+            placeholder={t("codecSelector.bitratePlaceholder")}
           />
         </Box>
       )}

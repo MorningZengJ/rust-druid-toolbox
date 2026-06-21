@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import i18n from "@/i18n";
 import type { AsciiArtParams, AsciiArtOutput, AsciiArtProgress, CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 interface AsciiArtState {
@@ -90,7 +91,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
         filters: [
-          { name: "图片文件", extensions: ["png", "jpg", "jpeg", "gif", "bmp", "webp"] },
+          { name: i18n.t("common:fileTypes.image"), extensions: ["png", "jpg", "jpeg", "gif", "bmp", "webp"] },
         ],
       });
       if (!selected) return;
@@ -104,7 +105,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       set({ imagePath: path, imageBytes: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
-      set({ errorMessage: `加载图片失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
   },
 
@@ -121,7 +122,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       set({ imageBytes: uint8, imagePath: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
-      set({ errorMessage: `加载图片失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
   },
 
@@ -135,7 +136,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       set({ imagePath: path, imageBytes: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
-      set({ errorMessage: `加载图片失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
   },
 
@@ -151,7 +152,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       set({ imageBytes: uint8, imagePath: null, imagePreviewUrl: url, output: null, activeTab: "original" });
       get().convert();
     } catch (e) {
-      set({ errorMessage: `加载图片失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
   },
 
@@ -194,7 +195,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       }
       set({ output, isConverting: false, progress: 100, estimatedTimeRemaining: 0, activeTab: "ascii" });
     } catch (e) {
-      set({ errorMessage: `转换失败: ${e}`, isConverting: false });
+      set({ errorMessage: i18n.t("errors:convertFailed", { error: String(e) }), isConverting: false });
     } finally {
       unlistenProgress();
     }
@@ -208,7 +209,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
       await writeText(output.plainText);
     } catch (e) {
-      set({ errorMessage: `复制失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:copyFailed", { error: String(e) }) });
     }
   },
 
@@ -220,7 +221,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
       const { save } = await import("@tauri-apps/plugin-dialog");
       const ext = format === "png" ? "png" : format === "svg" ? "svg" : format === "html" ? "html" : "txt";
       const filePath = await save({
-        filters: [{ name: "文件", extensions: [ext] }],
+        filters: [{ name: i18n.t("common:labels.file"), extensions: [ext] }],
         defaultPath: `ascii_art.${ext}`,
       });
       if (!filePath) return;
@@ -232,7 +233,7 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
         path: filePath,
       });
     } catch (e) {
-      set({ errorMessage: `导出失败: ${e}` });
+      set({ errorMessage: i18n.t("errors:exportFailed", { error: String(e) }) });
     }
   },
 

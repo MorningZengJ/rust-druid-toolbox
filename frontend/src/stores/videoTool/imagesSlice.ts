@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/i18n";
 import type { ImagesToVideoParams, ImagesToVideoResult } from "@/types";
 import type { VideoToolState } from "./types";
 import type { StateCreator } from "zustand";
@@ -54,7 +55,7 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
         const paths = await invoke<string[]>("list_images_in_folder", { folderPath: selectedPath });
         set({ imagesInputPaths: paths, errorMessage: null });
       } catch (e) {
-        set({ errorMessage: `读取文件夹失败: ${e}` });
+        set({ errorMessage: i18n.t("videoTool:errors.readFolderFailed", { error: String(e) }) });
       }
     } else {
       set({ imagesFolderPath: targetPath });
@@ -62,7 +63,7 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
         const paths = await invoke<string[]>("list_images_in_folder", { folderPath: targetPath });
         set({ imagesInputPaths: paths, errorMessage: null });
       } catch (e) {
-        set({ errorMessage: `读取文件夹失败: ${e}` });
+        set({ errorMessage: i18n.t("videoTool:errors.readFolderFailed", { error: String(e) }) });
       }
     }
   },
@@ -78,15 +79,15 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
   runImagesToVideo: async () => {
     const state = get();
     if (!state.imagesFolderPath) {
-      set({ errorMessage: "请先选择图片文件夹" });
+      set({ errorMessage: i18n.t("videoTool:errors.selectFolderFirst") });
       return;
     }
     if (state.imagesInputPaths.length === 0) {
-      set({ errorMessage: "文件夹中未找到图片文件" });
+      set({ errorMessage: i18n.t("videoTool:errors.noImagesInFolder") });
       return;
     }
     if (!state.imagesOutputPath) {
-      set({ errorMessage: "请设置输出路径" });
+      set({ errorMessage: i18n.t("videoTool:errors.setOutputPath") });
       return;
     }
 
@@ -109,7 +110,7 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
       const result = await invoke<ImagesToVideoResult>("images_to_video", { params });
       set({ imagesResult: result });
     } catch (e) {
-      set({ errorMessage: `生成失败: ${e}` });
+      set({ errorMessage: i18n.t("videoTool:errors.generateFailed", { error: String(e) }) });
     } finally {
       set({ isProcessing: false });
       get().unregisterEventListeners();

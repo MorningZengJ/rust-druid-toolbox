@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import i18n from "@/i18n";
 import type {
   VideoInfo,
   ExtractParams,
@@ -69,7 +70,7 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
         const { open } = await import("@tauri-apps/plugin-dialog");
         const selected = await open({
           filters: [
-            { name: "视频文件", extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
+            { name: i18n.t("common:fileTypes.video"), extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
           ],
         });
         if (!selected) return;
@@ -90,7 +91,7 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
         errorMessage: null,
       });
     } catch (e) {
-      set({ errorMessage: `加载视频失败: ${e}` });
+      set({ errorMessage: i18n.t("videoTool:errors.loadVideoFailed", { error: String(e) }) });
     }
   },
 
@@ -152,7 +153,7 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
       set({ extractFrames: frames, isExtracting: false, extractProgress: 100, extractEstimatedTimeRemaining: 0 });
       get().startExtractWatcher();
     } catch (e) {
-      set({ errorMessage: `提取帧失败: ${e}`, isExtracting: false });
+      set({ errorMessage: i18n.t("videoTool:errors.extractFailed", { error: String(e) }), isExtracting: false });
     } finally {
       for (const unlisten of unlisteners) {
         unlisten();

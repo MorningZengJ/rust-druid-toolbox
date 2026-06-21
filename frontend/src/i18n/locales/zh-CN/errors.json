@@ -18,5 +18,16 @@
   "UNSUPPORTED_FORMAT": "不支持的格式：{{format}}",
   "VIDEO_FILE": "视频文件",
   "AUDIO_FILE": "音频文件",
-  "IMAGE_FILE": "图片文件"
+  "IMAGE_FILE": "图片文件",
+  "loadImageFailed": "加载图片失败: {{error}}",
+  "convertFailed": "转换失败: {{error}}",
+  "copyFailed": "复制失败: {{error}}",
+  "exportFailed": "导出失败: {{error}}",
+  "loadFilesFailed": "加载文件失败: {{error}}",
+  "applyTemplateFailed": "应用模板失败: {{error}}",
+  "detectConflictsFailed": "检测冲突失败: {{error}}",
+  "executeRenameFailed": "执行重命名失败: {{error}}",
+  "selectDirectoryFailed": "选择目录失败: {{error}}",
+  "getParentFailed": "获取上级目录失败: {{error}}",
+  "openFileFailed": "打开文件失败: {{error}}"
 }

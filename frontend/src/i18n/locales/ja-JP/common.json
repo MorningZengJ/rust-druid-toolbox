@@ -103,5 +103,24 @@
     "videoTool": "ビデオツール",
     "videoToolDesc": "ビデオ処理ツール",
     "settings": "設定"
+  },
+  "colors": {
+    "default": "Default",
+    "blue": "Blue",
+    "green": "Green",
+    "purple": "Purple",
+    "orange": "Orange",
+    "rose": "Rose"
+  },
+  "time": {
+    "seconds": "{{count}}s",
+    "minutesSeconds": "{{minutes}}m {{seconds}}s",
+    "minutes": "{{minutes}}m"
+  },
+  "fileTypes": {
+    "image": "Image",
+    "video": "Video",
+    "audio": "Audio",
+    "media": "Media"
   }
 }
