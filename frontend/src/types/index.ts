@@ -275,3 +275,13 @@ export interface VideoToolLog {
 }
 
 export type VideoToolTab = "merge" | "images" | "convert" | "extract";
+
+// Update types
+
+export type UpdateStatus = "idle" | "checking" | "available" | "downloading" | "downloaded" | "installing" | "error" | "no-update";
+
+export interface UpdateProgress {
+  downloadedBytes: number;
+  totalBytes: number | null;
+  percentage: number;
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Flex, Box, Text, useComputedColorScheme, useMantineTheme, Tooltip } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import {
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useWindowState } from "@/hooks/useWindowState";
 import { useTheme } from "@/hooks/useTheme";
+import { useUpdateStore } from "@/stores/updateStore";
 import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
 import VideoToolPage from "@/pages/video-tool/VideoToolPage";
@@ -32,6 +33,18 @@ function App() {
   useWindowState();
 
   const isDark = colorScheme === "dark";
+
+  // Auto-check for updates on startup
+  const updateInit = useUpdateStore((s) => s.init);
+
+  useEffect(() => {
+    updateInit().then(() => {
+      const state = useUpdateStore.getState();
+      if (state.autoCheck) {
+        state.checkForUpdate();
+      }
+    });
+  }, []);
 
   const handleToggleColorScheme = () => {
     setColorMode(colorMode === "light" ? "dark" : "light");

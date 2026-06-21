@@ -64,6 +64,7 @@ frontend/                        # React 前端
         convertSlice.ts          # 格式转换 slice (173 行)
         extractSlice.ts          # 抽帧 slice (190 行)
       themeStore.ts              # 主题状态 Zustand store（持久化到 LazyStore）(62 行)
+      updateStore.ts             # 更新状态 Zustand store（检查/下载/安装更新）(~100 行)
     components/
       ThemeProvider.tsx           # 主题包装组件
       FileIcon.tsx               # 文件类型图标组件
@@ -108,7 +109,8 @@ frontend/                        # React 前端
           FileRow.tsx                # 文件行组件 (67 行)
           FrameViewer.tsx            # 帧查看器 (180 行)
       settings/
-        SettingsPage.tsx         # 设置页（主题切换 + 自定义主色）(209 行)
+        SettingsPage.tsx         # 设置页（主题切换 + 自定义主色 + 更新检查）(~210 行)
+        UpdateSection.tsx        # 更新功能组件（版本显示/检查更新/自动更新）(~280 行)
     utils/
       formatTime.ts              # 时间格式化工具 (约 10 行)
 
@@ -227,6 +229,8 @@ src-tauri/                       # Tauri 后端（Rust）
 | tauri-plugin-clipboard-manager | 2 | 剪贴板操作 |
 | tauri-plugin-opener | 2 | 打开 URL/文件 |
 | tauri-plugin-store | 2 | 持久化键值存储 |
+| tauri-plugin-updater | 2 | 自动更新（签名验证） |
+| tauri-plugin-process | 2 | 进程重启（更新后 relaunch） |
 | serde + serde_json | 1 | IPC 序列化 |
 | tokio | 1 (rt-multi-thread, macros) | 异步运行时 |
 | fancy-regex | 0.18.0 | 正则表达式（支持前瞻/后顾） |
@@ -247,6 +251,8 @@ src-tauri/                       # Tauri 后端（Rust）
 | @tauri-apps/plugin-clipboard-manager | ^2.3.2 | 剪贴板 |
 | @tauri-apps/plugin-opener | ^2.0.0 | 打开 URL/文件 |
 | @tauri-apps/plugin-store | ^2 | 持久化存储 |
+| @tauri-apps/plugin-updater | ^2 | 自动更新 |
+| @tauri-apps/plugin-process | ^2 | 进程重启 |
 | @mantine/core | ^9.2.1 | Mantine UI 组件库 |
 | @mantine/hooks | ^9.2.1 | Mantine hooks |
 | @mantine/modals | ^9.2.1 | Mantine 模态框管理 |

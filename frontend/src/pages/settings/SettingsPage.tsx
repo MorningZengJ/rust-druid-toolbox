@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Stack, Title, Group, Button, TextInput, Text, Box, ActionIcon, useMantineTheme, useComputedColorScheme } from "@mantine/core";
-import { Sun, Moon, Monitor, Check, Palette, Info } from "lucide-react";
+import { Sun, Moon, Monitor, Check, Palette, Download } from "lucide-react";
 import { useTheme, COLOR_THEMES } from "@/hooks/useTheme";
+import { useUpdateStore } from "@/stores/updateStore";
+import UpdateSection from "./UpdateSection";
 
 export default function SettingsPage() {
   const { colorMode, colorTheme, customPrimary, setColorMode, setColorTheme, setCustomPrimary } =
@@ -10,6 +12,11 @@ export default function SettingsPage() {
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
+  const updateInit = useUpdateStore((s) => s.init);
+
+  useEffect(() => {
+    updateInit();
+  }, [updateInit]);
 
   const handleCustomColorApply = () => {
     const hex = customColorInput.trim();
@@ -170,37 +177,14 @@ export default function SettingsPage() {
           </div>
         </Box>
 
-        {/* About */}
+        {/* About & Update */}
         <Box style={cardStyle}>
           <div style={sectionHeaderStyle}>
-            <Info size={16} />
-            <Text size="sm" fw={600}>关于</Text>
+            <Download size={16} />
+            <Text size="sm" fw={600}>关于与更新</Text>
           </div>
           <div style={sectionBodyStyle}>
-            <Stack gap="xs">
-              <Group gap="sm" align="center">
-                <Box
-                  w={32}
-                  h={32}
-                  style={{
-                    borderRadius: 8,
-                    background: `linear-gradient(135deg, ${theme.colors[theme.primaryColor][5]}, ${theme.colors[theme.primaryColor][7]})`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text size="xs" fw={700} c="white" style={{ fontFamily: "monospace" }}>D</Text>
-                </Box>
-                <div>
-                  <Text size="sm" fw={600}>Druid Toolbox</Text>
-                  <Text size="xs" c="dimmed">批量重命名 / 字符画生成 / 视频工具</Text>
-                </div>
-              </Group>
-              <Text size="xs" c="dimmed" mt="xs">
-                Tauri v2 + React + Mantine
-              </Text>
-            </Stack>
+            <UpdateSection />
           </div>
         </Box>
       </Stack>

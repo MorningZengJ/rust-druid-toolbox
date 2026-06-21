@@ -1,0 +1,11 @@
+{
+  "version": "0.1.2",
+  "notes": "初始版本：批量文件重命名、字符画生成、视频工具",
+  "pub_date": "2026-06-21T00:00:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUeG1scS9MK2U5YmIwY2NvY0sxanZ2Q1NTY2FqRHdTWHA5MkVvbGhoQ2wrUUhHOVovdkluNm5HWHJUMmwza3JjN3ZVZ2M5V05uTEVPenlBdDk2VWxvMnlyRWYxdFc4WXdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMDA5NTc1CWZpbGU6TVRvb2xib3hfMC4xLjJfeDY0LXNldHVwLmV4ZQpXMlYza1dkSSt5WkMwQTltWDYzQzk3ZjRYUnlHUXhPVUkrZnVKWXFQQkYzRGFQYXZtbFRaVDNRLzF3TzFnWlpLRW0xN3A1bURwSWZtczkxWVpxVnNEUT09Cg==",
+      "url": "https://github.com/MorningZengJ/rust-druid-toolbox/releases/download/v0.1.2/MToolbox_0.1.2_x64-setup.exe"
+    }
+  }
+}
