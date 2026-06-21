@@ -1,0 +1,76 @@
+{
+  "toolbar": {
+    "selectDirectory": "选择目录",
+    "parentDirectory": "上级目录",
+    "undoRuleChange": "撤销规则修改",
+    "pathPlaceholder": "输入目录路径，按 Enter 加载"
+  },
+  "filter": {
+    "title": "过滤条件",
+    "placeholder": "输入关键字过滤",
+    "quickFilters": {
+      "all": "全部",
+      "folders": "文件夹",
+      "files": "文件",
+      "byExtension": "按扩展名"
+    }
+  },
+  "rules": {
+    "title": "替换规则",
+    "ruleNumber": "规则 {{index}}",
+    "empty": "(空)",
+    "find": "查找",
+    "findPlaceholder": "查找内容",
+    "replace": "替换",
+    "replacePlaceholder": "替换为",
+    "regex": "正则表达式",
+    "addRule": "添加规则",
+    "clearAll": "清空规则",
+    "templates": {
+      "title": "规则模板",
+      "sequentialNumber": "序号命名",
+      "addPrefix": "添加前缀",
+      "addSuffix": "添加后缀",
+      "removeSpaces": "去除空格",
+      "toLowerCase": "转小写",
+      "toUpperCase": "转大写"
+    }
+  },
+  "preview": {
+    "title": "文件预览",
+    "fileCount": "文件预览 ({{count}})",
+    "multiSort": "多列排序",
+    "loadMore": "加载更多 ({{current}}/{{total}})",
+    "selectDirectoryHint": "选择目录以加载文件列表",
+    "conflict": "冲突",
+    "columns": {
+      "name": "名称",
+      "newName": "新名称",
+      "type": "类型",
+      "size": "大小"
+    }
+  },
+  "status": {
+    "fileCount": "{{count}} 个文件",
+    "ruleCount": "{{count}} 条规则",
+    "conflictCount": "{{count}} 个冲突",
+    "completed": "完成: {{success}}/{{total}}",
+    "errors": "{{count}} 个错误",
+    "executeRename": "执行重命名"
+  },
+  "dialog": {
+    "confirmTitle": "确认重命名",
+    "confirmMessage": "即将对 {{fileCount}} 个文件执行 {{ruleCount}} 条替换规则。\n此操作不可撤销，确定继续吗？",
+    "confirmExecute": "确认执行",
+    "cancel": "取消"
+  },
+  "errors": {
+    "loadFilesFailed": "加载文件失败: {{error}}",
+    "applyTemplateFailed": "应用模板失败: {{error}}",
+    "detectConflictsFailed": "检测冲突失败: {{error}}",
+    "executeRenameFailed": "执行重命名失败: {{error}}",
+    "selectDirectoryFailed": "选择目录失败: {{error}}",
+    "getParentFailed": "获取上级目录失败: {{error}}",
+    "openFileFailed": "打开文件失败: {{error}}"
+  }
+}

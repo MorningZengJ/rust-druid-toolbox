@@ -26,6 +26,7 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { VIDEO_EXTENSIONS, VIDEO_FORMATS } from "./constants";
@@ -33,6 +34,7 @@ import { ProgressPanel } from "./ProgressPanel";
 import { CodecSelector } from "./components/CodecSelector";
 
 export function MergePanel() {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const mergeInputPaths = useVideoToolStore((s) => s.mergeInputPaths);
   const mergeOutputPath = useVideoToolStore((s) => s.mergeOutputPath);
@@ -84,7 +86,7 @@ export function MergePanel() {
       multiple: true,
       filters: [
         {
-          name: "视频文件",
+          name: t("errors.ffmpegNotInstalled"),
           extensions: VIDEO_EXTENSIONS,
         },
       ],
@@ -111,7 +113,7 @@ export function MergePanel() {
     const path = await save({
       filters: [
         {
-          name: "视频文件",
+          name: t("errors.ffmpegNotInstalled"),
           extensions: [mergeOutputFormat],
         },
       ],
@@ -147,23 +149,23 @@ export function MergePanel() {
           >
             <Stack align="center" gap="xs" c="blue">
               <Upload size={32} />
-              <Text size="sm" fw={500}>释放文件以添加</Text>
+              <Text size="sm" fw={500}>{t("merge.dropHint")}</Text>
             </Stack>
           </Flex>
         )}
         <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
-          <Text size="sm" fw={500}>合并视频</Text>
+          <Text size="sm" fw={500}>{t("merge.title")}</Text>
         </Box>
 
         <ScrollArea style={{ flex: 1 }} p="md">
           <Stack gap="md">
             <Box>
               <Group justify="space-between" mb="xs">
-                <Text size="sm" fw={500}>输入文件 ({mergeInputPaths.length})</Text>
+                <Text size="sm" fw={500}>{t("merge.inputFiles", { count: mergeInputPaths.length })}</Text>
                 <Button size="compact-sm" variant="outline" onClick={addFiles}>
                   <Group gap={4}>
                     <Plus size={12} />
-                    <Text size="xs">添加</Text>
+                    <Text size="xs">{t("merge.addFile")}</Text>
                   </Group>
                 </Button>
               </Group>
@@ -223,7 +225,7 @@ export function MergePanel() {
                       }}
                     >
                       <Text size="xs" c="dimmed">
-                        拖拽视频文件到此处，或点击"添加"
+                        {t("merge.dropHint")}
                       </Text>
                     </Box>
                   )}
@@ -232,7 +234,7 @@ export function MergePanel() {
             </Box>
 
             <Box>
-              <Text size="sm" fw={500}>输出格式</Text>
+              <Text size="sm" fw={500}>{t("merge.outputFormat")}</Text>
               <Select
                 mt={4}
                 value={mergeOutputFormat}
@@ -246,7 +248,7 @@ export function MergePanel() {
                 checked={mergeReencode}
                 onChange={(e) => setMergeReencode(e.currentTarget.checked)}
               />
-              <Text size="xs">重编码模式（处理不同编码格式，速度较慢）</Text>
+              <Text size="xs">{t("merge.reencodeMode")}</Text>
             </Group>
 
             <CodecSelector
@@ -261,12 +263,12 @@ export function MergePanel() {
             />
 
             <Box>
-              <Text size="sm" fw={500}>输出路径</Text>
+              <Text size="sm" fw={500}>{t("merge.outputPath")}</Text>
               <Group mt={4} gap="xs">
                 <TextInput
                   value={mergeOutputPath}
                   onChange={(e) => setMergeOutputPath(e.currentTarget.value)}
-                  placeholder="选择输出文件路径"
+                  placeholder={t("merge.outputPathPlaceholder")}
                   style={{ flex: 1 }}
                   size="xs"
                 />
@@ -282,7 +284,7 @@ export function MergePanel() {
               disabled={isProcessing || mergeInputPaths.length < 2}
               leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
             >
-              合并
+              {t("merge.startMerge")}
             </Button>
           </Stack>
         </ScrollArea>

@@ -1,9 +1,11 @@
 import { Button, Group, Text, Stack, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { Plus, Trash, ListChecks } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
 import RuleCard from "./RuleCard";
 
 export default function RuleList() {
+  const { t } = useTranslation("rename");
   const replaceInfos = useRenameStore((s) => s.replaceInfos);
   const addReplaceInfo = useRenameStore((s) => s.addReplaceInfo);
   const clearAllRules = useRenameStore((s) => s.clearAllRules);
@@ -27,7 +29,7 @@ export default function RuleList() {
         <Group gap={6} align="center">
           <ListChecks size={14} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[6] }} />
           <Text size="xs" fw={600} c="dimmed">
-            替换规则 ({replaceInfos.length})
+            {t("rules.title")} ({replaceInfos.length})
           </Text>
         </Group>
         <Group gap={4}>
@@ -40,7 +42,7 @@ export default function RuleList() {
             radius="md"
             color="gray"
           >
-            清空
+            {t("rules.clearAll")}
           </Button>
           <Button
             variant="subtle"
@@ -49,7 +51,7 @@ export default function RuleList() {
             onClick={addReplaceInfo}
             radius="md"
           >
-            添加
+            {t("rules.addRule")}
           </Button>
         </Group>
       </Group>
@@ -58,7 +60,7 @@ export default function RuleList() {
         <Stack gap="xs">
           {replaceInfos.length === 0 ? (
             <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
-              <Text size="sm" c="dimmed">点击"添加"创建替换规则</Text>
+              <Text size="sm" c="dimmed">{t("rules.addRule")}</Text>
             </div>
           ) : (
             replaceInfos.map((rule, index) => (

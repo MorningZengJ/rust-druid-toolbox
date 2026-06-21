@@ -9,6 +9,7 @@ import {
   useComputedColorScheme,
 } from "@mantine/core";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   useReactTable,
   getCoreRowModel,
@@ -31,6 +32,7 @@ interface FileRow extends FileInfo {
 }
 
 export default function FilePreview() {
+  const { t } = useTranslation("rename");
   const filterFileList = useRenameStore((s) => s.filterFileList);
   const replaceInfos = useRenameStore((s) => s.replaceInfos);
   const conflicts = useRenameStore((s) => s.conflicts);
@@ -178,7 +180,7 @@ export default function FilePreview() {
       },
       {
         accessorKey: "name",
-        header: "名称",
+        header: t("preview.columns.name"),
         enableSorting: true,
         cell: ({ row }) => (
           <Text truncate size="sm" style={{ fontFamily: "monospace" }}>
@@ -188,7 +190,7 @@ export default function FilePreview() {
       },
       {
         id: "newName",
-        header: "新名称",
+        header: t("preview.columns.newName"),
         enableSorting: false,
         cell: ({ row }) => (
           <Text
@@ -204,7 +206,7 @@ export default function FilePreview() {
       },
       {
         accessorKey: "extension",
-        header: "类型",
+        header: t("preview.columns.type"),
         enableSorting: true,
         cell: ({ row }) => (
           <Text size="xs" c="dimmed" ta="center">
@@ -214,7 +216,7 @@ export default function FilePreview() {
       },
       {
         accessorKey: "size",
-        header: "大小",
+        header: t("preview.columns.size"),
         enableSorting: true,
         cell: ({ row }) => (
           <Text size="xs" c="dimmed" ta="right" style={{ fontFamily: "monospace" }}>
@@ -230,12 +232,12 @@ export default function FilePreview() {
         cell: ({ row }) =>
           row.original.hasConflict ? (
             <Badge color="red" variant="filled" size="sm" radius="sm">
-              冲突
+              {t("preview.conflict")}
             </Badge>
           ) : null,
       },
     ],
-    [getNewTextColor]
+    [getNewTextColor, t]
   );
 
   const table = useReactTable({
@@ -303,12 +305,12 @@ export default function FilePreview() {
         }}
       >
         <Text size="xs" fw={600} c="dimmed">
-          文件预览 ({filterFileList.length})
+          {t("preview.fileCount", { count: filterFileList.length })}
         </Text>
         <Group gap="xs">
           {sortColumns.length > 1 && (
             <Text size="xs" c="dimmed">
-              多列排序
+              {t("preview.multiSort")}
             </Text>
           )}
           {hasMore && (
@@ -318,7 +320,7 @@ export default function FilePreview() {
               style={{ cursor: "pointer", textDecoration: "underline" }}
               onClick={loadMore}
             >
-              加载更多 ({displayLimit}/{filterFileList.length})
+              {t("preview.loadMore", { current: displayLimit, total: filterFileList.length })}
             </Text>
           )}
         </Group>
@@ -393,7 +395,7 @@ export default function FilePreview() {
         {filterFileList.length === 0 ? (
           <Flex h="100%" align="center" justify="center">
             <Text size="sm" c="dimmed">
-              选择目录以加载文件列表
+              {t("preview.selectDirectoryHint")}
             </Text>
           </Flex>
         ) : (

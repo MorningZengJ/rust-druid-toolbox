@@ -9,6 +9,7 @@ import {
   Moon,
   Wrench,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useWindowState } from "@/hooks/useWindowState";
 import { useTheme } from "@/hooks/useTheme";
 import { useUpdateStore } from "@/stores/updateStore";
@@ -19,13 +20,8 @@ import SettingsPage from "@/pages/settings/SettingsPage";
 
 type Page = "rename" | "ascii-art" | "video-tool" | "settings";
 
-const navItems: { id: Page; label: string; icon: React.ReactNode; description: string }[] = [
-  { id: "rename", label: "重命名", icon: <PenLine size={20} />, description: "批量文件重命名" },
-  { id: "ascii-art", label: "字符画", icon: <ImageIcon size={20} />, description: "图片转字符画" },
-  { id: "video-tool", label: "视频工具", icon: <Wrench size={20} />, description: "视频处理工具" },
-];
-
 function App() {
+  const { t } = useTranslation("common");
   const [activePage, setActivePage] = useState<Page>("rename");
   const colorScheme = useComputedColorScheme();
   const { colorMode, setColorMode } = useTheme();
@@ -33,6 +29,12 @@ function App() {
   useWindowState();
 
   const isDark = colorScheme === "dark";
+
+  const navItems: { id: Page; label: string; icon: React.ReactNode; description: string }[] = [
+    { id: "rename", label: t("navigation.rename"), icon: <PenLine size={20} />, description: t("navigation.renameDesc") },
+    { id: "ascii-art", label: t("navigation.asciiArt"), icon: <ImageIcon size={20} />, description: t("navigation.asciiArtDesc") },
+    { id: "video-tool", label: t("navigation.videoTool"), icon: <Wrench size={20} />, description: t("navigation.videoToolDesc") },
+  ];
 
   // Auto-check for updates on startup
   const updateInit = useUpdateStore((s) => s.init);
@@ -187,7 +189,7 @@ function App() {
                 margin: "4px auto 8px",
               }}
             />
-            <Tooltip label={isDark ? "切换亮色模式" : "切换暗色模式"} position="right" withArrow offset={12}>
+            <Tooltip label={isDark ? t("theme.switchToLight") : t("theme.switchToDark")} position="right" withArrow offset={12}>
               <Box
                 onClick={handleToggleColorScheme}
                 style={{
@@ -229,11 +231,11 @@ function App() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {isDark ? "亮色" : "暗色"}
+                  {isDark ? t("theme.light") : t("theme.dark")}
                 </Text>
               </Box>
             </Tooltip>
-            <Tooltip label="设置" position="right" withArrow offset={12}>
+            <Tooltip label={t("navigation.settings")} position="right" withArrow offset={12}>
               <Box
                 onClick={() => setActivePage("settings")}
                 style={{
@@ -307,7 +309,7 @@ function App() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  设置
+                  {t("navigation.settings")}
                 </Text>
               </Box>
             </Tooltip>

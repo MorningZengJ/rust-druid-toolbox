@@ -25,12 +25,14 @@ import {
   Music,
   Loader2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ProgressPanel } from "./ProgressPanel";
 import { CodecSelector } from "./components/CodecSelector";
 
 export function ImagesPanel() {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const imagesFolderPath = useVideoToolStore((s) => s.imagesFolderPath);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -81,7 +83,7 @@ export function ImagesPanel() {
     const selected = await open({
       filters: [
         {
-          name: "音频文件",
+          name: t("images.audio"),
           extensions: ["mp3", "aac", "wav", "flac", "ogg", "opus"],
         },
       ],
@@ -96,7 +98,7 @@ export function ImagesPanel() {
     const path = await save({
       filters: [
         {
-          name: "视频文件",
+          name: t("images.outputFormat"),
           extensions: [imagesOutputFormat],
         },
       ],
@@ -118,13 +120,13 @@ export function ImagesPanel() {
           style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}` }}
         >
         <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
-          <Text size="sm" fw={500}>图片转视频</Text>
+          <Text size="sm" fw={500}>{t("images.title")}</Text>
         </Box>
 
         <ScrollArea style={{ flex: 1 }} p="md">
           <Stack gap="md">
             <Box>
-              <Text size="sm" fw={500}>图片文件夹</Text>
+              <Text size="sm" fw={500}>{t("images.imageFolder")}</Text>
               <Box mt={4}>
                 {imagesFolderPath ? (
                   <Box p="sm" style={{ borderRadius: 6, border: `1px solid ${theme.colors.dark[4]}`, background: theme.colors.dark[3] }}>
@@ -139,7 +141,7 @@ export function ImagesPanel() {
                       </Text>
                     </Group>
                     <Text size="xs" c="dimmed">
-                      已加载 {imagesInputPaths.length} 张图片
+                      {t("images.loadedCount", { count: imagesInputPaths.length })}
                     </Text>
                     <Button
                       size="compact-sm"
@@ -148,7 +150,7 @@ export function ImagesPanel() {
                       fullWidth
                       onClick={selectFolder}
                     >
-                      更换文件夹
+                      {t("images.changeFolder")}
                     </Button>
                   </Box>
                 ) : (
@@ -163,14 +165,14 @@ export function ImagesPanel() {
                     }}
                     onClick={selectFolder}
                   >
-                    <Text size="xs" c="dimmed">拖拽文件夹到此处，或点击选择</Text>
+                    <Text size="xs" c="dimmed">{t("images.dropHint")}</Text>
                   </Box>
                 )}
               </Box>
             </Box>
 
             <Box>
-              <Text size="sm" fw={500}>FPS</Text>
+              <Text size="sm" fw={500}>{t("images.fps")}</Text>
               <NumberInput
                 mt={4}
                 value={imagesFps}
@@ -181,7 +183,7 @@ export function ImagesPanel() {
             </Box>
 
             <Box>
-              <Text size="sm" fw={500}>输出格式</Text>
+              <Text size="sm" fw={500}>{t("images.outputFormat")}</Text>
               <Select
                 mt={4}
                 value={imagesOutputFormat}
@@ -215,7 +217,7 @@ export function ImagesPanel() {
                     setImagesResolution(e.currentTarget.checked ? [1920, 1080] : null)
                   }
                 />
-                <Text size="sm" fw={500}>自定义分辨率</Text>
+                <Text size="sm" fw={500}>{t("images.customResolution")}</Text>
               </Group>
               {imagesResolution && (
                 <Group gap="xs">
@@ -227,7 +229,7 @@ export function ImagesPanel() {
                         imagesResolution[1],
                       ])
                     }
-                    placeholder="宽"
+                    placeholder={t("images.widthPlaceholder")}
                     style={{ flex: 1 }}
                   />
                   <NumberInput
@@ -238,7 +240,7 @@ export function ImagesPanel() {
                         typeof v === "number" ? v : 1080,
                       ])
                     }
-                    placeholder="高"
+                    placeholder={t("images.heightPlaceholder")}
                     style={{ flex: 1 }}
                   />
                 </Group>
@@ -246,12 +248,12 @@ export function ImagesPanel() {
             </Box>
 
             <Box>
-              <Text size="sm" fw={500}>背景音频（可选）</Text>
+              <Text size="sm" fw={500}>{t("images.audio")}</Text>
               <Group mt={4} gap="xs">
                 <TextInput
                   value={imagesAudioPath || ""}
                   readOnly
-                  placeholder="选择音频文件"
+                  placeholder={t("images.audioPlaceholder")}
                   style={{ flex: 1 }}
                   size="xs"
                 />
@@ -272,12 +274,12 @@ export function ImagesPanel() {
             </Box>
 
             <Box>
-              <Text size="sm" fw={500}>输出路径</Text>
+              <Text size="sm" fw={500}>{t("images.outputPath")}</Text>
               <Group mt={4} gap="xs">
                 <TextInput
                   value={imagesOutputPath}
                   onChange={(e) => setImagesOutputPath(e.currentTarget.value)}
-                  placeholder="选择输出文件路径"
+                  placeholder={t("images.outputPathPlaceholder")}
                   style={{ flex: 1 }}
                   size="xs"
                 />
@@ -293,7 +295,7 @@ export function ImagesPanel() {
               disabled={isProcessing || imagesInputPaths.length === 0}
               leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
             >
-              生成视频
+              {t("images.startGenerate")}
             </Button>
           </Stack>
         </ScrollArea>

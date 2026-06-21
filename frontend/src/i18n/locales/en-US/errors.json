@@ -1,0 +1,22 @@
+{
+  "FILE_NOT_FOUND": "File not found: {{path}}",
+  "FILE_PERMISSION_DENIED": "Permission denied: {{path}}",
+  "FILE_ALREADY_EXISTS": "File already exists: {{path}}",
+  "FFMPEG_NOT_FOUND": "FFmpeg not found, please install it first",
+  "ENCODER_UNAVAILABLE": "Encoder unavailable: {{name}}",
+  "DECODER_UNAVAILABLE": "Decoder unavailable: {{name}}",
+  "INVALID_VIDEO_FORMAT": "Invalid video format",
+  "PROBE_FAILED": "Failed to probe video info: {{reason}}",
+  "INVALID_PARAMS": "Invalid parameters: {{details}}",
+  "OPERATION_CANCELLED": "Operation cancelled",
+  "UNKNOWN_ERROR": "Unknown error",
+  "NETWORK_ERROR": "Network error",
+  "TIMEOUT_ERROR": "Operation timeout",
+  "DISK_FULL": "Disk space insufficient",
+  "INVALID_FILENAME": "Invalid filename: {{name}}",
+  "FILENAME_TOO_LONG": "Filename too long",
+  "UNSUPPORTED_FORMAT": "Unsupported format: {{format}}",
+  "VIDEO_FILE": "Video File",
+  "AUDIO_FILE": "Audio File",
+  "IMAGE_FILE": "Image File"
+}

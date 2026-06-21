@@ -1,5 +1,6 @@
 import { Group, TextInput, ActionIcon, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { FolderOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface DirectoryPickerProps {
   value: string;
@@ -10,8 +11,9 @@ interface DirectoryPickerProps {
 export function DirectoryPicker({
   value,
   onChange,
-  placeholder = "选择或输入路径",
+  placeholder,
 }: DirectoryPickerProps) {
+  const { t } = useTranslation("common");
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
@@ -31,7 +33,7 @@ export function DirectoryPicker({
         style={{ flex: 1 }}
         value={value}
         onChange={(e) => onChange(e.currentTarget.value)}
-        placeholder={placeholder}
+        placeholder={placeholder || t("messages.selectDirectory")}
         styles={{
           input: {
             fontFamily: "monospace",

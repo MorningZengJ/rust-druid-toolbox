@@ -1,0 +1,55 @@
+{
+  "title": "",
+  "appearance": {
+    "title": "",
+    "light": "",
+    "dark": "",
+    "system": ""
+  },
+  "theme": {
+    "title": "",
+    "customColor": "",
+    "colorPlaceholder": "",
+    "apply": "",
+    "clear": "",
+    "currentCustom": ""
+  },
+  "language": {
+    "title": "",
+    "label": ""
+  },
+  "update": {
+    "title": "",
+    "appDescription": "",
+    "currentVersion": "",
+    "updateStatus": "",
+    "autoCheck": "",
+    "autoCheckDesc": "",
+    "status": {
+      "idle": "",
+      "checking": "",
+      "available": "",
+      "downloading": "",
+      "downloaded": "",
+      "installing": "",
+      "notAvailable": "",
+      "error": "",
+      "errorDefault": ""
+    },
+    "actions": {
+      "checkUpdate": "",
+      "downloadInstall": "",
+      "recheck": ""
+    },
+    "buttons": {
+      "checking": "",
+      "available": "",
+      "downloading": "",
+      "downloaded": "",
+      "notAvailable": "",
+      "error": "",
+      "recheck": "",
+      "checkUpdate": ""
+    }
+  }
+}

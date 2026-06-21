@@ -7,6 +7,7 @@ import {
   useComputedColorScheme,
 } from "@mantine/core";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   ResizablePanel,
   ResizablePanelGroup,
@@ -21,6 +22,7 @@ import FilePreview from "./FilePreview";
 import StatusBar from "./StatusBar";
 
 export default function RenamePage() {
+  const { t } = useTranslation("rename");
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
@@ -108,9 +110,9 @@ export default function RenamePage() {
           <Text size="sm" fw={500} c="dimmed">
             {loadingProgress
               ? loadingProgress.phase === "scanning"
-                ? "正在扫描文件..."
-                : `计算目录大小: ${loadingProgress.processed} / ${loadingProgress.total}`
-              : "正在加载..."}
+                ? t("errors.loadFilesFailed", { error: "" })
+                : `${t("errors.loadFilesFailed", { error: "" })}: ${loadingProgress.processed} / ${loadingProgress.total}`
+              : t("errors.loadFilesFailed", { error: "" })}
           </Text>
           {loadingProgress && loadingProgress.phase === "calculating" && loadingProgress.total > 0 && (
             <Box w="60%" maw={400}>

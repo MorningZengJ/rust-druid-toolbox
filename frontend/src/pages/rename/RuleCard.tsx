@@ -1,5 +1,6 @@
 import { TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
 import type { ReplaceInfo } from "@/types";
 
@@ -9,6 +10,7 @@ interface RuleCardProps {
 }
 
 export default function RuleCard({ rule, index }: RuleCardProps) {
+  const { t } = useTranslation("rename");
   const rulesCollapsed = useRenameStore((s) => s.rulesCollapsed);
   const toggleRuleCollapse = useRenameStore((s) => s.toggleRuleCollapse);
   const updateReplaceInfo = useRenameStore((s) => s.updateReplaceInfo);
@@ -53,11 +55,11 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
 
         <Text size="xs" fw={500} c="dimmed" style={{ flex: 1 }} truncate>
           <Text span size="xs" fw={600} c={isDark ? theme.colors.dark[1] : theme.colors.gray[7]}>
-            规则 {index + 1}
+            {t("rules.ruleNumber", { index: index + 1 })}
           </Text>
           {!collapsed && (
             <Text span size="xs" c="dimmed" opacity={0.6} ml="xs">
-              {rule.content || "(空)"} → {rule.target || "(空)"}
+              {rule.content || t("rules.empty")} → {rule.target || t("rules.empty")}
             </Text>
           )}
         </Text>
@@ -92,11 +94,11 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
           }}
         >
           <Group gap="xs" align="center">
-            <Text size="xs" c="dimmed" w={48} style={{ flexShrink: 0 }}>查找</Text>
+            <Text size="xs" c="dimmed" w={48} style={{ flexShrink: 0 }}>{t("rules.find")}</Text>
             <TextInput
               style={{ flex: 1 }}
               size="xs"
-              placeholder="查找内容"
+              placeholder={t("rules.findPlaceholder")}
               value={rule.content}
               onChange={(e) => updateReplaceInfo(index, { content: e.currentTarget.value })}
               radius="md"
@@ -110,11 +112,11 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
             />
           </Group>
           <Group gap="xs" align="center">
-            <Text size="xs" c="dimmed" w={48} style={{ flexShrink: 0 }}>替换</Text>
+            <Text size="xs" c="dimmed" w={48} style={{ flexShrink: 0 }}>{t("rules.replace")}</Text>
             <TextInput
               style={{ flex: 1 }}
               size="xs"
-              placeholder="替换为"
+              placeholder={t("rules.replacePlaceholder")}
               value={rule.target}
               onChange={(e) => updateReplaceInfo(index, { target: e.currentTarget.value })}
               radius="md"
@@ -135,7 +137,7 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
                 size="xs"
                 color={theme.primaryColor}
               />
-              <Text size="xs" c="dimmed">正则表达式</Text>
+              <Text size="xs" c="dimmed">{t("rules.regex")}</Text>
             </Group>
           </Group>
         </Stack>

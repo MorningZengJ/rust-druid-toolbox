@@ -1,0 +1,22 @@
+{
+  "FILE_NOT_FOUND": "文件不存在：{{path}}",
+  "FILE_PERMISSION_DENIED": "没有文件访问权限：{{path}}",
+  "FILE_ALREADY_EXISTS": "文件已存在：{{path}}",
+  "FFMPEG_NOT_FOUND": "未找到 FFmpeg，请先安装",
+  "ENCODER_UNAVAILABLE": "编码器不可用：{{name}}",
+  "DECODER_UNAVAILABLE": "解码器不可用：{{name}}",
+  "INVALID_VIDEO_FORMAT": "无效的视频格式",
+  "PROBE_FAILED": "无法探测视频信息：{{reason}}",
+  "INVALID_PARAMS": "参数无效：{{details}}",
+  "OPERATION_CANCELLED": "操作已取消",
+  "UNKNOWN_ERROR": "未知错误",
+  "NETWORK_ERROR": "网络错误",
+  "TIMEOUT_ERROR": "操作超时",
+  "DISK_FULL": "磁盘空间不足",
+  "INVALID_FILENAME": "无效的文件名：{{name}}",
+  "FILENAME_TOO_LONG": "文件名过长",
+  "UNSUPPORTED_FORMAT": "不支持的格式：{{format}}",
+  "VIDEO_FILE": "视频文件",
+  "AUDIO_FILE": "音频文件",
+  "IMAGE_FILE": "图片文件"
+}

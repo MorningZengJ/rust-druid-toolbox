@@ -1,10 +1,12 @@
 import { Button, TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { ChevronDown, ChevronRight, Plus, Trash2, Filter } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
 import QuickFilters from "./QuickFilters";
 import type { FilterItem } from "@/types";
 
 export default function FilterSection() {
+  const { t } = useTranslation("rename");
   const filterCollapsed = useRenameStore((s) => s.filterCollapsed);
   const setFilterCollapsed = useRenameStore((s) => s.setFilterCollapsed);
   const filterItems = useRenameStore((s) => s.filterItems);
@@ -52,7 +54,7 @@ export default function FilterSection() {
       >
         {filterCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
         <Filter size={14} />
-        文件筛选
+        {t("filter.title")}
       </button>
 
       {!filterCollapsed && (
@@ -64,7 +66,7 @@ export default function FilterSection() {
               <TextInput
                 style={{ flex: 1 }}
                 size="xs"
-                placeholder="关键词筛选..."
+                placeholder={t("filter.placeholder")}
                 value={filter.keyword}
                 onChange={(e) => updateFilter(index, { keyword: e.currentTarget.value })}
                 radius="md"
@@ -82,7 +84,7 @@ export default function FilterSection() {
                   size="xs"
                   color={theme.primaryColor}
                 />
-                <Text size="xs" c="dimmed">正则</Text>
+                <Text size="xs" c="dimmed">{t("rules.regex")}</Text>
               </Group>
               <ActionIcon
                 variant="subtle"
@@ -103,7 +105,7 @@ export default function FilterSection() {
             onClick={addFilter}
             radius="md"
           >
-            添加筛选
+            {t("filter.quickFilters.byExtension")}
           </Button>
         </Stack>
       )}

@@ -1,0 +1,169 @@
+{
+  "tabs": {
+    "merge": "",
+    "images": "",
+    "convert": "",
+    "extract": ""
+  },
+  "ffmpeg": {
+    "notInstalled": "",
+    "notInstalledDesc": "",
+    "noEncoder": "",
+    "noEncoderDesc": "",
+    "installHint": "",
+    "encoderStatus": "",
+    "recheck": ""
+  },
+  "merge": {
+    "title": "",
+    "inputFiles": "",
+    "addFile": "",
+    "dropHint": "",
+    "outputFormat": "",
+    "reencodeMode": "",
+    "outputPath": "",
+    "outputPathPlaceholder": "",
+    "startMerge": "",
+    "minFilesHint": "",
+    "setOutputPathHint": ""
+  },
+  "images": {
+    "title": "",
+    "imageFolder": "",
+    "loadedCount": "",
+    "changeFolder": "",
+    "dropHint": "",
+    "outputFormat": "",
+    "customResolution": "",
+    "widthPlaceholder": "",
+    "heightPlaceholder": "",
+    "audio": "",
+    "audioPlaceholder": "",
+    "outputPath": "",
+    "outputPathPlaceholder": "",
+    "startGenerate": "",
+    "selectFolderHint": "",
+    "noImagesHint": "",
+    "setOutputPathHint": ""
+  },
+  "convert": {
+    "title": "",
+    "target": "",
+    "videoFormat": "",
+    "audioFormat": "",
+    "outputFormat": "",
+    "audioCodec": "",
+    "audioBitrate": "",
+    "startConvert": "",
+    "batchConvert": ""
+  },
+  "extract": {
+    "title": "",
+    "params": "",
+    "videoInfo": {
+      "resolution": "",
+      "fps": "",
+      "duration": "",
+      "totalFrames": ""
+    },
+    "outputPath": "",
+    "outputPathPlaceholder": "",
+    "extractMode": "",
+    "modes": {
+      "allFrames": "",
+      "byInterval": "",
+      "byCount": "",
+      "byTimePoints": ""
+    },
+    "interval": "",
+    "frameCount": "",
+    "timePoints": "",
+    "outputFormat": "",
+    "jpegQuality": "",
+    "scaleWidth": "",
+    "scaleWidthPlaceholder": "",
+    "extracting": "",
+    "timeRemaining": "",
+    "startExtract": "",
+    "viewFrames": "",
+    "dropVideoHint": "",
+    "setParamsHint": "",
+    "frameIndex": "",
+    "timestamp": "",
+    "filename": ""
+  },
+  "progress": {
+    "title": "",
+    "processing": "",
+    "fileProgress": "",
+    "frameProgress": "",
+    "timeRemaining": "",
+    "completed": "",
+    "log": "",
+    "waiting": "",
+    "clearLog": ""
+  },
+  "convertProgress": {
+    "title": "",
+    "batchProgress": "",
+    "currentFile": "",
+    "completedWithResult": "",
+    "completedAllSuccess": "",
+    "log": "",
+    "waiting": ""
+  },
+  "frameViewer": {
+    "title": "",
+    "dropHint": ""
+  },
+  "errors": {
+    "ffmpegNotInstalled": "",
+    "noVideoEncoder": "",
+    "mergeFailed": "",
+    "generateFailed": "",
+    "convertFailed": "",
+    "extractFailed": "",
+    "loadVideoFailed": "",
+    "readFolderFailed": ""
+  },
+  "codec": {
+    "copy": {
+      "label": "",
+      "tooltip": ""
+    },
+    "libx264": {
+      "label": "",
+      "tooltip": ""
+    },
+    "libx265": {
+      "label": "",
+      "tooltip": ""
+    },
+    "ffv1": {
+      "label": "",
+      "tooltip": ""
+    },
+    "libvpx-vp9": {
+      "label": "",
+      "tooltip": ""
+    },
+    "mpeg4": {
+      "label": "",
+      "tooltip": ""
+    }
+  },
+  "quality": {
+    "high": {
+      "label": "",
+      "tooltip": ""
+    },
+    "balanced": {
+      "label": "",
+      "tooltip": ""
+    },
+    "fast": {
+      "label": "",
+      "tooltip": ""
+    }
+  }
+}

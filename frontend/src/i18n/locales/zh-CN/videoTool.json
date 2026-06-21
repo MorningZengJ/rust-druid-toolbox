@@ -1,0 +1,169 @@
+{
+  "tabs": {
+    "merge": "合并视频",
+    "images": "图片转视频",
+    "convert": "格式转换",
+    "extract": "抽帧"
+  },
+  "ffmpeg": {
+    "notInstalled": "FFmpeg 未安装",
+    "notInstalledDesc": "视频工具需要 FFmpeg 支持，请先安装 FFmpeg 并确保其在系统 PATH 中。",
+    "noEncoder": "缺少视频编码器",
+    "noEncoderDesc": "FFmpeg 已安装，但未找到可用的视频编码器（libx264/libx265/mpeg4）。",
+    "installHint": "请安装包含完整编码器的 FFmpeg 版本。",
+    "encoderStatus": "编码器状态：",
+    "recheck": "重新检测"
+  },
+  "merge": {
+    "title": "合并视频",
+    "inputFiles": "输入文件 ({{count}})",
+    "addFile": "添加",
+    "dropHint": "拖拽视频文件到此处，或点击\"添加\"",
+    "outputFormat": "输出格式",
+    "reencodeMode": "重编码模式（处理不同编码格式，速度较慢）",
+    "outputPath": "输出路径",
+    "outputPathPlaceholder": "选择输出文件路径",
+    "startMerge": "合并",
+    "minFilesHint": "至少需要选择两个视频文件",
+    "setOutputPathHint": "请设置输出路径"
+  },
+  "images": {
+    "title": "图片转视频",
+    "imageFolder": "图片文件夹",
+    "loadedCount": "已加载 {{count}} 张图片",
+    "changeFolder": "更换文件夹",
+    "dropHint": "拖拽文件夹到此处，或点击选择",
+    "outputFormat": "输出格式",
+    "customResolution": "自定义分辨率",
+    "widthPlaceholder": "宽",
+    "heightPlaceholder": "高",
+    "audio": "背景音频（可选）",
+    "audioPlaceholder": "选择音频文件",
+    "outputPath": "输出路径",
+    "outputPathPlaceholder": "选择输出文件路径",
+    "startGenerate": "生成视频",
+    "selectFolderHint": "请先选择图片文件夹",
+    "noImagesHint": "文件夹中未找到图片文件",
+    "setOutputPathHint": "请设置输出路径"
+  },
+  "convert": {
+    "title": "格式转换",
+    "target": "转换目标",
+    "videoFormat": "视频格式",
+    "audioFormat": "提取音频",
+    "outputFormat": "输出格式",
+    "audioCodec": "音频编码",
+    "audioBitrate": "音频码率",
+    "startConvert": "开始转换",
+    "batchConvert": "批量转换"
+  },
+  "extract": {
+    "title": "视频抽帧",
+    "params": "参数设置",
+    "videoInfo": {
+      "resolution": "分辨率: {{width}}x{{height}}",
+      "fps": "帧率: {{fps}} fps",
+      "duration": "时长: {{duration}}s",
+      "totalFrames": "总帧数: {{count}}"
+    },
+    "outputPath": "帧图存放路径",
+    "outputPathPlaceholder": "选择或输入路径",
+    "extractMode": "提取模式",
+    "modes": {
+      "allFrames": "全部帧",
+      "byInterval": "按间隔",
+      "byCount": "按数量",
+      "byTimePoints": "按时间点"
+    },
+    "interval": "间隔: {{value}} 秒",
+    "frameCount": "帧数量",
+    "timePoints": "时间点（秒，逗号分隔）",
+    "outputFormat": "输出格式",
+    "jpegQuality": "JPEG 质量: {{value}}",
+    "scaleWidth": "缩放宽度（留空不缩放）",
+    "scaleWidthPlaceholder": "原始宽度",
+    "extracting": "提取中 {{progress}}%",
+    "timeRemaining": "剩余 {{time}}",
+    "startExtract": "提取帧",
+    "viewFrames": "提取的帧 ({{count}})",
+    "dropVideoHint": "双击或拖拽视频文件到此处",
+    "setParamsHint": "设置参数后点击\"提取帧\"",
+    "frameIndex": "帧索引: {{index}}",
+    "timestamp": "时间戳: {{time}}s",
+    "filename": "文件名: {{name}}"
+  },
+  "progress": {
+    "title": "进度",
+    "processing": "处理中...",
+    "fileProgress": "文件 {{current}}/{{total}}",
+    "frameProgress": "帧 {{processed}}/{{total}}",
+    "timeRemaining": "预计剩余: {{time}}",
+    "completed": "处理完成",
+    "log": "日志",
+    "waiting": "等待操作...",
+    "clearLog": "清空日志"
+  },
+  "convertProgress": {
+    "title": "进度",
+    "batchProgress": "总进度 {{current}}/{{total}} 文件",
+    "currentFile": "当前文件: {{name}}",
+    "completedWithResult": "转换完成: {{success}} 成功, {{fail}} 失败",
+    "completedAllSuccess": "转换完成: {{count}} 个文件全部成功",
+    "log": "日志",
+    "waiting": "等待操作..."
+  },
+  "frameViewer": {
+    "title": "视频抽帧",
+    "dropHint": "松开以加载视频"
+  },
+  "errors": {
+    "ffmpegNotInstalled": "FFmpeg 未安装",
+    "noVideoEncoder": "缺少视频编码器",
+    "mergeFailed": "合并失败: {{error}}",
+    "generateFailed": "生成失败: {{error}}",
+    "convertFailed": "转换失败: {{error}}",
+    "extractFailed": "提取帧失败: {{error}}",
+    "loadVideoFailed": "加载视频失败: {{error}}",
+    "readFolderFailed": "读取文件夹失败: {{error}}"
+  },
+  "codec": {
+    "copy": {
+      "label": "流复制",
+      "tooltip": "不重新编码，直接复制视频/音频数据。零质量损失，速度最快，但要求所有输入视频的编码格式和分辨率一致。"
+    },
+    "libx264": {
+      "label": "H.264",
+      "tooltip": "兼容性最广泛的视频编码，几乎所有设备和播放器都支持。适合日常使用。"
+    },
+    "libx265": {
+      "label": "H.265/HEVC",
+      "tooltip": "新一代视频编码，同等画质下文件比 H.264 小 30%-50%。编码较慢，部分老旧播放器不支持。"
+    },
+    "ffv1": {
+      "label": "FFV1 无损",
+      "tooltip": "数学无损编码，画质完全无损失，适合归档和专业后期。文件非常大（约为原始大小的 1/3），不适合日常播放。"
+    },
+    "libvpx-vp9": {
+      "label": "VP9",
+      "tooltip": "Google 开发的开放编码，配合 WebM 格式使用。画质优秀但编码较慢。"
+    },
+    "mpeg4": {
+      "label": "MPEG-4",
+      "tooltip": "旧一代编码，兼容性好但压缩效率低。仅在其他编码不可用时作为兜底方案。"
+    }
+  },
+  "quality": {
+    "high": {
+      "label": "高质量",
+      "tooltip": "CRF 18，视觉无损级别，文件较大，适合对画质要求极高的场景。"
+    },
+    "balanced": {
+      "label": "平衡",
+      "tooltip": "CRF 23，质量与文件大小的最佳平衡，推荐日常使用。"
+    },
+    "fast": {
+      "label": "快速",
+      "tooltip": "CRF 28，编码速度快，文件较小，适合预览或对画质要求不高的场景。"
+    }
+  }
+}

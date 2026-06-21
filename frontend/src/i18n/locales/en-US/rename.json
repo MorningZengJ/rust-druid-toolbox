@@ -1,0 +1,76 @@
+{
+  "toolbar": {
+    "selectDirectory": "Select Directory",
+    "parentDirectory": "Parent Directory",
+    "undoRuleChange": "Undo Rule Change",
+    "pathPlaceholder": "Enter directory path, press Enter to load"
+  },
+  "filter": {
+    "title": "Filters",
+    "placeholder": "Enter keyword to filter",
+    "quickFilters": {
+      "all": "All",
+      "folders": "Folders",
+      "files": "Files",
+      "byExtension": "By Extension"
+    }
+  },
+  "rules": {
+    "title": "Replace Rules",
+    "ruleNumber": "Rule {{index}}",
+    "empty": "(empty)",
+    "find": "Find",
+    "findPlaceholder": "Find content",
+    "replace": "Replace",
+    "replacePlaceholder": "Replace with",
+    "regex": "Regular Expression",
+    "addRule": "Add Rule",
+    "clearAll": "Clear All Rules",
+    "templates": {
+      "title": "Rule Templates",
+      "sequentialNumber": "Sequential Number",
+      "addPrefix": "Add Prefix",
+      "addSuffix": "Add Suffix",
+      "removeSpaces": "Remove Spaces",
+      "toLowerCase": "To Lowercase",
+      "toUpperCase": "To Uppercase"
+    }
+  },
+  "preview": {
+    "title": "File Preview",
+    "fileCount": "File Preview ({{count}})",
+    "multiSort": "Multi-Sort",
+    "loadMore": "Load More ({{current}}/{{total}})",
+    "selectDirectoryHint": "Select a directory to load file list",
+    "conflict": "Conflict",
+    "columns": {
+      "name": "Name",
+      "newName": "New Name",
+      "type": "Type",
+      "size": "Size"
+    }
+  },
+  "status": {
+    "fileCount": "{{count}} files",
+    "ruleCount": "{{count}} rules",
+    "conflictCount": "{{count}} conflicts",
+    "completed": "Completed: {{success}}/{{total}}",
+    "errors": "{{count}} errors",
+    "executeRename": "Execute Rename"
+  },
+  "dialog": {
+    "confirmTitle": "Confirm Rename",
+    "confirmMessage": "About to execute {{ruleCount}} replace rules on {{fileCount}} files.\nThis operation cannot be undone. Continue?",
+    "confirmExecute": "Confirm Execute",
+    "cancel": "Cancel"
+  },
+  "errors": {
+    "loadFilesFailed": "Failed to load files: {{error}}",
+    "applyTemplateFailed": "Failed to apply template: {{error}}",
+    "detectConflictsFailed": "Failed to detect conflicts: {{error}}",
+    "executeRenameFailed": "Failed to execute rename: {{error}}",
+    "selectDirectoryFailed": "Failed to select directory: {{error}}",
+    "getParentFailed": "Failed to get parent directory: {{error}}",
+    "openFileFailed": "Failed to open file: {{error}}"
+  }
+}

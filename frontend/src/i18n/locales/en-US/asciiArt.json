@@ -1,0 +1,65 @@
+{
+  "control": {
+    "renderMode": "Render Mode",
+    "renderModes": {
+      "png": "PNG - Fast, good for large images",
+      "svg": "SVG - Vector, scalable without quality loss",
+      "canvas": "Canvas - Flexible, supports interaction"
+    },
+    "width": "Width: {{value}} characters",
+    "charset": "Character Set",
+    "charsets": {
+      "simple": "Simple",
+      "standard": "Standard",
+      "complex": "Complex",
+      "custom": "Custom"
+    },
+    "customChars": "Custom Characters",
+    "customCharsPlaceholder": "Arrange characters from dark to light",
+    "contrast": "Contrast: {{value}}",
+    "brightness": "Brightness: {{value}}",
+    "saturation": "Saturation: {{value}}",
+    "charAspectRatio": "Char Aspect Ratio: {{value}}",
+    "invertColors": "Invert Colors",
+    "colorMode": "Color Mode",
+    "colorModes": {
+      "monochrome": "Monochrome",
+      "ansi256": "ANSI 256",
+      "trueColor": "True Color",
+      "html": "HTML"
+    },
+    "background": "Background",
+    "backgrounds": {
+      "black": "Black",
+      "white": "White",
+      "transparent": "Transparent"
+    }
+  },
+  "preview": {
+    "originalImage": "Original Image",
+    "selectImageHint": "Double-click to select image",
+    "dragDropHint": "Supports drag & drop or Ctrl+V paste",
+    "converting": "Converting...",
+    "tabs": {
+      "original": "Original",
+      "ascii": "ASCII Art"
+    },
+    "toolbar": {
+      "copy": "Copy",
+      "export": "Export",
+      "exportPng": "Export as PNG",
+      "exportSvg": "Export as SVG",
+      "exportTxt": "Export as TXT",
+      "exportHtml": "Export as HTML",
+      "timeRemaining": "{{time}} remaining"
+    }
+  },
+  "errors": {
+    "loadImageFailed": "Failed to load image: {{error}}",
+    "convertFailed": "Conversion failed: {{error}}",
+    "copyFailed": "Copy failed: {{error}}",
+    "exportFailed": "Export failed: {{error}}",
+    "exportPngFailed": "Failed to export PNG: {{error}}",
+    "canvasToPngFailed": "Failed to convert Canvas to PNG"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "toolbar": {
+    "selectDirectory": "",
+    "parentDirectory": "",
+    "undoRuleChange": "",
+    "pathPlaceholder": ""
+  },
+  "filter": {
+    "title": "",
+    "placeholder": "",
+    "quickFilters": {
+      "all": "",
+      "folders": "",
+      "files": "",
+      "byExtension": ""
+    }
+  },
+  "rules": {
+    "title": "",
+    "ruleNumber": "",
+    "empty": "",
+    "find": "",
+    "findPlaceholder": "",
+    "replace": "",
+    "replacePlaceholder": "",
+    "regex": "",
+    "addRule": "",
+    "clearAll": "",
+    "templates": {
+      "title": "",
+      "sequentialNumber": "",
+      "addPrefix": "",
+      "addSuffix": "",
+      "removeSpaces": "",
+      "toLowerCase": "",
+      "toUpperCase": ""
+    }
+  },
+  "preview": {
+    "title": "",
+    "fileCount": "",
+    "multiSort": "",
+    "loadMore": "",
+    "selectDirectoryHint": "",
+    "conflict": "",
+    "columns": {
+      "name": "",
+      "newName": "",
+      "type": "",
+      "size": ""
+    }
+  },
+  "status": {
+    "fileCount": "",
+    "ruleCount": "",
+    "conflictCount": "",
+    "completed": "",
+    "errors": "",
+    "executeRename": ""
+  },
+  "dialog": {
+    "confirmTitle": "",
+    "confirmMessage": "",
+    "confirmExecute": "",
+    "cancel": ""
+  },
+  "errors": {
+    "loadFilesFailed": "",
+    "applyTemplateFailed": "",
+    "detectConflictsFailed": "",
+    "executeRenameFailed": "",
+    "selectDirectoryFailed": "",
+    "getParentFailed": "",
+    "openFileFailed": ""
+  }
+}

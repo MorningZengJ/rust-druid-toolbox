@@ -1,0 +1,55 @@
+{
+  "title": "設定",
+  "appearance": {
+    "title": "表示モード",
+    "light": "ライト",
+    "dark": "ダーク",
+    "system": "システム"
+  },
+  "theme": {
+    "title": "カラーテーマ",
+    "customColor": "カスタムカラー",
+    "colorPlaceholder": "#3b82f6 (HEX カラーコード)",
+    "apply": "適用",
+    "clear": "クリア",
+    "currentCustom": "現在のカスタム: {{color}}"
+  },
+  "language": {
+    "title": "言語",
+    "label": "インターフェース言語"
+  },
+  "update": {
+    "title": "バージョン情報と更新",
+    "appDescription": "バッチ名前変更 / ASCIIアート / ビデオツール",
+    "currentVersion": "現在のインストールバージョン",
+    "updateStatus": "更新ステータス",
+    "autoCheck": "起動時に自動チェック",
+    "autoCheckDesc": "アプリ起動時に新しいバージョンを自動チェック",
+    "status": {
+      "idle": "下のボタンをクリックして新しいバージョンをチェック",
+      "checking": "更新をチェック中...",
+      "available": "新しいバージョンがあります",
+      "downloading": "更新をダウンロード中...",
+      "downloaded": "更新のダウンロード完了、アプリを再起動します...",
+      "installing": "更新をインストール中...",
+      "notAvailable": "現在のバージョン v{{version}} は最新です",
+      "error": "{{error}}",
+      "errorDefault": "更新のチェックに失敗しました。ネットワーク接続を確認してください"
+    },
+    "actions": {
+      "checkUpdate": "更新をチェック",
+      "downloadInstall": "ダウンロードしてインストール",
+      "recheck": "再チェック"
+    },
+    "buttons": {
+      "checking": "チェック中...",
+      "available": "新しいバージョン",
+      "downloading": "ダウンロード中 {{progress}}",
+      "downloaded": "ダウンロード完了",
+      "notAvailable": "最新",
+      "error": "チェック失敗",
+      "recheck": "再チェック",
+      "checkUpdate": "更新をチェック"
+    }
+  }
+}

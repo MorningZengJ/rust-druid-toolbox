@@ -1,9 +1,11 @@
 import { Button, Badge, Group, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { useModals } from "@mantine/modals";
 import { Play, AlertTriangle, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
 
 export default function StatusBar() {
+  const { t } = useTranslation("rename");
   const filterFileList = useRenameStore((s) => s.filterFileList);
   const replaceInfos = useRenameStore((s) => s.replaceInfos);
   const conflicts = useRenameStore((s) => s.conflicts);
@@ -21,14 +23,13 @@ export default function StatusBar() {
 
   const handleExecute = () => {
     modals.openConfirmModal({
-      title: "确认重命名",
+      title: t("dialog.confirmTitle"),
       children: (
         <Text size="sm">
-          即将对 {filterFileList.length} 个文件执行 {activeRules.length} 条替换规则。
-          此操作不可撤销，确定继续吗？
+          {t("dialog.confirmMessage", { fileCount: filterFileList.length, ruleCount: activeRules.length })}
         </Text>
       ),
-      labels: { confirm: "确认执行", cancel: "取消" },
+      labels: { confirm: t("dialog.confirmExecute"), cancel: t("dialog.cancel") },
       onConfirm: executeRenames,
     });
   };
@@ -45,25 +46,25 @@ export default function StatusBar() {
     >
       <Group gap="sm">
         <Text size="xs" c="dimmed">
-          {filterFileList.length} 个文件
+          {t("status.fileCount", { count: filterFileList.length })}
         </Text>
 
         {hasChanges && (
           <Badge variant="light" size="sm" radius="sm">
-            {activeRules.length} 条规则
+            {t("status.ruleCount", { count: activeRules.length })}
           </Badge>
         )}
 
         {hasConflicts && (
           <Badge color="red" variant="filled" size="sm" radius="sm" leftSection={<AlertTriangle size={12} />}>
-            {conflicts.length} 个冲突
+            {t("status.conflictCount", { count: conflicts.length })}
           </Badge>
         )}
 
         {status && (
           <Badge variant="filled" size="sm" radius="sm" leftSection={<CheckCircle size={12} />}>
-            完成: {status.success}/{status.total}
-            {status.errors.length > 0 && `, ${status.errors.length} 个错误`}
+            {t("status.completed", { success: status.success, total: status.total })}
+            {status.errors.length > 0 && `, ${t("status.errors", { count: status.errors.length })}`}
           </Badge>
         )}
       </Group>
@@ -75,7 +76,7 @@ export default function StatusBar() {
         onClick={handleExecute}
         radius="md"
       >
-        执行重命名
+        {t("status.executeRename")}
       </Button>
     </Group>
   );

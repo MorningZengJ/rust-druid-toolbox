@@ -1,5 +1,6 @@
 import { Flex, Text, Button, Stack, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { AlertCircle, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface FfmpegWarningProps {
   onRetry: () => void;
@@ -7,6 +8,7 @@ interface FfmpegWarningProps {
 }
 
 export function FfmpegWarning({ onRetry, variant = "default" }: FfmpegWarningProps) {
+  const { t } = useTranslation("videoTool");
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
@@ -28,12 +30,12 @@ export function FfmpegWarning({ onRetry, variant = "default" }: FfmpegWarningPro
         >
           <Icon size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
         </div>
-        <Text fw={600} size="lg">FFmpeg 未安装</Text>
+        <Text fw={600} size="lg">{t("ffmpeg.notInstalled")}</Text>
         <Text size="sm" c="dimmed" ta="center" maw={360}>
-          此功能需要 FFmpeg 支持，请先安装 FFmpeg 并确保其在系统 PATH 中。
+          {t("ffmpeg.notInstalledDesc")}
         </Text>
         <Button mt="sm" onClick={onRetry} radius="md">
-          重新检测
+          {t("ffmpeg.recheck")}
         </Button>
       </Stack>
     </Flex>

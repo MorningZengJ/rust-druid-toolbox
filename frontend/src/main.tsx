@@ -5,6 +5,7 @@ import { LogicalSize, LogicalPosition } from "@tauri-apps/api/dpi";
 import { LazyStore } from "@tauri-apps/plugin-store";
 import ThemeProvider from "./components/ThemeProvider";
 import App from "./App";
+import "./i18n";
 import "@mantine/core/styles.css";
 import "./globals.css";
 

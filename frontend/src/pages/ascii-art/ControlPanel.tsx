@@ -9,10 +9,12 @@ import {
   ScrollArea,
   useMantineTheme,
 } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
 import type { CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
 
 export function ControlPanel() {
+  const { t } = useTranslation("asciiArt");
   const params = useAsciiArtStore((s) => s.params);
   const setParams = useAsciiArtStore((s) => s.setParams);
   const theme = useMantineTheme();
@@ -32,15 +34,15 @@ export function ControlPanel() {
         <Stack gap="md" p="sm">
           {/* Render Mode */}
           <Box>
-            <Text size="xs" fw={500} c="dimmed" mb={4}>渲染模式</Text>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>{t("control.renderMode")}</Text>
             <Select
               size="xs"
               value={params.renderMode}
               onChange={(v) => setParams({ renderMode: (v ?? "png") as RenderMode })}
               data={[
-                { value: "png", label: "PNG - 快速，适合大图" },
-                { value: "svg", label: "SVG - 矢量，缩放不失真" },
-                { value: "canvas", label: "Canvas - 灵活，支持交互" },
+                { value: "png", label: t("control.renderModes.png") },
+                { value: "svg", label: t("control.renderModes.svg") },
+                { value: "canvas", label: t("control.renderModes.canvas") },
               ]}
             />
           </Box>
@@ -48,7 +50,7 @@ export function ControlPanel() {
           {/* Width */}
           <Box>
             <Text size="xs" fw={500} c="dimmed" mb={4}>
-              宽度: {params.width} 字符
+              {t("control.width", { value: params.width })}
             </Text>
             <Slider
               size="xs"
@@ -62,16 +64,16 @@ export function ControlPanel() {
 
           {/* Charset */}
           <Box>
-            <Text size="xs" fw={500} c="dimmed" mb={4}>字符集</Text>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>{t("control.charset")}</Text>
             <Select
               size="xs"
               value={params.charset}
               onChange={(v) => setParams({ charset: (v ?? "standard") as CharsetPreset })}
               data={[
-                { value: "simple", label: "简单" },
-                { value: "standard", label: "标准" },
-                { value: "complex", label: "复杂" },
-                { value: "custom", label: "自定义" },
+                { value: "simple", label: t("control.charsets.simple") },
+                { value: "standard", label: t("control.charsets.standard") },
+                { value: "complex", label: t("control.charsets.complex") },
+                { value: "custom", label: t("control.charsets.custom") },
               ]}
             />
           </Box>
@@ -79,13 +81,13 @@ export function ControlPanel() {
           {/* Custom charset */}
           {params.charset === "custom" && (
             <Box>
-              <Text size="xs" fw={500} c="dimmed" mb={4}>自定义字符</Text>
+              <Text size="xs" fw={500} c="dimmed" mb={4}>{t("control.customChars")}</Text>
               <TextInput
                 size="xs"
                 style={{ fontFamily: "monospace" }}
                 value={params.customCharset}
                 onChange={(e) => setParams({ customCharset: e.currentTarget.value })}
-                placeholder="从暗到亮排列字符"
+                placeholder={t("control.customCharsPlaceholder")}
               />
             </Box>
           )}
@@ -93,7 +95,7 @@ export function ControlPanel() {
           {/* Contrast */}
           <Box>
             <Text size="xs" fw={500} c="dimmed" mb={4}>
-              对比度: {params.contrast.toFixed(1)}
+              {t("control.contrast", { value: params.contrast.toFixed(1) })}
             </Text>
             <Slider
               size="xs"
@@ -108,7 +110,7 @@ export function ControlPanel() {
           {/* Brightness */}
           <Box>
             <Text size="xs" fw={500} c="dimmed" mb={4}>
-              亮度: {params.brightness.toFixed(1)}
+              {t("control.brightness", { value: params.brightness.toFixed(1) })}
             </Text>
             <Slider
               size="xs"
@@ -123,7 +125,7 @@ export function ControlPanel() {
           {/* Saturation */}
           <Box>
             <Text size="xs" fw={500} c="dimmed" mb={4}>
-              饱和度: {params.saturation.toFixed(1)}
+              {t("control.saturation", { value: params.saturation.toFixed(1) })}
             </Text>
             <Slider
               size="xs"
@@ -138,7 +140,7 @@ export function ControlPanel() {
           {/* Char aspect ratio */}
           <Box>
             <Text size="xs" fw={500} c="dimmed" mb={4}>
-              字符宽高比: {params.charAspectRatio.toFixed(2)}
+              {t("control.charAspectRatio", { value: params.charAspectRatio.toFixed(2) })}
             </Text>
             <Slider
               size="xs"
@@ -153,38 +155,38 @@ export function ControlPanel() {
           {/* Invert */}
           <Checkbox
             size="xs"
-            label="反转明暗"
+            label={t("control.invertColors")}
             checked={params.invert}
             onChange={(e) => setParams({ invert: e.currentTarget.checked })}
           />
 
           {/* Color mode */}
           <Box>
-            <Text size="xs" fw={500} c="dimmed" mb={4}>颜色模式</Text>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>{t("control.colorMode")}</Text>
             <Select
               size="xs"
               value={params.colorMode}
               onChange={(v) => setParams({ colorMode: (v ?? "monochrome") as ColorMode })}
               data={[
-                { value: "monochrome", label: "单色" },
-                { value: "ansi256", label: "ANSI 256色" },
-                { value: "trueColor", label: "真彩色" },
-                { value: "html", label: "HTML" },
+                { value: "monochrome", label: t("control.colorModes.monochrome") },
+                { value: "ansi256", label: t("control.colorModes.ansi256") },
+                { value: "trueColor", label: t("control.colorModes.trueColor") },
+                { value: "html", label: t("control.colorModes.html") },
               ]}
             />
           </Box>
 
           {/* Background */}
           <Box>
-            <Text size="xs" fw={500} c="dimmed" mb={4}>背景</Text>
+            <Text size="xs" fw={500} c="dimmed" mb={4}>{t("control.background")}</Text>
             <Select
               size="xs"
               value={params.background}
               onChange={(v) => setParams({ background: (v ?? "black") as Background })}
               data={[
-                { value: "black", label: "黑色" },
-                { value: "white", label: "白色" },
-                { value: "transparent", label: "透明" },
+                { value: "black", label: t("control.backgrounds.black") },
+                { value: "white", label: t("control.backgrounds.white") },
+                { value: "transparent", label: t("control.backgrounds.transparent") },
               ]}
             />
           </Box>

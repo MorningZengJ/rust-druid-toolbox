@@ -1,8 +1,10 @@
 import { TextInput, Group, Tooltip, ActionIcon, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { FolderOpen, ArrowUp, Undo2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
 
 export default function Toolbar() {
+  const { t } = useTranslation("rename");
   const dirPath = useRenameStore((s) => s.dirPath);
   const setDirPath = useRenameStore((s) => s.setDirPath);
   const chooseDirectory = useRenameStore((s) => s.chooseDirectory);
@@ -33,7 +35,7 @@ export default function Toolbar() {
       }}
     >
       <Group gap={4}>
-        <Tooltip label="选择目录" withArrow>
+        <Tooltip label={t("toolbar.selectDirectory")} withArrow>
           <ActionIcon
             variant="light"
             color={theme.primaryColor}
@@ -45,7 +47,7 @@ export default function Toolbar() {
           </ActionIcon>
         </Tooltip>
 
-        <Tooltip label="上级目录" withArrow>
+        <Tooltip label={t("toolbar.parentDirectory")} withArrow>
           <ActionIcon
             variant="default"
             size="sm"
@@ -63,7 +65,7 @@ export default function Toolbar() {
         value={dirPath}
         onChange={(e) => setDirPath(e.currentTarget.value)}
         onKeyDown={handlePathKeyDown}
-        placeholder="输入目录路径，按 Enter 加载"
+        placeholder={t("toolbar.pathPlaceholder")}
         radius="md"
         styles={{
           input: {
@@ -77,7 +79,7 @@ export default function Toolbar() {
         }}
       />
 
-      <Tooltip label="撤销规则修改" withArrow>
+      <Tooltip label={t("toolbar.undoRuleChange")} withArrow>
         <ActionIcon
           variant="default"
           size="sm"

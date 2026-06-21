@@ -22,10 +22,12 @@ import {
   ArrowUpCircle,
   Sparkles,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useUpdateStore } from "@/stores/updateStore";
 import type { UpdateStatus } from "@/types";
 
 export default function UpdateSection() {
+  const { t } = useTranslation("settings");
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
@@ -63,7 +65,7 @@ export default function UpdateSection() {
             leftSection={<Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />}
             styles={{ root: { textTransform: "none" } }}
           >
-            检查中...
+            {t("update.buttons.checking")}
           </Badge>
         );
       case "available":
@@ -74,7 +76,7 @@ export default function UpdateSection() {
             leftSection={<Sparkles size={12} />}
             styles={{ root: { textTransform: "none" } }}
           >
-            有新版本
+            {t("update.buttons.available")}
           </Badge>
         );
       case "downloading":
@@ -85,7 +87,7 @@ export default function UpdateSection() {
             leftSection={<Download size={12} />}
             styles={{ root: { textTransform: "none" } }}
           >
-            下载中 {progress.percentage > 0 ? `${progress.percentage}%` : ""}
+            {t("update.buttons.downloading", { progress: progress.percentage > 0 ? `${progress.percentage}%` : "" })}
           </Badge>
         );
       case "downloaded":
@@ -96,7 +98,7 @@ export default function UpdateSection() {
             leftSection={<Check size={12} />}
             styles={{ root: { textTransform: "none" } }}
           >
-            已下载
+            {t("update.buttons.downloaded")}
           </Badge>
         );
       case "no-update":
@@ -107,7 +109,7 @@ export default function UpdateSection() {
             leftSection={<Check size={12} />}
             styles={{ root: { textTransform: "none" } }}
           >
-            已是最新
+            {t("update.buttons.notAvailable")}
           </Badge>
         );
       case "error":
@@ -118,7 +120,7 @@ export default function UpdateSection() {
             leftSection={<AlertCircle size={12} />}
             styles={{ root: { textTransform: "none" } }}
           >
-            检查失败
+            {t("update.buttons.error")}
           </Badge>
         );
       default:
@@ -131,7 +133,7 @@ export default function UpdateSection() {
       case "idle":
         return (
           <Text size="sm" c="dimmed">
-            点击下方按钮检查是否有新版本可用
+            {t("update.status.idle")}
           </Text>
         );
 
@@ -145,7 +147,7 @@ export default function UpdateSection() {
                 color: theme.colors[theme.primaryColor][isDark ? 4 : 6],
               }}
             />
-            <Text size="sm" c="dimmed">正在检查更新...</Text>
+            <Text size="sm" c="dimmed">{t("update.status.checking")}</Text>
           </Group>
         );
 
@@ -158,7 +160,7 @@ export default function UpdateSection() {
                 style={{ color: theme.colors.teal[isDark ? 4 : 6] }}
               />
               <Text size="sm" fw={500}>
-                发现新版本{" "}
+                {t("update.status.available")}{" "}
                 <Text
                   span
                   fw={700}
@@ -193,7 +195,7 @@ export default function UpdateSection() {
         return (
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text size="sm" c="dimmed">正在下载更新...</Text>
+              <Text size="sm" c="dimmed">{t("update.status.downloading")}</Text>
               {progress.totalBytes && (
                 <Text size="xs" c="dimmed">
                   {formatBytes(progress.downloadedBytes)} / {formatBytes(progress.totalBytes)}
@@ -220,7 +222,7 @@ export default function UpdateSection() {
         return (
           <Group gap="xs">
             <Check size={14} style={{ color: theme.colors.green[isDark ? 4 : 6] }} />
-            <Text size="sm">更新已下载完成，即将重启应用...</Text>
+            <Text size="sm">{t("update.status.downloaded")}</Text>
           </Group>
         );
 
@@ -229,7 +231,7 @@ export default function UpdateSection() {
           <Group gap="xs">
             <Check size={14} style={{ color: theme.colors.green[isDark ? 4 : 6] }} />
             <Text size="sm" c="dimmed">
-              当前版本 v{currentVersion} 已是最新
+              {t("update.status.notAvailable", { version: currentVersion })}
             </Text>
           </Group>
         );
@@ -240,7 +242,7 @@ export default function UpdateSection() {
             <Group gap="xs">
               <AlertCircle size={14} style={{ color: theme.colors.red[isDark ? 4 : 6] }} />
               <Text size="sm" c="red">
-                {error || "检查更新失败，请检查网络连接"}
+                {error || t("update.status.errorDefault")}
               </Text>
             </Group>
           </Stack>
@@ -256,7 +258,7 @@ export default function UpdateSection() {
                 color: theme.colors[theme.primaryColor][isDark ? 4 : 6],
               }}
             />
-            <Text size="sm" c="dimmed">正在安装更新...</Text>
+            <Text size="sm" c="dimmed">{t("update.status.installing")}</Text>
           </Group>
         );
 
@@ -277,7 +279,7 @@ export default function UpdateSection() {
             onClick={downloadAndInstall}
             radius="md"
           >
-            下载并安装
+            {t("update.actions.downloadInstall")}
           </Button>
           <Button
             size="compact-sm"
@@ -286,7 +288,7 @@ export default function UpdateSection() {
             onClick={checkForUpdate}
             radius="md"
           >
-            重新检查
+            {t("update.actions.recheck")}
           </Button>
         </Group>
       );
@@ -301,7 +303,7 @@ export default function UpdateSection() {
           onClick={checkForUpdate}
           radius="md"
         >
-          重新检查
+          {t("update.actions.recheck")}
         </Button>
       );
     }
@@ -316,7 +318,7 @@ export default function UpdateSection() {
         onClick={checkForUpdate}
         radius="md"
       >
-        检查更新
+        {t("update.actions.checkUpdate")}
       </Button>
     );
   };
@@ -358,10 +360,10 @@ export default function UpdateSection() {
             </Box>
             <div>
               <Text size="sm" fw={600}>MToolbox</Text>
-              <Text size="xs" c="dimmed">批量重命名 / 字符画 / 视频工具</Text>
+              <Text size="xs" c="dimmed">{t("update.appDescription")}</Text>
             </div>
           </Group>
-          <Tooltip label="当前安装版本" position="left" withArrow>
+          <Tooltip label={t("update.currentVersion")} position="left" withArrow>
             <Badge
               variant="filled"
               styles={{
@@ -382,7 +384,7 @@ export default function UpdateSection() {
       <Stack gap="sm" mt="sm">
         <Group justify="space-between" align="center">
           <Group gap="xs">
-            <Text size="sm" fw={500}>更新状态</Text>
+            <Text size="sm" fw={500}>{t("update.updateStatus")}</Text>
             {renderStatusBadge()}
           </Group>
         </Group>
@@ -408,8 +410,8 @@ export default function UpdateSection() {
       >
         <Group justify="space-between" align="center">
           <div>
-            <Text size="sm" fw={500}>启动时自动检查</Text>
-            <Text size="xs" c="dimmed">应用启动时自动检查是否有新版本</Text>
+            <Text size="sm" fw={500}>{t("update.autoCheck")}</Text>
+            <Text size="xs" c="dimmed">{t("update.autoCheckDesc")}</Text>
           </div>
           <Switch
             checked={autoCheck}

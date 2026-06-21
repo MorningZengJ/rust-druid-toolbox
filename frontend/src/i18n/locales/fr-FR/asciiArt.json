@@ -1,0 +1,65 @@
+{
+  "control": {
+    "renderMode": "",
+    "renderModes": {
+      "png": "",
+      "svg": "",
+      "canvas": ""
+    },
+    "width": "",
+    "charset": "",
+    "charsets": {
+      "simple": "",
+      "standard": "",
+      "complex": "",
+      "custom": ""
+    },
+    "customChars": "",
+    "customCharsPlaceholder": "",
+    "contrast": "",
+    "brightness": "",
+    "saturation": "",
+    "charAspectRatio": "",
+    "invertColors": "",
+    "colorMode": "",
+    "colorModes": {
+      "monochrome": "",
+      "ansi256": "",
+      "trueColor": "",
+      "html": ""
+    },
+    "background": "",
+    "backgrounds": {
+      "black": "",
+      "white": "",
+      "transparent": ""
+    }
+  },
+  "preview": {
+    "originalImage": "",
+    "selectImageHint": "",
+    "dragDropHint": "",
+    "converting": "",
+    "tabs": {
+      "original": "",
+      "ascii": ""
+    },
+    "toolbar": {
+      "copy": "",
+      "export": "",
+      "exportPng": "",
+      "exportSvg": "",
+      "exportTxt": "",
+      "exportHtml": "",
+      "timeRemaining": ""
+    }
+  },
+  "errors": {
+    "loadImageFailed": "",
+    "convertFailed": "",
+    "copyFailed": "",
+    "exportFailed": "",
+    "exportPngFailed": "",
+    "canvasToPngFailed": ""
+  }
+}

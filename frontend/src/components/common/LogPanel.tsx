@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Box, Flex, Text, ScrollArea, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 
 interface LogEntry {
   level: string;
@@ -12,6 +13,7 @@ interface LogPanelProps {
 }
 
 export function LogPanel({ logs, height = 140 }: LogPanelProps) {
+  const { t } = useTranslation("common");
   const logEndRef = useRef<HTMLDivElement>(null);
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme();
@@ -43,7 +45,7 @@ export function LogPanel({ logs, height = 140 }: LogPanelProps) {
           backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
         }}
       >
-        <Text size="xs" fw={600} c="dimmed">日志</Text>
+        <Text size="xs" fw={600} c="dimmed">{t("labels.log")}</Text>
       </Box>
       <ScrollArea h={height - 28} p="xs">
         {logs.length > 0 ? (
@@ -57,7 +59,7 @@ export function LogPanel({ logs, height = 140 }: LogPanelProps) {
           </>
         ) : (
           <Flex h="100%" align="center" justify="center">
-            <Text size="xs" c="dimmed">暂无日志</Text>
+            <Text size="xs" c="dimmed">{t("messages.noData")}</Text>
           </Flex>
         )}
       </ScrollArea>

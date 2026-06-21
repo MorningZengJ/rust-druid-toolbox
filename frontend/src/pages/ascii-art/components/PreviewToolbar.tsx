@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
   FileDown,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { formatTime } from "@/utils/formatTime";
 
 interface PreviewToolbarProps {
@@ -47,6 +48,7 @@ export function PreviewToolbar({
   exportOutput,
   onExportPng,
 }: PreviewToolbarProps) {
+  const { t } = useTranslation("asciiArt");
   return (
     <Flex
       align="center"
@@ -59,10 +61,10 @@ export function PreviewToolbar({
         <Tabs value={activeTab} onChange={(v) => setActiveTab((v ?? "original") as "original" | "ascii")}>
           <Tabs.List>
             <Tabs.Tab value="original" leftSection={<ImageIcon size={12} />}>
-              <Text size="xs">原图</Text>
+              <Text size="xs">{t("preview.tabs.original")}</Text>
             </Tabs.Tab>
             <Tabs.Tab value="ascii" disabled={!hasOutput}>
-              <Text size="xs">字符画</Text>
+              <Text size="xs">{t("preview.tabs.ascii")}</Text>
             </Tabs.Tab>
           </Tabs.List>
         </Tabs>
@@ -90,7 +92,7 @@ export function PreviewToolbar({
             <Text size="xs" c="dimmed">
               {progress.toFixed(0)}%
               {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 && (
-                <span> · 剩余 {formatTime(estimatedTimeRemaining)}</span>
+                <span> · {t("preview.toolbar.timeRemaining", { time: formatTime(estimatedTimeRemaining) })}</span>
               )}
             </Text>
           </Flex>
@@ -102,7 +104,7 @@ export function PreviewToolbar({
           leftSection={<Copy size={14} />}
           onClick={copyToClipboard}
         >
-          复制
+          {t("preview.toolbar.copy")}
         </Button>
         <Menu position="bottom-end">
           <Menu.Target>
@@ -112,21 +114,21 @@ export function PreviewToolbar({
               disabled={!hasOutput}
               leftSection={<Download size={14} />}
             >
-              导出
+              {t("preview.toolbar.export")}
             </Button>
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Item leftSection={<FileDown size={14} />} onClick={onExportPng}>
-              导出为 PNG
+              {t("preview.toolbar.exportPng")}
             </Menu.Item>
             <Menu.Item leftSection={<FileDown size={14} />} onClick={() => exportOutput("svg")}>
-              导出为 SVG
+              {t("preview.toolbar.exportSvg")}
             </Menu.Item>
             <Menu.Item leftSection={<FileDown size={14} />} onClick={() => exportOutput("txt")}>
-              导出为 TXT
+              {t("preview.toolbar.exportTxt")}
             </Menu.Item>
             <Menu.Item leftSection={<FileDown size={14} />} onClick={() => exportOutput("html")}>
-              导出为 HTML
+              {t("preview.toolbar.exportHtml")}
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>

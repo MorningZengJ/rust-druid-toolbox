@@ -1,0 +1,65 @@
+{
+  "control": {
+    "renderMode": "渲染模式",
+    "renderModes": {
+      "png": "PNG - 快速，适合大图",
+      "svg": "SVG - 矢量，缩放不失真",
+      "canvas": "Canvas - 灵活，支持交互"
+    },
+    "width": "宽度: {{value}} 字符",
+    "charset": "字符集",
+    "charsets": {
+      "simple": "简单",
+      "standard": "标准",
+      "complex": "复杂",
+      "custom": "自定义"
+    },
+    "customChars": "自定义字符",
+    "customCharsPlaceholder": "从暗到亮排列字符",
+    "contrast": "对比度: {{value}}",
+    "brightness": "亮度: {{value}}",
+    "saturation": "饱和度: {{value}}",
+    "charAspectRatio": "字符宽高比: {{value}}",
+    "invertColors": "反转明暗",
+    "colorMode": "颜色模式",
+    "colorModes": {
+      "monochrome": "单色",
+      "ansi256": "ANSI 256色",
+      "trueColor": "真彩色",
+      "html": "HTML"
+    },
+    "background": "背景",
+    "backgrounds": {
+      "black": "黑色",
+      "white": "白色",
+      "transparent": "透明"
+    }
+  },
+  "preview": {
+    "originalImage": "原始图片",
+    "selectImageHint": "双击选择图片",
+    "dragDropHint": "支持拖拽或 Ctrl+V 粘贴",
+    "converting": "正在转换...",
+    "tabs": {
+      "original": "原图",
+      "ascii": "字符画"
+    },
+    "toolbar": {
+      "copy": "复制",
+      "export": "导出",
+      "exportPng": "导出为 PNG",
+      "exportSvg": "导出为 SVG",
+      "exportTxt": "导出为 TXT",
+      "exportHtml": "导出为 HTML",
+      "timeRemaining": "剩余 {{time}}"
+    }
+  },
+  "errors": {
+    "loadImageFailed": "加载图片失败: {{error}}",
+    "convertFailed": "转换失败: {{error}}",
+    "copyFailed": "复制失败: {{error}}",
+    "exportFailed": "导出失败: {{error}}",
+    "exportPngFailed": "导出PNG失败: {{error}}",
+    "canvasToPngFailed": "Canvas 转换为 PNG 失败"
+  }
+}

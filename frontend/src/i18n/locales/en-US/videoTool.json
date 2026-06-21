@@ -1,0 +1,169 @@
+{
+  "tabs": {
+    "merge": "Merge Videos",
+    "images": "Images to Video",
+    "convert": "Format Convert",
+    "extract": "Extract Frames"
+  },
+  "ffmpeg": {
+    "notInstalled": "FFmpeg Not Installed",
+    "notInstalledDesc": "Video tools require FFmpeg support. Please install FFmpeg first and ensure it's in the system PATH.",
+    "noEncoder": "Missing Video Encoder",
+    "noEncoderDesc": "FFmpeg is installed, but no available video encoder found (libx264/libx265/mpeg4).",
+    "installHint": "Please install a version of FFmpeg with complete encoders.",
+    "encoderStatus": "Encoder Status:",
+    "recheck": "Recheck"
+  },
+  "merge": {
+    "title": "Merge Videos",
+    "inputFiles": "Input Files ({{count}})",
+    "addFile": "Add",
+    "dropHint": "Drop video files here, or click 'Add'",
+    "outputFormat": "Output Format",
+    "reencodeMode": "Re-encode mode (handles different formats, slower)",
+    "outputPath": "Output Path",
+    "outputPathPlaceholder": "Select output file path",
+    "startMerge": "Merge",
+    "minFilesHint": "At least two video files are required",
+    "setOutputPathHint": "Please set output path"
+  },
+  "images": {
+    "title": "Images to Video",
+    "imageFolder": "Image Folder",
+    "loadedCount": "{{count}} images loaded",
+    "changeFolder": "Change Folder",
+    "dropHint": "Drop folder here, or click to select",
+    "outputFormat": "Output Format",
+    "customResolution": "Custom Resolution",
+    "widthPlaceholder": "Width",
+    "heightPlaceholder": "Height",
+    "audio": "Background Audio (optional)",
+    "audioPlaceholder": "Select audio file",
+    "outputPath": "Output Path",
+    "outputPathPlaceholder": "Select output file path",
+    "startGenerate": "Generate Video",
+    "selectFolderHint": "Please select image folder first",
+    "noImagesHint": "No images found in folder",
+    "setOutputPathHint": "Please set output path"
+  },
+  "convert": {
+    "title": "Format Convert",
+    "target": "Convert Target",
+    "videoFormat": "Video Format",
+    "audioFormat": "Extract Audio",
+    "outputFormat": "Output Format",
+    "audioCodec": "Audio Codec",
+    "audioBitrate": "Audio Bitrate",
+    "startConvert": "Start Convert",
+    "batchConvert": "Batch Convert"
+  },
+  "extract": {
+    "title": "Extract Frames",
+    "params": "Parameters",
+    "videoInfo": {
+      "resolution": "Resolution: {{width}}x{{height}}",
+      "fps": "FPS: {{fps}} fps",
+      "duration": "Duration: {{duration}}s",
+      "totalFrames": "Total Frames: {{count}}"
+    },
+    "outputPath": "Frame Output Path",
+    "outputPathPlaceholder": "Select or enter path",
+    "extractMode": "Extract Mode",
+    "modes": {
+      "allFrames": "All Frames",
+      "byInterval": "By Interval",
+      "byCount": "By Count",
+      "byTimePoints": "By Time Points"
+    },
+    "interval": "Interval: {{value}} seconds",
+    "frameCount": "Frame Count",
+    "timePoints": "Time points (seconds, comma-separated)",
+    "outputFormat": "Output Format",
+    "jpegQuality": "JPEG Quality: {{value}}",
+    "scaleWidth": "Scale Width (leave empty for original)",
+    "scaleWidthPlaceholder": "Original width",
+    "extracting": "Extracting {{progress}}%",
+    "timeRemaining": "{{time}} remaining",
+    "startExtract": "Extract Frames",
+    "viewFrames": "Extracted Frames ({{count}})",
+    "dropVideoHint": "Double-click or drop video file here",
+    "setParamsHint": "Set parameters then click 'Extract Frames'",
+    "frameIndex": "Frame Index: {{index}}",
+    "timestamp": "Timestamp: {{time}}s",
+    "filename": "Filename: {{name}}"
+  },
+  "progress": {
+    "title": "Progress",
+    "processing": "Processing...",
+    "fileProgress": "File {{current}}/{{total}}",
+    "frameProgress": "Frame {{processed}}/{{total}}",
+    "timeRemaining": "Estimated remaining: {{time}}",
+    "completed": "Processing completed",
+    "log": "Log",
+    "waiting": "Waiting for operation...",
+    "clearLog": "Clear Log"
+  },
+  "convertProgress": {
+    "title": "Progress",
+    "batchProgress": "Total progress {{current}}/{{total}} files",
+    "currentFile": "Current file: {{name}}",
+    "completedWithResult": "Convert completed: {{success}} succeeded, {{fail}} failed",
+    "completedAllSuccess": "Convert completed: all {{count}} files succeeded",
+    "log": "Log",
+    "waiting": "Waiting for operation..."
+  },
+  "frameViewer": {
+    "title": "Video Frame Extraction",
+    "dropHint": "Release to load video"
+  },
+  "errors": {
+    "ffmpegNotInstalled": "FFmpeg not installed",
+    "noVideoEncoder": "Missing video encoder",
+    "mergeFailed": "Merge failed: {{error}}",
+    "generateFailed": "Generation failed: {{error}}",
+    "convertFailed": "Convert failed: {{error}}",
+    "extractFailed": "Frame extraction failed: {{error}}",
+    "loadVideoFailed": "Failed to load video: {{error}}",
+    "readFolderFailed": "Failed to read folder: {{error}}"
+  },
+  "codec": {
+    "copy": {
+      "label": "Stream Copy",
+      "tooltip": "Copy video/audio data without re-encoding. Zero quality loss, fastest speed, but requires all input videos to have the same codec and resolution."
+    },
+    "libx264": {
+      "label": "H.264",
+      "tooltip": "Most widely compatible video codec, supported by almost all devices and players. Suitable for daily use."
+    },
+    "libx265": {
+      "label": "H.265/HEVC",
+      "tooltip": "Next-gen video codec, 30%-50% smaller files than H.264 at the same quality. Slower encoding, some older players don't support it."
+    },
+    "ffv1": {
+      "label": "FFV1 Lossless",
+      "tooltip": "Mathematically lossless codec, no quality loss at all. Suitable for archiving and professional post-production. Files are very large (about 1/3 of original size), not suitable for daily playback."
+    },
+    "libvpx-vp9": {
+      "label": "VP9",
+      "tooltip": "Open codec developed by Google, used with WebM format. Excellent quality but slower encoding."
+    },
+    "mpeg4": {
+      "label": "MPEG-4",
+      "tooltip": "Legacy codec with good compatibility but low compression efficiency. Only used as fallback when other codecs are unavailable."
+    }
+  },
+  "quality": {
+    "high": {
+      "label": "High Quality",
+      "tooltip": "CRF 18, visually lossless level, larger files, suitable for scenarios requiring extreme quality."
+    },
+    "balanced": {
+      "label": "Balanced",
+      "tooltip": "CRF 23, best balance between quality and file size, recommended for daily use."
+    },
+    "fast": {
+      "label": "Fast",
+      "tooltip": "CRF 28, fast encoding speed, smaller files, suitable for preview or scenarios with lower quality requirements."
+    }
+  }
+}

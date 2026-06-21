@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { Flex, Box, Text, Progress, useMantineTheme } from "@mantine/core";
 import { Loader2, Image as ImageIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
 import { exportAsciiArtPng, writeCanvasToPng } from "@/lib/asciiArtApi";
 import { usePanZoom } from "./hooks/usePanZoom";
@@ -9,6 +10,7 @@ import { PreviewToolbar } from "./components/PreviewToolbar";
 import { AsciiContent } from "./components/AsciiContent";
 
 export function PreviewPanel() {
+  const { t } = useTranslation("asciiArt");
   const imagePreviewUrl = useAsciiArtStore((s) => s.imagePreviewUrl);
   const output = useAsciiArtStore((s) => s.output);
   const params = useAsciiArtStore((s) => s.params);
@@ -48,7 +50,7 @@ export function PreviewPanel() {
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
       const filePath = await save({
-        filters: [{ name: "图片", extensions: ["png"] }],
+        filters: [{ name: t("errors.exportPngFailed", { error: "" }), extensions: ["png"] }],
         defaultPath: "ascii_art.png",
       });
       if (!filePath) return;
@@ -59,9 +61,9 @@ export function PreviewPanel() {
         await writeCanvasToPng(canvasRef.current, filePath);
       }
     } catch (e) {
-      useAsciiArtStore.getState().setErrorMessage(`导出PNG失败: ${e}`);
+      useAsciiArtStore.getState().setErrorMessage(t("errors.exportPngFailed", { error: e }));
     }
-  }, [canvasRef]);
+  }, [canvasRef, t]);
 
   return (
     <Flex
@@ -134,7 +136,7 @@ export function PreviewPanel() {
             {imagePreviewUrl ? (
               <img
                 src={imagePreviewUrl}
-                alt="原始图片"
+                alt={t("preview.originalImage")}
                 style={{
                   transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
                   transformOrigin: "0 0",
@@ -153,8 +155,8 @@ export function PreviewPanel() {
                 onDoubleClick={loadImageFromFile}
               >
                 <ImageIcon size={48} />
-                <Text size="sm">双击选择图片</Text>
-                <Text size="xs">支持拖拽或 Ctrl+V 粘贴</Text>
+                <Text size="sm">{t("preview.selectImageHint")}</Text>
+                <Text size="xs">{t("preview.dragDropHint")}</Text>
               </Flex>
             )}
           </Flex>
@@ -169,7 +171,7 @@ export function PreviewPanel() {
                     marginRight: 8,
                   }}
                 />
-                <Text size="sm">正在转换...</Text>
+                <Text size="sm">{t("preview.converting")}</Text>
               </Flex>
             ) : output ? (
               <AsciiContent
@@ -190,7 +192,7 @@ export function PreviewPanel() {
                 style={{ cursor: "pointer" }}
                 onDoubleClick={loadImageFromFile}
               >
-                <Text size="sm">双击选择图片</Text>
+                <Text size="sm">{t("preview.selectImageHint")}</Text>
               </Flex>
             )}
           </Box>

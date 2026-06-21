@@ -7,6 +7,7 @@ import {
   Film,
   AlertCircle,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 import type { VideoToolTab } from "@/types";
 import { MergePanel } from "./MergePanel";
@@ -15,6 +16,7 @@ import { ConvertPanel } from "./ConvertPanel";
 import { ExtractPanel } from "./ExtractPanel";
 
 export default function VideoToolPage() {
+  const { t } = useTranslation("videoTool");
   const ffmpegAvailable = useVideoToolStore((s) => s.ffmpegAvailable);
   const checkFfmpeg = useVideoToolStore((s) => s.checkFfmpeg);
   const encoderStatus = useVideoToolStore((s) => s.encoderStatus);
@@ -47,12 +49,12 @@ export default function VideoToolPage() {
           >
             <AlertCircle size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
           </div>
-          <Text size="lg" fw={600}>FFmpeg 未安装</Text>
+          <Text size="lg" fw={600}>{t("ffmpeg.notInstalled")}</Text>
           <Text size="sm" c="dimmed" ta="center" maw={360}>
-            视频工具需要 FFmpeg 支持，请先安装 FFmpeg 并确保其在系统 PATH 中。
+            {t("ffmpeg.notInstalledDesc")}
           </Text>
           <Button mt="md" onClick={checkFfmpeg} radius="md">
-            重新检测
+            {t("ffmpeg.recheck")}
           </Button>
         </Stack>
       </Center>
@@ -82,11 +84,11 @@ export default function VideoToolPage() {
           >
             <AlertCircle size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
           </div>
-          <Text size="lg" fw={600}>缺少视频编码器</Text>
+          <Text size="lg" fw={600}>{t("ffmpeg.noEncoder")}</Text>
           <Text size="sm" c="dimmed" ta="center" maw={400}>
-            FFmpeg 已安装，但未找到可用的视频编码器（libx264/libx265/mpeg4）。
+            {t("ffmpeg.noEncoderDesc")}
             <br />
-            请安装包含完整编码器的 FFmpeg 版本。
+            {t("ffmpeg.installHint")}
           </Text>
           <Box
             ta="left"
@@ -98,7 +100,7 @@ export default function VideoToolPage() {
               backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
             }}
           >
-            <Text size="xs" fw={600} mb="xs">编码器状态：</Text>
+            <Text size="xs" fw={600} mb="xs">{t("ffmpeg.encoderStatus")}</Text>
             {Object.entries(encoderStatus).map(([name, available]) => (
               <Group key={name} gap="xs">
                 <Text size="xs" c={available ? "green" : "red"}>
@@ -109,7 +111,7 @@ export default function VideoToolPage() {
             ))}
           </Box>
           <Button mt="md" onClick={checkEncoders} radius="md">
-            重新检测
+            {t("ffmpeg.recheck")}
           </Button>
         </Stack>
       </Center>
@@ -136,16 +138,16 @@ export default function VideoToolPage() {
         <Box px="sm" pt="sm">
           <Tabs.List>
             <Tabs.Tab value="merge" leftSection={<Merge size={16} />}>
-              合并视频
+              {t("tabs.merge")}
             </Tabs.Tab>
             <Tabs.Tab value="images" leftSection={<Images size={16} />}>
-              图片转视频
+              {t("tabs.images")}
             </Tabs.Tab>
             <Tabs.Tab value="convert" leftSection={<RefreshCw size={16} />}>
-              格式转换
+              {t("tabs.convert")}
             </Tabs.Tab>
             <Tabs.Tab value="extract" leftSection={<Film size={16} />}>
-              抽帧
+              {t("tabs.extract")}
             </Tabs.Tab>
           </Tabs.List>
         </Box>

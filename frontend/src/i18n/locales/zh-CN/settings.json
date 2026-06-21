@@ -1,0 +1,55 @@
+{
+  "title": "设置",
+  "appearance": {
+    "title": "显示模式",
+    "light": "亮色",
+    "dark": "暗色",
+    "system": "跟随系统"
+  },
+  "theme": {
+    "title": "颜色主题",
+    "customColor": "自定义颜色",
+    "colorPlaceholder": "#3b82f6 (HEX 色值)",
+    "apply": "应用",
+    "clear": "清除",
+    "currentCustom": "当前自定义: {{color}}"
+  },
+  "language": {
+    "title": "语言",
+    "label": "界面语言"
+  },
+  "update": {
+    "title": "关于与更新",
+    "appDescription": "批量重命名 / 字符画 / 视频工具",
+    "currentVersion": "当前安装版本",
+    "updateStatus": "更新状态",
+    "autoCheck": "启动时自动检查",
+    "autoCheckDesc": "应用启动时自动检查是否有新版本",
+    "status": {
+      "idle": "点击下方按钮检查是否有新版本可用",
+      "checking": "正在检查更新...",
+      "available": "发现新版本",
+      "downloading": "正在下载更新...",
+      "downloaded": "更新已下载完成，即将重启应用...",
+      "installing": "正在安装更新...",
+      "notAvailable": "当前版本 v{{version}} 已是最新",
+      "error": "{{error}}",
+      "errorDefault": "检查更新失败，请检查网络连接"
+    },
+    "actions": {
+      "checkUpdate": "检查更新",
+      "downloadInstall": "下载并安装",
+      "recheck": "重新检查"
+    },
+    "buttons": {
+      "checking": "检查中...",
+      "available": "有新版本",
+      "downloading": "下载中 {{progress}}",
+      "downloaded": "已下载",
+      "notAvailable": "已是最新",
+      "error": "检查失败",
+      "recheck": "重新检查",
+      "checkUpdate": "检查更新"
+    }
+  }
+}

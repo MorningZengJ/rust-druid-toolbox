@@ -1,0 +1,55 @@
+{
+  "title": "Settings",
+  "appearance": {
+    "title": "Display Mode",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "theme": {
+    "title": "Color Theme",
+    "customColor": "Custom Color",
+    "colorPlaceholder": "#3b82f6 (HEX color value)",
+    "apply": "Apply",
+    "clear": "Clear",
+    "currentCustom": "Current custom: {{color}}"
+  },
+  "language": {
+    "title": "Language",
+    "label": "Interface Language"
+  },
+  "update": {
+    "title": "About & Updates",
+    "appDescription": "Batch Rename / ASCII Art / Video Tool",
+    "currentVersion": "Current installed version",
+    "updateStatus": "Update Status",
+    "autoCheck": "Auto-check on startup",
+    "autoCheckDesc": "Automatically check for new versions when app starts",
+    "status": {
+      "idle": "Click the button below to check for new versions",
+      "checking": "Checking for updates...",
+      "available": "New version available",
+      "downloading": "Downloading update...",
+      "downloaded": "Update downloaded, app will restart soon...",
+      "installing": "Installing update...",
+      "notAvailable": "Current version v{{version}} is up to date",
+      "error": "{{error}}",
+      "errorDefault": "Failed to check updates, please check network connection"
+    },
+    "actions": {
+      "checkUpdate": "Check for Updates",
+      "downloadInstall": "Download & Install",
+      "recheck": "Recheck"
+    },
+    "buttons": {
+      "checking": "Checking...",
+      "available": "New Version",
+      "downloading": "Downloading {{progress}}",
+      "downloaded": "Downloaded",
+      "notAvailable": "Up to Date",
+      "error": "Check Failed",
+      "recheck": "Recheck",
+      "checkUpdate": "Check for Updates"
+    }
+  }
+}

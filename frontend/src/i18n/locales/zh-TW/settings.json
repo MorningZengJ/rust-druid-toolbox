@@ -1,0 +1,55 @@
+{
+  "title": "設定",
+  "appearance": {
+    "title": "顯示模式",
+    "light": "淺色",
+    "dark": "深色",
+    "system": "跟隨系統"
+  },
+  "theme": {
+    "title": "顏色主題",
+    "customColor": "自訂顏色",
+    "colorPlaceholder": "#3b82f6 (HEX 色碼)",
+    "apply": "套用",
+    "clear": "清除",
+    "currentCustom": "目前自訂: {{color}}"
+  },
+  "language": {
+    "title": "語言",
+    "label": "介面語言"
+  },
+  "update": {
+    "title": "關於與更新",
+    "appDescription": "批次重新命名 / 字元畫 / 影片工具",
+    "currentVersion": "目前安裝版本",
+    "updateStatus": "更新狀態",
+    "autoCheck": "啟動時自動檢查",
+    "autoCheckDesc": "應用程式啟動時自動檢查是否有新版本",
+    "status": {
+      "idle": "點擊下方按鈕檢查是否有新版本可用",
+      "checking": "正在檢查更新...",
+      "available": "發現新版本",
+      "downloading": "正在下載更新...",
+      "downloaded": "更新已下載完成，即將重新啟動應用程式...",
+      "installing": "正在安裝更新...",
+      "notAvailable": "目前版本 v{{version}} 已是最新",
+      "error": "{{error}}",
+      "errorDefault": "檢查更新失敗，請檢查網路連線"
+    },
+    "actions": {
+      "checkUpdate": "檢查更新",
+      "downloadInstall": "下載並安裝",
+      "recheck": "重新檢查"
+    },
+    "buttons": {
+      "checking": "檢查中...",
+      "available": "有新版本",
+      "downloading": "下載中 {{progress}}",
+      "downloaded": "已下載",
+      "notAvailable": "已是最新",
+      "error": "檢查失敗",
+      "recheck": "重新檢查",
+      "checkUpdate": "檢查更新"
+    }
+  }
+}

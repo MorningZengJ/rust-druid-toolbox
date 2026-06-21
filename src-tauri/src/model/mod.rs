@@ -1,4 +1,5 @@
 pub mod ascii_art_state;
+pub mod error_codes;
 pub mod file_info;
 pub mod rename_result;
 pub mod replace_info;

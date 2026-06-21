@@ -1,9 +1,11 @@
 import { Button, Badge, Group, Text } from "@mantine/core";
 import { Folder, File, Layers } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
 import type { QuickFilter } from "@/types";
 
 export default function QuickFilters() {
+  const { t } = useTranslation("rename");
   const quickFilters = useRenameStore((s) => s.quickFilters);
   const toggleQuickFilter = useRenameStore((s) => s.toggleQuickFilter);
   const fileList = useRenameStore((s) => s.fileList);
@@ -25,7 +27,7 @@ export default function QuickFilters() {
 
   return (
     <Group gap={6} align="center">
-      <Text size="xs" fw={600} c="dimmed" mr={4}>筛选:</Text>
+      <Text size="xs" fw={600} c="dimmed" mr={4}>{t("filter.quickFilters.all")}:</Text>
       <Button
         variant={isActive("all") ? "light" : "default"}
         size="compact-xs"
@@ -33,7 +35,7 @@ export default function QuickFilters() {
         onClick={() => toggleQuickFilter("all")}
         radius="md"
       >
-        全部
+        {t("filter.quickFilters.all")}
       </Button>
       <Button
         variant={isActive("folder") ? "light" : "default"}
@@ -42,7 +44,7 @@ export default function QuickFilters() {
         onClick={() => toggleQuickFilter("folder")}
         radius="md"
       >
-        文件夹
+        {t("filter.quickFilters.folders")}
       </Button>
       <Button
         variant={isActive("file") ? "light" : "default"}
@@ -51,7 +53,7 @@ export default function QuickFilters() {
         onClick={() => toggleQuickFilter("file")}
         radius="md"
       >
-        文件
+        {t("filter.quickFilters.files")}
       </Button>
       {extensions.map((ext) => (
         <Badge
