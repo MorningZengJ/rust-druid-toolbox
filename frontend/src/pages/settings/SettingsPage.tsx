@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Stack, Title, Group, Button, TextInput, Text, Box, ActionIcon, Select, useMantineTheme, useComputedColorScheme } from "@mantine/core";
 import { Sun, Moon, Monitor, Check, Palette, Download, Languages } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useTheme, COLOR_THEMES } from "@/hooks/useTheme";
+import { useTheme, useColorThemes } from "@/hooks/useTheme";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useI18nStore } from "@/stores/i18nStore";
 import { languageNames } from "@/i18n/types";
@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const { t } = useTranslation("settings");
   const { colorMode, colorTheme, customPrimary, setColorMode, setColorTheme, setCustomPrimary } =
     useTheme();
+  const colorThemes = useColorThemes();
   const { language, setLanguage } = useI18nStore();
   const [customColorInput, setCustomColorInput] = useState("");
   const theme = useMantineTheme();
@@ -107,16 +108,16 @@ export default function SettingsPage() {
           </div>
           <div style={sectionBodyStyle}>
             <Group gap="sm">
-              {COLOR_THEMES.map((t) => {
-                const isActive = colorTheme === t.value && !isCustomActive;
+              {colorThemes.map((ct) => {
+                const isActive = colorTheme === ct.value && !isCustomActive;
                 return (
                   <ActionIcon
-                    key={t.value}
+                    key={ct.value}
                     size="xl"
                     radius="xl"
                     variant="transparent"
                     style={{
-                      backgroundColor: t.color,
+                      backgroundColor: ct.color,
                       width: 40,
                       height: 40,
                       border: isActive
@@ -126,8 +127,8 @@ export default function SettingsPage() {
                       boxShadow: isActive ? theme.shadows.md : "none",
                       transition: "all 150ms ease",
                     }}
-                    onClick={() => setColorTheme(t.value)}
-                    title={t.label}
+                    onClick={() => setColorTheme(ct.value)}
+                    title={ct.label}
                   >
                     {isActive && (
                       <Check size={16} color="white" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))" }} />

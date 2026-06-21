@@ -28,7 +28,7 @@ export interface CodecOption {
 }
 
 /** 获取翻译后的视频编码器选项 */
-export function getVideoCodecs(): CodecOption[] {
+function getVideoCodecs(): CodecOption[] {
   const t = i18n.getFixedT(null, "videoTool");
   return [
     {
@@ -80,7 +80,7 @@ export interface QualityPresetOption {
 }
 
 /** 获取翻译后的质量预设选项 */
-export function getQualityPresets(): QualityPresetOption[] {
+function getQualityPresets(): QualityPresetOption[] {
   const t = i18n.getFixedT(null, "videoTool");
   return [
     {

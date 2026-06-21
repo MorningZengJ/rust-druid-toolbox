@@ -49,8 +49,3 @@ export const languageNames: Record<Language, string> = {
 
 // RTL 语言列表
 export const rtlLanguages: Language[] = ['ar-SA'];
-
-// 是否为 RTL 语言
-export function isRTL(lang: Language): boolean {
-  return rtlLanguages.includes(lang);
-}

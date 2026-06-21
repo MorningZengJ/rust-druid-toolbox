@@ -21,16 +21,6 @@ export function useColorThemes() {
   return COLOR_THEMES;
 }
 
-/** @deprecated Use useColorThemes() instead */
-export const COLOR_THEMES = [
-  { value: "default" as ColorTheme, label: "默认", color: "#1a1a2e" },
-  { value: "blue" as ColorTheme, label: "蓝色", color: "#1a52ff" },
-  { value: "green" as ColorTheme, label: "绿色", color: "#0cc04b" },
-  { value: "purple" as ColorTheme, label: "紫色", color: "#6a10ff" },
-  { value: "orange" as ColorTheme, label: "橙色", color: "#ff8200" },
-  { value: "rose" as ColorTheme, label: "玫红", color: "#ff0050" },
-];
-
 export function useTheme() {
   return useThemeStore();
 }

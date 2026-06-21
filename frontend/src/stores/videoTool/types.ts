@@ -10,11 +10,7 @@ import type {
   ExtractParams,
   ExtractedFrame,
   LogEntry,
-  ExtractMode,
-  OutputFormat,
 } from "@/types";
-
-export type { ExtractMode, OutputFormat };
 
 export interface VideoToolState {
   // Tab

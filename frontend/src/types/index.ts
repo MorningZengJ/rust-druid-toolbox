@@ -43,7 +43,7 @@ export interface RenameResult {
   errors: RenameError[];
 }
 
-export interface RenameError {
+interface RenameError {
   fileName: string;
   error: string;
 }
@@ -56,7 +56,7 @@ export type RuleTemplate =
   | "removeDigitsBeforeExt"
   | "custom";
 
-export type SortDirection = "asc" | "desc";
+type SortDirection = "asc" | "desc";
 
 export type SortField = "name" | "size" | "extension";
 
@@ -69,7 +69,7 @@ export interface SortColumn {
 
 export type RenderMode = "png" | "svg" | "canvas";
 
-export interface CharColor {
+interface CharColor {
   char: string;
   r: number;
   g: number;
@@ -195,7 +195,7 @@ export interface ImagesToVideoResult {
   fileSizeBytes: number;
 }
 
-export type ConversionTarget =
+type ConversionTarget =
   | { videoFormat: string }
   | { audioFormat: string };
 
@@ -229,7 +229,7 @@ export interface BatchConvertResult {
   failCount: number;
 }
 
-export interface BatchConvertItemResult {
+interface BatchConvertItemResult {
   inputPath: string;
   outputPath: string;
   fileSizeBytes: number;
@@ -244,7 +244,7 @@ export interface BatchProgress {
   currentFileName: string;
 }
 
-export type ConvertFileStatus = "pending" | "converting" | "done" | "error";
+type ConvertFileStatus = "pending" | "converting" | "done" | "error";
 
 export interface ConvertFileItem {
   inputPath: string;

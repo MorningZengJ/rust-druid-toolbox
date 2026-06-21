@@ -13,8 +13,6 @@ import type {
 import type { VideoToolState } from "./types";
 import type { StateCreator } from "zustand";
 
-export type { ExtractMode, OutputFormat };
-
 export interface ExtractSlice {
   extractVideoPath: string;
   extractVideoInfo: VideoInfo | null;
