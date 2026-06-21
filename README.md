@@ -1,33 +1,144 @@
-修改PowerShell安全策略：`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
-启动项目：`npm run tauri dev`
-安装LLVM：`winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements`
-vcpkg 安装静态库：`C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md`
-FFmpeg静态库编译：`cargo check --manifest-path src-tauri/Cargo.toml --features video-frame`
+<div align="center">
 
-生成完整图标：`npm run tauri icon <your-icon.png>`
+# MToolbox
 
-# 生成密钥对
-`npm run tauri signer generate -- -w ~/.tauri/mtoolbox.key`
-私钥：`C:\Users\zengc\.tauri\mtoolbox.key`
-# 构建时设置环境变量
+**A lightweight Windows desktop toolbox built with Tauri v2**
+
+[![Version](https://img.shields.io/github/v/release/MorningZengJ/rust-druid-toolbox)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/MorningZengJ/rust-druid-toolbox/total)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
+
+English | [中文](README_CN.md)
+
+</div>
+
+---
+
+## Features
+
+- **Batch File Rename** - Filter files, define replacement rules, preview changes, and execute renames with conflict detection
+- **ASCII Art Generator** - Convert images to ASCII art with customizable parameters (width, charset, contrast, color modes)
+- **Video Tools** - Merge videos, image sequence to video, format conversion, and frame extraction with FFmpeg
+- **Auto Update** - Built-in update mechanism with signature verification
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, TypeScript, Mantine UI v9, Zustand v5 |
+| Backend | Rust (Edition 2021), Tauri v2 |
+| Build | Vite 6, Cargo |
+| Video | FFmpeg (optional, feature-gated) |
+
+## Installation
+
+### Download Pre-built Binary
+
+Download the latest `.exe` installer from [Releases](https://github.com/MorningZengJ/rust-druid-toolbox/releases).
+
+### Build from Source
+
+**Prerequisites:**
+
+- [Node.js](https://nodejs.org/) (v18+)
+- [Rust](https://www.rust-lang.org/tools/install) (stable)
+- [LLVM](https://llvm.org/) (required for FFmpeg static linking)
+- [vcpkg](https://github.com/microsoft/vcpkg) with FFmpeg static libraries
+
+**Setup:**
+
 ```bash
-$env:TAURI_SIGNING_PRIVATE_KEY="<私钥内容>"
-$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+# 1. Install LLVM
+winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements
+
+# 2. Install FFmpeg static libraries via vcpkg
+C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md
+
+# 3. Clone the repository
+git clone https://github.com/MorningZengJ/rust-druid-toolbox.git
+cd rust-druid-toolbox
+
+# 4. Install frontend dependencies
+cd frontend && npm install && cd ..
+
+# 5. Run in development mode
+npm run tauri dev
 ```
-# 1. 构建（生成安装包 + .sig 文件）
+
+**Build for Production:**
+
 ```bash
-$env:TAURI_SIGNING_PRIVATE_KEY = "C:\Users\zengc\.tauri\mtoolbox.key"
+# Build without video features (no FFmpeg dependency)
+cargo build --manifest-path src-tauri/Cargo.toml --no-default-features --release
+
+# Build with video features (requires FFmpeg)
+cargo build --manifest-path src-tauri/Cargo.toml --release
+```
+
+## Project Structure
+
+```
+rust-druid-toolbox/
+├── frontend/                  # React frontend
+│   └── src/
+│       ├── pages/             # Feature pages (rename, ascii-art, video-tool, settings)
+│       ├── stores/            # Zustand state management
+│       ├── components/        # Shared components
+│       └── types/             # TypeScript type definitions
+├── src-tauri/                 # Rust backend
+│   └── src/
+│       ├── commands/          # Tauri IPC commands
+│       ├── model/             # Data models
+│       └── utils/             # Business logic & engines
+└── assets/                    # Static assets
+```
+
+## Development
+
+```bash
+# Run development server
+npm run tauri dev
+
+# Frontend build check
+cd frontend && npm run build
+
+# Rust compilation check
+cargo check --manifest-path src-tauri/Cargo.toml
+
+# Run Rust tests
+cargo test --manifest-path src-tauri/Cargo.toml
+
+# Check with video features
+cargo check --manifest-path src-tauri/Cargo.toml --features video-frame
+```
+
+## Publishing a Release
+
+```bash
+# 1. Update version in tauri.conf.json and Cargo.toml
+
+# 2. Build with signing
+$env:TAURI_SIGNING_PRIVATE_KEY = "path\to\your\key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 npm run tauri build
+
+# 3. Get signature
+Get-Content target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
+
+# 4. Update updater.json (version, signature, URL)
+
+# 5. Create GitHub Release
+gh release create vx.x.x --title "MToolbox vx.x.x" --notes "Release notes" \
+  target/release/bundle/nsis/*.exe \
+  target/release/bundle/nsis/*.exe.sig
 ```
 
-# 2. 构建产物在 src-tauri/target/release/bundle/ 下：
-#    nsis/MToolbox_0.1.2_x64-setup.exe
-#    nsis/MToolbox_0.1.2_x64-setup.exe.sig
+## License
 
-# 3. 读取 .sig 文件内容
-```bash
-Get-Content src-tauri/target/release/bundle/nsis/MToolbox_0.1.2_x64-setup.exe.sig
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-打包发行：`npx tauri build`
+## Contact
+
+- Author: MorningZeng
+- Email: zengchennihon@gmail.com
+- GitHub: [@MorningZengJ](https://github.com/MorningZengJ)
