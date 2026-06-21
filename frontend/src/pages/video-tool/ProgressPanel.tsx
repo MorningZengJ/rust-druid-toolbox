@@ -1,4 +1,4 @@
-import { Box, Flex, Text, ScrollArea, Stack, Progress, Group, useMantineTheme } from "@mantine/core";
+import { Box, Flex, Text, ScrollArea, Stack, Progress, Group } from "@mantine/core";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useVideoToolStore } from "@/stores/videoToolStore";
@@ -13,7 +13,6 @@ function formatEta(ms: number, t: (key: string, options?: any) => string): strin
 
 export function ProgressPanel() {
   const { t } = useTranslation("videoTool");
-  const theme = useMantineTheme();
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const progress = useVideoToolStore((s) => s.progress);
   const logs = useVideoToolStore((s) => s.logs);
@@ -21,43 +20,67 @@ export function ProgressPanel() {
   const mergeProgressDetail = useVideoToolStore((s) => s.mergeProgressDetail);
 
   return (
-    <Flex direction="column" style={{ height: "100%", overflow: "hidden", borderRadius: theme.radius.md, border: `1px solid ${theme.colors.dark[4]}` }}>
-      <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
-        <Text size="sm" fw={500}>{t("progress.title")}</Text>
+    <Flex
+      direction="column"
+      style={{
+        height: "100%",
+        overflow: "hidden",
+        borderRadius: 10,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-raised)",
+        position: "relative",
+      }}
+    >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
+      <Box px="md" py="xs" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--surface-panel)" }}>
+        <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("progress.title")}</Text>
       </Box>
       <Box p="md">
         {isProcessing && (
           <Box mb="md">
             <Flex justify="space-between" mb={4}>
-              <Text size="xs">{t("progress.processing")}</Text>
-              <Text size="xs">{Math.round(progress * 100)}%</Text>
+              <Text size="xs" style={{ fontFamily: "var(--font-body)" }}>{t("progress.processing")}</Text>
+              <Text size="xs" style={{ fontFamily: "var(--font-mono)" }}>{Math.round(progress * 100)}%</Text>
             </Flex>
-            <Progress value={progress * 100} size="sm" radius="xl" />
+            <Progress value={progress * 100} size="sm" radius="xl" color="amber" />
           </Box>
         )}
 
         {isProcessing && mergeProgressDetail && (
           <Stack gap={4} mb="md">
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-body)" }}>
                 {t("progress.fileProgress", { current: mergeProgressDetail.currentFileIndex + 1, total: mergeProgressDetail.totalFiles })}
                 {mergeProgressDetail.currentFileName && ` - ${mergeProgressDetail.currentFileName}`}
               </Text>
             </Group>
             {mergeProgressDetail.framesProcessed > 0 && mergeProgressDetail.totalFrames > 0 && (
               <Group justify="space-between">
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>
                   {t("progress.frameProgress", { processed: mergeProgressDetail.framesProcessed, total: mergeProgressDetail.totalFrames })}
                 </Text>
                 {mergeProgressDetail.speed > 0 && (
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>
                     {Math.round(mergeProgressDetail.speed)} fps
                   </Text>
                 )}
               </Group>
             )}
             {mergeProgressDetail.etaMs > 0 && (
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>
                 {t("progress.timeRemaining", { time: formatEta(mergeProgressDetail.etaMs, t) })}
               </Text>
             )}
@@ -71,9 +94,13 @@ export function ProgressPanel() {
             mb="md"
             px="sm"
             py="xs"
-            style={{ borderRadius: 6, background: `${theme.colors.red[0]}` }}
+            style={{
+              borderRadius: 8,
+              backgroundColor: "var(--status-error-bg)",
+              border: "1px solid var(--status-error-border)",
+            }}
           >
-            <AlertCircle size={16} color={theme.colors.red[6]} style={{ flexShrink: 0 }} />
+            <AlertCircle size={16} style={{ color: "var(--status-error)", flexShrink: 0 }} />
             <Text size="sm" c="red">{errorMessage}</Text>
           </Flex>
         )}
@@ -85,20 +112,24 @@ export function ProgressPanel() {
             mb="md"
             px="sm"
             py="xs"
-            style={{ borderRadius: 6, background: `${theme.colors.green[0]}` }}
+            style={{
+              borderRadius: 8,
+              backgroundColor: "var(--status-success-bg)",
+              border: "1px solid var(--status-success-border)",
+            }}
           >
-            <CheckCircle2 size={16} color={theme.colors.green[6]} style={{ flexShrink: 0 }} />
+            <CheckCircle2 size={16} style={{ color: "var(--status-success)", flexShrink: 0 }} />
             <Text size="sm" c="green">{t("progress.completed")}</Text>
           </Flex>
         )}
       </Box>
 
-      <Flex direction="column" flex={1} style={{ minHeight: 0, borderTop: `1px solid ${theme.colors.dark[4]}` }}>
-        <Box px="md" py="xs">
-          <Text size="sm" fw={500}>{t("progress.log")}</Text>
+      <Flex direction="column" flex={1} style={{ minHeight: 0, borderTop: "1px solid var(--border-default)" }}>
+        <Box px="md" py="xs" style={{ backgroundColor: "var(--surface-panel)" }}>
+          <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("progress.log")}</Text>
         </Box>
         <ScrollArea style={{ flex: 1 }} px="md" pb="md">
-          <Stack gap={2} style={{ fontFamily: "monospace", fontSize: 12 }}>
+          <Stack gap={2} style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
             {logs.map((log, i) => (
               <Text
                 key={i}

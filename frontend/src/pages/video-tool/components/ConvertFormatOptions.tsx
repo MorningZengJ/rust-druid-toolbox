@@ -29,10 +29,18 @@ export function ConvertFormatOptions() {
   const setConvertVideoCodec = useVideoToolStore((s) => s.setConvertVideoCodec);
   const setConvertQualityPreset = useVideoToolStore((s) => s.setConvertQualityPreset);
 
+  const selectStyles = {
+    input: {
+      backgroundColor: "var(--surface-panel)",
+      borderColor: "var(--border-default)",
+      color: "var(--text-primary)",
+    },
+  };
+
   return (
     <>
       <Box>
-        <Text size="sm" fw={500}>
+        <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
           {t("convert.target")}
         </Text>
         <Group mt={4} gap="xs">
@@ -41,6 +49,7 @@ export function ConvertFormatOptions() {
             style={{ flex: 1 }}
             leftSection={<FileVideo size={16} />}
             onClick={() => setConvertTarget("video")}
+            color="amber"
           >
             {t("convert.videoFormat")}
           </Button>
@@ -49,6 +58,7 @@ export function ConvertFormatOptions() {
             style={{ flex: 1 }}
             leftSection={<Music size={16} />}
             onClick={() => setConvertTarget("audio")}
+            color="amber"
           >
             {t("convert.audioFormat")}
           </Button>
@@ -58,7 +68,7 @@ export function ConvertFormatOptions() {
       {convertTarget === "video" ? (
         <>
           <Box>
-            <Text size="sm" fw={500}>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
               {t("convert.outputFormat")}
             </Text>
             <Select
@@ -69,6 +79,7 @@ export function ConvertFormatOptions() {
                 value: fmt,
                 label: fmt.toUpperCase(),
               }))}
+              styles={selectStyles}
             />
           </Box>
 
@@ -84,7 +95,7 @@ export function ConvertFormatOptions() {
           />
 
           <Box>
-            <Text size="sm" fw={500}>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
               {t("convert.audioCodec")}
             </Text>
             <Select
@@ -95,13 +106,14 @@ export function ConvertFormatOptions() {
                 value: c,
                 label: c.toUpperCase(),
               }))}
+              styles={selectStyles}
             />
           </Box>
         </>
       ) : (
         <>
           <Box>
-            <Text size="sm" fw={500}>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
               {t("convert.outputFormat")}
             </Text>
             <Select
@@ -112,10 +124,11 @@ export function ConvertFormatOptions() {
                 value: fmt,
                 label: fmt.toUpperCase(),
               }))}
+              styles={selectStyles}
             />
           </Box>
           <Box>
-            <Text size="sm" fw={500}>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
               {t("convert.audioBitrate")}
             </Text>
             <Select
@@ -126,6 +139,7 @@ export function ConvertFormatOptions() {
                 value: rate,
                 label: rate,
               }))}
+              styles={selectStyles}
             />
           </Box>
         </>

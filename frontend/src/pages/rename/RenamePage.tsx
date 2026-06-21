@@ -3,8 +3,6 @@ import {
   Flex,
   Text,
   Progress,
-  useMantineTheme,
-  useComputedColorScheme,
 } from "@mantine/core";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -23,9 +21,6 @@ import StatusBar from "./StatusBar";
 
 export default function RenamePage() {
   const { t } = useTranslation("rename");
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
   const loading = useRenameStore((s) => s.loading);
   const loadingProgress = useRenameStore((s) => s.loadingProgress);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -41,11 +36,25 @@ export default function RenamePage() {
         height: "100%",
         overflow: "hidden",
         position: "relative",
-        borderRadius: theme.radius.lg,
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+        borderRadius: 12,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-overlay)",
       }}
     >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
       {/* Top toolbar */}
       <Toolbar />
 
@@ -65,9 +74,9 @@ export default function RenamePage() {
               flexDirection: "column",
               height: "100%",
               overflow: "hidden",
-              borderRadius: theme.radius.md,
-              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-              backgroundColor: isDark ? theme.colors.dark[8] : theme.colors.gray[0],
+              borderRadius: 10,
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--surface-raised)",
             }}
           >
             <FilterSection />
@@ -95,19 +104,19 @@ export default function RenamePage() {
           gap="md"
           style={{
             zIndex: 100,
-            backgroundColor: isDark
-              ? "rgba(0, 0, 0, 0.6)"
-              : "rgba(255, 255, 255, 0.7)",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
             backdropFilter: "blur(4px)",
-            borderRadius: theme.radius.lg,
+            borderRadius: 12,
           }}
         >
           <Loader2
             size={32}
-            color={theme.colors[theme.primaryColor][isDark ? 4 : 6]}
-            style={{ animation: "spin 1s linear infinite" }}
+            style={{
+              color: "var(--accent-primary)",
+              animation: "spin 1s linear infinite",
+            }}
           />
-          <Text size="sm" fw={500} c="dimmed">
+          <Text size="sm" fw={500} style={{ color: "var(--text-secondary)" }}>
             {loadingProgress
               ? loadingProgress.phase === "scanning"
                 ? t("errors.loadFilesFailed", { error: "" })
@@ -120,6 +129,7 @@ export default function RenamePage() {
                 value={(loadingProgress.processed / loadingProgress.total) * 100}
                 size="sm"
                 radius="xl"
+                color="amber"
                 animated
               />
             </Box>

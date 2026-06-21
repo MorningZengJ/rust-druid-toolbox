@@ -55,10 +55,17 @@ export function PreviewToolbar({
       justify="space-between"
       px="sm"
       py="xs"
-      style={{ borderBottom: "1px solid var(--mantine-color-gray-3)" }}
+      style={{
+        borderBottom: "1px solid var(--border-subtle)",
+        backgroundColor: "var(--surface-panel)",
+      }}
     >
       <Flex align="center" gap="xs">
-        <Tabs value={activeTab} onChange={(v) => setActiveTab((v ?? "original") as "original" | "ascii")}>
+        <Tabs
+          value={activeTab}
+          onChange={(v) => setActiveTab((v ?? "original") as "original" | "ascii")}
+          color="amber"
+        >
           <Tabs.List>
             <Tabs.Tab value="original" leftSection={<ImageIcon size={12} />}>
               <Text size="xs">{t("preview.tabs.original")}</Text>
@@ -79,7 +86,7 @@ export function PreviewToolbar({
           <ActionIcon variant="subtle" size="sm" onClick={resetView}>
             <RotateCcw size={14} />
           </ActionIcon>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>
             {Math.round(zoom * 100)}%
           </Text>
         </Flex>
@@ -88,8 +95,11 @@ export function PreviewToolbar({
       <Flex align="center" gap="xs">
         {isConverting && (
           <Flex align="center" gap="xs">
-            <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-            <Text size="xs" c="dimmed">
+            <Loader2
+              size={14}
+              style={{ animation: "spin 1s linear infinite", color: "var(--accent-primary)" }}
+            />
+            <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>
               {progress.toFixed(0)}%
               {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 && (
                 <span> · {t("preview.toolbar.timeRemaining", { time: formatTime(estimatedTimeRemaining) })}</span>
@@ -103,6 +113,7 @@ export function PreviewToolbar({
           disabled={!hasOutput}
           leftSection={<Copy size={14} />}
           onClick={copyToClipboard}
+          color="amber"
         >
           {t("preview.toolbar.copy")}
         </Button>
@@ -113,6 +124,7 @@ export function PreviewToolbar({
               size="compact-xs"
               disabled={!hasOutput}
               leftSection={<Download size={14} />}
+              color="amber"
             >
               {t("preview.toolbar.export")}
             </Button>

@@ -3,7 +3,6 @@ import {
   Box,
   Flex,
   Text,
-  useMantineTheme,
 } from "@mantine/core";
 import {
   ResizablePanel,
@@ -19,7 +18,6 @@ import { FrameViewer } from "./components/FrameViewer";
 
 export function ExtractPanel() {
   const { t } = useTranslation("videoTool");
-  const theme = useMantineTheme();
   const extractLogs = useVideoToolStore((s) => s.extractLogs);
   const loadVideo = useVideoToolStore((s) => s.loadVideo);
   const stopExtractWatcher = useVideoToolStore((s) => s.stopExtractWatcher);
@@ -64,12 +62,10 @@ export function ExtractPanel() {
     };
   }, [stopExtractWatcher]);
 
-  const borderColor = theme.colors.dark[4];
-
   const logSection = (
-    <Box style={{ height: 140, flexShrink: 0, borderTop: `1px solid ${borderColor}` }}>
-      <Flex align="center" px="sm" py={6} style={{ borderBottom: `1px solid ${borderColor}` }}>
-        <Text size="xs" fw={500} c="dimmed">{t("common.log")}</Text>
+    <Box style={{ height: 140, flexShrink: 0, borderTop: "1px solid var(--border-default)" }}>
+      <Flex align="center" px="sm" py={6} style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--surface-panel)" }}>
+        <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>{t("common.log")}</Text>
       </Flex>
       <Box style={{ height: "calc(100% - 28px)", overflowY: "auto" }} p="xs">
         {extractLogs.length > 0 ? (
@@ -80,6 +76,7 @@ export function ExtractPanel() {
                 size="xs"
                 py={2}
                 c={log.level === "error" ? "red" : log.level === "warn" ? "yellow" : "dimmed"}
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 {log.message}
               </Text>

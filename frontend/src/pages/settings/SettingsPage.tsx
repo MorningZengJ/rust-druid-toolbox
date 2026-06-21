@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Stack, Title, Group, Button, TextInput, Text, Box, ActionIcon, Select, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { Stack, Title, Group, Button, TextInput, Text, Box, ActionIcon, Select } from "@mantine/core";
 import { Sun, Moon, Monitor, Check, Palette, Download, Languages } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme, useColorThemes } from "@/hooks/useTheme";
@@ -16,9 +16,6 @@ export default function SettingsPage() {
   const colorThemes = useColorThemes();
   const { language, setLanguage } = useI18nStore();
   const [customColorInput, setCustomColorInput] = useState("");
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
   const updateInit = useUpdateStore((s) => s.init);
 
   useEffect(() => {
@@ -40,35 +37,57 @@ export default function SettingsPage() {
   const isCustomActive = !!customPrimary;
 
   const cardStyle = {
-    borderRadius: theme.radius.lg,
-    border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-    backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+    borderRadius: 12,
+    border: "1px solid var(--border-default)",
+    backgroundColor: "var(--surface-overlay)",
     overflow: "hidden" as const,
+    position: "relative" as const,
   };
 
   const sectionHeaderStyle = {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    padding: "12px 16px",
-    borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
-    backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
+    padding: "10px 14px",
+    borderBottom: "1px solid var(--border-subtle)",
+    backgroundColor: "var(--surface-panel)",
   };
 
   const sectionBodyStyle = {
-    padding: "16px",
+    padding: "14px",
+  };
+
+  const selectStyles = {
+    input: {
+      backgroundColor: "var(--surface-panel)",
+      borderColor: "var(--border-default)",
+      color: "var(--text-primary)",
+    },
   };
 
   return (
     <Stack h="100%" style={{ overflow: "auto" }}>
-      <Title order={3} fw={600}>{t("title")}</Title>
+      <Title order={3} fw={600} style={{ fontFamily: "var(--font-display)" }}>{t("title")}</Title>
 
       <Stack gap="lg" maw={520}>
         {/* Display Mode */}
         <Box style={cardStyle}>
+          {/* 顶部高光线 */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
           <div style={sectionHeaderStyle}>
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-            <Text size="sm" fw={600}>{t("appearance.title")}</Text>
+            {colorMode === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <Text size="sm" fw={600} style={{ fontFamily: "var(--font-body)" }}>{t("appearance.title")}</Text>
           </div>
           <div style={sectionBodyStyle}>
             <Group gap="xs">
@@ -84,11 +103,12 @@ export default function SettingsPage() {
                   leftSection={mode.icon}
                   onClick={() => setColorMode(mode.value)}
                   radius="md"
+                  color={colorMode === mode.value ? "amber" : "gray"}
                   style={{
-                    transition: "all 150ms ease",
+                    transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
                     ...(colorMode === mode.value
                       ? {
-                        boxShadow: `0 0 0 1px ${theme.colors[theme.primaryColor][isDark ? 5 : 4]}40`,
+                        boxShadow: "0 0 0 1px var(--accent-glow)",
                       }
                       : {}),
                   }}
@@ -102,9 +122,21 @@ export default function SettingsPage() {
 
         {/* Color Theme */}
         <Box style={cardStyle}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
           <div style={sectionHeaderStyle}>
             <Palette size={16} />
-            <Text size="sm" fw={600}>{t("theme.title")}</Text>
+            <Text size="sm" fw={600} style={{ fontFamily: "var(--font-body)" }}>{t("theme.title")}</Text>
           </div>
           <div style={sectionBodyStyle}>
             <Group gap="sm">
@@ -121,11 +153,11 @@ export default function SettingsPage() {
                       width: 40,
                       height: 40,
                       border: isActive
-                        ? `2px solid ${theme.colors[theme.primaryColor][6]}`
-                        : `2px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+                        ? "2px solid var(--accent-primary)"
+                        : "2px solid var(--border-strong)",
                       transform: isActive ? "scale(1.1)" : "scale(1)",
-                      boxShadow: isActive ? theme.shadows.md : "none",
-                      transition: "all 150ms ease",
+                      boxShadow: isActive ? "var(--shadow-md)" : "none",
+                      transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
                     }}
                     onClick={() => setColorTheme(ct.value)}
                     title={ct.label}
@@ -142,9 +174,21 @@ export default function SettingsPage() {
 
         {/* Custom Color */}
         <Box style={cardStyle}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
           <div style={sectionHeaderStyle}>
             <Palette size={16} />
-            <Text size="sm" fw={600}>{t("theme.customColor")}</Text>
+            <Text size="sm" fw={600} style={{ fontFamily: "var(--font-body)" }}>{t("theme.customColor")}</Text>
           </div>
           <div style={sectionBodyStyle}>
             <Stack gap="sm">
@@ -156,8 +200,16 @@ export default function SettingsPage() {
                   onChange={(e) => setCustomColorInput(e.currentTarget.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleCustomColorApply()}
                   radius="md"
+                  styles={{
+                    input: {
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: "var(--surface-panel)",
+                      borderColor: "var(--border-default)",
+                      color: "var(--text-primary)",
+                    },
+                  }}
                 />
-                <Button size="compact-sm" onClick={handleCustomColorApply} radius="md">
+                <Button size="compact-sm" onClick={handleCustomColorApply} radius="md" color="amber">
                   {t("theme.apply")}
                 </Button>
                 {isCustomActive && (
@@ -174,7 +226,7 @@ export default function SettingsPage() {
                     style={{
                       borderRadius: "50%",
                       backgroundColor: customPrimary,
-                      border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}`,
+                      border: "1px solid var(--border-strong)",
                     }}
                   />
                   <Text size="sm" c="dimmed">{t("theme.currentCustom", { color: customPrimary })}</Text>
@@ -186,9 +238,21 @@ export default function SettingsPage() {
 
         {/* Language */}
         <Box style={cardStyle}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
           <div style={sectionHeaderStyle}>
             <Languages size={16} />
-            <Text size="sm" fw={600}>{t("language.title")}</Text>
+            <Text size="sm" fw={600} style={{ fontFamily: "var(--font-body)" }}>{t("language.title")}</Text>
           </div>
           <div style={sectionBodyStyle}>
             <Select
@@ -200,15 +264,28 @@ export default function SettingsPage() {
                 label,
               }))}
               radius="md"
+              styles={selectStyles}
             />
           </div>
         </Box>
 
         {/* About & Update */}
         <Box style={cardStyle}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
           <div style={sectionHeaderStyle}>
             <Download size={16} />
-            <Text size="sm" fw={600}>{t("update.title")}</Text>
+            <Text size="sm" fw={600} style={{ fontFamily: "var(--font-body)" }}>{t("update.title")}</Text>
           </div>
           <div style={sectionBodyStyle}>
             <UpdateSection />

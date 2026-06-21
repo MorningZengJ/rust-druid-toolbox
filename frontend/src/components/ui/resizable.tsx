@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react"
-import { Box, useMantineTheme, useComputedColorScheme } from "@mantine/core"
+import { Box } from "@mantine/core"
 import { GripVerticalIcon } from "lucide-react"
 import * as ResizablePrimitive from "react-resizable-panels"
 
@@ -33,9 +33,6 @@ function ResizableHandle({
   className?: string
   style?: React.CSSProperties
 }) {
-  const theme = useMantineTheme()
-  const colorScheme = useComputedColorScheme()
-  const isDark = colorScheme === "dark"
   const [hovered, setHovered] = useState(false)
   const onMouseEnter = useCallback(() => setHovered(true), [])
   const onMouseLeave = useCallback(() => setHovered(false), [])
@@ -64,12 +61,8 @@ function ResizableHandle({
           bottom: 0,
           left: "50%",
           width: hovered ? 2 : 1,
-          backgroundColor: hovered
-            ? theme.colors[theme.primaryColor][isDark ? 5 : 4]
-            : isDark
-              ? "rgba(255, 255, 255, 0.06)"
-              : "rgba(0, 0, 0, 0.08)",
-          transition: "width 150ms ease, background-color 150ms ease",
+          backgroundColor: hovered ? "var(--accent-primary)" : "var(--border-default)",
+          transition: "width 200ms ease, background-color 200ms ease",
           transform: "translateX(-50%)",
           borderRadius: 1,
         }}
@@ -85,13 +78,9 @@ function ResizableHandle({
             justifyContent: "center",
             borderRadius: 6,
             border: hovered
-              ? `1px solid ${theme.colors[theme.primaryColor][isDark ? 5 : 4]}40`
-              : `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-            backgroundColor: hovered
-              ? isDark
-                ? "rgba(255, 255, 255, 0.06)"
-                : "rgba(0, 0, 0, 0.04)"
-              : "transparent",
+              ? "1px solid var(--accent-glow)"
+              : "1px solid var(--border-default)",
+            backgroundColor: hovered ? "var(--border-subtle)" : "transparent",
             opacity: hovered ? 1 : 0.4,
             transition: "opacity 150ms ease, background-color 150ms ease, border-color 150ms ease",
           }}
@@ -100,7 +89,7 @@ function ResizableHandle({
             size={10}
             style={{
               opacity: hovered ? 0.8 : 0.4,
-              color: isDark ? theme.colors.dark[2] : theme.colors.gray[5],
+              color: "var(--text-muted)",
               transition: "opacity 150ms ease",
             }}
           />

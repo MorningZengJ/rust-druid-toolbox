@@ -9,25 +9,16 @@ import {
 } from "../constants";
 
 interface CodecSelectorProps {
-  /** 当前选中的编码器 */
   codec: string;
-  /** 编码器变更回调 */
   onCodecChange: (codec: string) => void;
-  /** 当前选中的质量预设 */
   qualityPreset: string;
-  /** 质量预设变更回调 */
   onQualityPresetChange: (preset: string) => void;
-  /** 自定义视频码率 */
   videoBitrate: string;
-  /** 视频码率变更回调 */
   onVideoBitrateChange: (rate: string) => void;
-  /** 是否显示流复制选项（合并面板用） */
   showStreamCopy?: boolean;
-  /** 是否显示自定义码率输入 */
   showBitrate?: boolean;
 }
 
-/** 带 tooltip 的 Select 选项渲染 */
 function renderCodecOption(item: ComboboxLikeRenderOptionInput<ComboboxItem<string>>) {
   const tooltip = VIDEO_CODECS.find((c) => c.value === item.option.value)?.tooltip
     ?? QUALITY_PRESETS.find((p) => p.value === item.option.value)?.tooltip;
@@ -65,14 +56,22 @@ export function CodecSelector({
   const selectedCodec = codecs.find((c) => c.value === codec);
   const selectedPreset = QUALITY_PRESETS.find((p) => p.value === qualityPreset);
 
+  const selectStyles = {
+    input: {
+      backgroundColor: "var(--surface-panel)",
+      borderColor: "var(--border-default)",
+      color: "var(--text-primary)",
+    },
+  };
+
   return (
     <>
       <Box>
-        <Text size="sm" fw={500}>
+        <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
           {t("codecSelector.title")}
         </Text>
         {selectedCodec && (
-          <Text size="xs" c="dimmed" mt={2}>
+          <Text size="xs" c="dimmed" mt={2} style={{ fontFamily: "var(--font-body)" }}>
             {selectedCodec.tooltip}
           </Text>
         )}
@@ -85,16 +84,17 @@ export function CodecSelector({
             label: c.label,
           }))}
           renderOption={renderCodecOption}
+          styles={selectStyles}
         />
       </Box>
 
       {!isLossless && (
         <Box>
-          <Text size="sm" fw={500}>
+          <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
             {t("codecSelector.qualityPreset")}
           </Text>
           {selectedPreset && (
-            <Text size="xs" c="dimmed" mt={2}>
+            <Text size="xs" c="dimmed" mt={2} style={{ fontFamily: "var(--font-body)" }}>
               {selectedPreset.tooltip}
             </Text>
           )}
@@ -107,13 +107,14 @@ export function CodecSelector({
               label: p.label,
             }))}
             renderOption={renderCodecOption}
+            styles={selectStyles}
           />
         </Box>
       )}
 
       {showBitrate && !isLossless && (
         <Box>
-          <Text size="sm" fw={500}>
+          <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
             {t("codecSelector.customBitrate")}
           </Text>
           <TextInput
@@ -121,6 +122,14 @@ export function CodecSelector({
             value={videoBitrate}
             onChange={(e) => onVideoBitrateChange(e.currentTarget.value)}
             placeholder={t("codecSelector.bitratePlaceholder")}
+            styles={{
+              input: {
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "var(--surface-panel)",
+                borderColor: "var(--border-default)",
+                color: "var(--text-primary)",
+              },
+            }}
           />
         </Box>
       )}

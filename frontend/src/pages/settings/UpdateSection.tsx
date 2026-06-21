@@ -6,8 +6,6 @@ import {
   Switch,
   Box,
   Progress,
-  useMantineTheme,
-  useComputedColorScheme,
   Collapse,
   Badge,
   Tooltip,
@@ -28,9 +26,6 @@ import type { UpdateStatus } from "@/types";
 
 export default function UpdateSection() {
   const { t } = useTranslation("settings");
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
 
   const {
     currentVersion,
@@ -44,7 +39,6 @@ export default function UpdateSection() {
     setAutoCheck,
   } = useUpdateStore();
 
-  // Read status directly to avoid TypeScript narrowing issues across function calls
   const status: UpdateStatus = useUpdateStore((s) => s.status);
 
   const formatBytes = (bytes: number): string => {
@@ -144,7 +138,7 @@ export default function UpdateSection() {
               size={14}
               style={{
                 animation: "spin 1s linear infinite",
-                color: theme.colors[theme.primaryColor][isDark ? 4 : 6],
+                color: "var(--accent-primary)",
               }}
             />
             <Text size="sm" c="dimmed">{t("update.status.checking")}</Text>
@@ -155,17 +149,10 @@ export default function UpdateSection() {
         return (
           <Stack gap="sm">
             <Group gap="xs" align="center">
-              <ArrowUpCircle
-                size={16}
-                style={{ color: theme.colors.teal[isDark ? 4 : 6] }}
-              />
+              <ArrowUpCircle size={16} style={{ color: "var(--status-success)" }} />
               <Text size="sm" fw={500}>
                 {t("update.status.available")}{" "}
-                <Text
-                  span
-                  fw={700}
-                  style={{ color: theme.colors.teal[isDark ? 4 : 6] }}
-                >
+                <Text span fw={700} style={{ color: "var(--status-success)" }}>
                   v{latestVersion}
                 </Text>
               </Text>
@@ -174,11 +161,9 @@ export default function UpdateSection() {
               <Box
                 style={{
                   padding: "8px 12px",
-                  borderRadius: theme.radius.sm,
-                  backgroundColor: isDark
-                    ? "rgba(255, 255, 255, 0.03)"
-                    : "rgba(0, 0, 0, 0.02)",
-                  border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+                  borderRadius: 8,
+                  backgroundColor: "var(--surface-panel)",
+                  border: "1px solid var(--border-subtle)",
                   maxHeight: 120,
                   overflow: "auto",
                 }}
@@ -197,7 +182,7 @@ export default function UpdateSection() {
             <Group justify="space-between">
               <Text size="sm" c="dimmed">{t("update.status.downloading")}</Text>
               {progress.totalBytes && (
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>
                   {formatBytes(progress.downloadedBytes)} / {formatBytes(progress.totalBytes)}
                 </Text>
               )}
@@ -207,13 +192,7 @@ export default function UpdateSection() {
               animated
               size="sm"
               radius="xl"
-              styles={{
-                root: {
-                  backgroundColor: isDark
-                    ? "rgba(255, 255, 255, 0.06)"
-                    : "rgba(0, 0, 0, 0.06)",
-                },
-              }}
+              color="amber"
             />
           </Stack>
         );
@@ -221,7 +200,7 @@ export default function UpdateSection() {
       case "downloaded":
         return (
           <Group gap="xs">
-            <Check size={14} style={{ color: theme.colors.green[isDark ? 4 : 6] }} />
+            <Check size={14} style={{ color: "var(--status-success)" }} />
             <Text size="sm">{t("update.status.downloaded")}</Text>
           </Group>
         );
@@ -229,7 +208,7 @@ export default function UpdateSection() {
       case "no-update":
         return (
           <Group gap="xs">
-            <Check size={14} style={{ color: theme.colors.green[isDark ? 4 : 6] }} />
+            <Check size={14} style={{ color: "var(--status-success)" }} />
             <Text size="sm" c="dimmed">
               {t("update.status.notAvailable", { version: currentVersion })}
             </Text>
@@ -240,7 +219,7 @@ export default function UpdateSection() {
         return (
           <Stack gap="xs">
             <Group gap="xs">
-              <AlertCircle size={14} style={{ color: theme.colors.red[isDark ? 4 : 6] }} />
+              <AlertCircle size={14} style={{ color: "var(--status-error)" }} />
               <Text size="sm" c="red">
                 {error || t("update.status.errorDefault")}
               </Text>
@@ -255,7 +234,7 @@ export default function UpdateSection() {
               size={14}
               style={{
                 animation: "spin 1s linear infinite",
-                color: theme.colors[theme.primaryColor][isDark ? 4 : 6],
+                color: "var(--accent-primary)",
               }}
             />
             <Text size="sm" c="dimmed">{t("update.status.installing")}</Text>
@@ -278,6 +257,7 @@ export default function UpdateSection() {
             leftSection={<Download size={14} />}
             onClick={downloadAndInstall}
             radius="md"
+            color="amber"
           >
             {t("update.actions.downloadInstall")}
           </Button>
@@ -317,6 +297,7 @@ export default function UpdateSection() {
         leftSection={<RefreshCw size={14} />}
         onClick={checkForUpdate}
         radius="md"
+        color="amber"
       >
         {t("update.actions.checkUpdate")}
       </Button>
@@ -325,22 +306,13 @@ export default function UpdateSection() {
 
   return (
     <>
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-
       {/* Version Display */}
       <Box
         style={{
           padding: "12px 16px",
-          borderRadius: theme.radius.md,
-          background: isDark
-            ? `linear-gradient(135deg, ${theme.colors[theme.primaryColor][9]}15, ${theme.colors[theme.primaryColor][8]}08)`
-            : `linear-gradient(135deg, ${theme.colors[theme.primaryColor][0]}60, ${theme.colors[theme.primaryColor][1]}30)`,
-          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
+          borderRadius: 10,
+          background: "linear-gradient(135deg, var(--accent-glow), transparent)",
+          border: "1px solid var(--border-subtle)",
         }}
       >
         <Group justify="space-between" align="center">
@@ -350,25 +322,27 @@ export default function UpdateSection() {
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                background: `linear-gradient(135deg, ${theme.colors[theme.primaryColor][5]}, ${theme.colors[theme.primaryColor][7]})`,
+                background: "linear-gradient(135deg, var(--accent-primary), var(--accent-dark))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                boxShadow: "0 2px 8px var(--accent-glow)",
               }}
             >
               <Package size={16} color="white" />
             </Box>
             <div>
-              <Text size="sm" fw={600}>MToolbox</Text>
+              <Text size="sm" fw={600} style={{ fontFamily: "var(--font-display)" }}>Tauri Toolbox</Text>
               <Text size="xs" c="dimmed">{t("update.appDescription")}</Text>
             </div>
           </Group>
           <Tooltip label={t("update.currentVersion")} position="left" withArrow>
             <Badge
               variant="filled"
+              color="amber"
               styles={{
                 root: {
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-mono)",
                   fontWeight: 600,
                   letterSpacing: 0.5,
                 },
@@ -384,7 +358,7 @@ export default function UpdateSection() {
       <Stack gap="sm" mt="sm">
         <Group justify="space-between" align="center">
           <Group gap="xs">
-            <Text size="sm" fw={500}>{t("update.updateStatus")}</Text>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("update.updateStatus")}</Text>
             {renderStatusBadge()}
           </Group>
         </Group>
@@ -401,22 +375,21 @@ export default function UpdateSection() {
         mt="sm"
         style={{
           padding: "10px 12px",
-          borderRadius: theme.radius.sm,
-          backgroundColor: isDark
-            ? "rgba(255, 255, 255, 0.02)"
-            : "rgba(0, 0, 0, 0.01)",
-          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
+          borderRadius: 8,
+          backgroundColor: "var(--surface-panel)",
+          border: "1px solid var(--border-subtle)",
         }}
       >
         <Group justify="space-between" align="center">
           <div>
-            <Text size="sm" fw={500}>{t("update.autoCheck")}</Text>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("update.autoCheck")}</Text>
             <Text size="xs" c="dimmed">{t("update.autoCheckDesc")}</Text>
           </div>
           <Switch
             checked={autoCheck}
             onChange={(e) => setAutoCheck(e.currentTarget.checked)}
             size="sm"
+            color="amber"
           />
         </Group>
       </Box>

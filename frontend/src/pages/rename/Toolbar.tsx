@@ -1,4 +1,4 @@
-import { TextInput, Group, Tooltip, ActionIcon, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { TextInput, Group, Tooltip, ActionIcon } from "@mantine/core";
 import { FolderOpen, ArrowUp, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
@@ -13,10 +13,6 @@ export default function Toolbar() {
   const undoRuleChange = useRenameStore((s) => s.undoRuleChange);
   const ruleHistory = useRenameStore((s) => s.ruleHistory);
 
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
-
   const handlePathKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       const val = e.currentTarget.value.trim();
@@ -30,15 +26,15 @@ export default function Toolbar() {
       px="sm"
       py={6}
       style={{
-        borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+        borderBottom: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-raised)",
       }}
     >
       <Group gap={4}>
         <Tooltip label={t("toolbar.selectDirectory")} withArrow>
           <ActionIcon
             variant="light"
-            color={theme.primaryColor}
+            color="amber"
             size="sm"
             radius="md"
             onClick={chooseDirectory}
@@ -69,11 +65,13 @@ export default function Toolbar() {
         radius="md"
         styles={{
           input: {
-            fontFamily: "monospace",
-            backgroundColor: isDark ? theme.colors.dark[6] : theme.colors.gray[0],
-            borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+            fontFamily: "var(--font-mono)",
+            backgroundColor: "var(--surface-panel)",
+            borderColor: "var(--border-default)",
+            color: "var(--text-primary)",
             "&:focus": {
-              borderColor: theme.colors[theme.primaryColor][isDark ? 5 : 4],
+              borderColor: "var(--accent-primary)",
+              boxShadow: "0 0 0 3px var(--accent-glow)",
             },
           },
         }}

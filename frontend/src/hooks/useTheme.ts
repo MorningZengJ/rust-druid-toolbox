@@ -10,7 +10,7 @@ export function useColorThemes() {
   const { t } = useTranslation("common");
 
   const COLOR_THEMES: { value: ColorTheme; label: string; color: string }[] = [
-    { value: "default", label: t("colors.default"), color: "#1a1a2e" },
+    { value: "default", label: t("colors.default"), color: "#F5A623" },
     { value: "blue", label: t("colors.blue"), color: "#1a52ff" },
     { value: "green", label: t("colors.green"), color: "#0cc04b" },
     { value: "purple", label: t("colors.purple"), color: "#6a10ff" },

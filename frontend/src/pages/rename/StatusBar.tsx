@@ -1,4 +1,4 @@
-import { Button, Badge, Group, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { Button, Badge, Group, Text } from "@mantine/core";
 import { useModals } from "@mantine/modals";
 import { Play, AlertTriangle, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -12,9 +12,6 @@ export default function StatusBar() {
   const status = useRenameStore((s) => s.status);
   const executeRenames = useRenameStore((s) => s.executeRenames);
 
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
   const modals = useModals();
 
   const activeRules = replaceInfos.filter((r) => r.enable);
@@ -40,17 +37,17 @@ export default function StatusBar() {
       px="sm"
       py={6}
       style={{
-        borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+        borderTop: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-raised)",
       }}
     >
       <Group gap="sm">
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-body)" }}>
           {t("status.fileCount", { count: filterFileList.length })}
         </Text>
 
         {hasChanges && (
-          <Badge variant="light" size="sm" radius="sm">
+          <Badge variant="light" size="sm" radius="sm" color="amber">
             {t("status.ruleCount", { count: activeRules.length })}
           </Badge>
         )}
@@ -62,7 +59,7 @@ export default function StatusBar() {
         )}
 
         {status && (
-          <Badge variant="filled" size="sm" radius="sm" leftSection={<CheckCircle size={12} />}>
+          <Badge variant="filled" size="sm" radius="sm" color="green" leftSection={<CheckCircle size={12} />}>
             {t("status.completed", { success: status.success, total: status.total })}
             {status.errors.length > 0 && `, ${t("status.errors", { count: status.errors.length })}`}
           </Badge>
@@ -75,6 +72,7 @@ export default function StatusBar() {
         disabled={!hasChanges || hasConflicts || filterFileList.length === 0}
         onClick={handleExecute}
         radius="md"
+        color="amber"
       >
         {t("status.executeRename")}
       </Button>

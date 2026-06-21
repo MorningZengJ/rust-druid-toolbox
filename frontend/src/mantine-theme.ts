@@ -1,6 +1,21 @@
 import { createTheme } from "@mantine/core";
 import type { MantineColorsTuple } from "@mantine/core";
 
+// === 琥珀金主色调 ===
+const amber: MantineColorsTuple = [
+  "#FFF8EB",
+  "#FFEFC2",
+  "#FFE08A",
+  "#FFD060",
+  "#F5A623",
+  "#D4880F",
+  "#B37200",
+  "#8A5800",
+  "#6B4500",
+  "#4D3200",
+];
+
+// === 功能色 ===
 const blue: MantineColorsTuple = [
   "#e7f0ff",
   "#d0ddff",
@@ -25,6 +40,19 @@ const green: MantineColorsTuple = [
   "#008732",
   "#006b29",
   "#005020",
+];
+
+const red: MantineColorsTuple = [
+  "#fff0f0",
+  "#ffe0e0",
+  "#ffb8b8",
+  "#ff8080",
+  "#ff5050",
+  "#ff2020",
+  "#e50000",
+  "#c00000",
+  "#9c0000",
+  "#7a0000",
 ];
 
 const purple: MantineColorsTuple = [
@@ -66,27 +94,28 @@ const rose: MantineColorsTuple = [
   "#7a0025",
 ];
 
-// Refined dark mode surface colors (avoid pure black, rich dark tones)
+// === 暗色表面色 ===
 const dark: MantineColorsTuple = [
-  "#C1C2C5",   // 0: lightest text
-  "#A6A7AB",   // 1: secondary text
-  "#909296",   // 2: muted text
-  "#5C5F66",   // 3: disabled text
-  "#373A40",   // 4: borders
-  "#2C2E33",   // 5: elevated surface
-  "#25262B",   // 6: card surface
-  "#1A1B1E",   // 7: base surface
-  "#141517",   // 8: deep surface
-  "#101113",   // 9: deepest background
+  "#E8E8EC",   // 0: 最亮文字
+  "#CDCDD4",   // 1: 次亮文字
+  "#9494A0",   // 2: 弱化文字
+  "#5C5C68",   // 3: 禁用文字
+  "#3A3A42",   // 4: 边框
+  "#2A2A32",   // 5: 抬升表面
+  "#222228",   // 6: 卡片表面
+  "#1A1A1F",   // 7: 基础表面
+  "#131316",   // 8: 深层表面
+  "#0C0C0E",   // 9: 最深背景
 ];
 
 const MANTINE_THEME = createTheme({
-  primaryColor: "blue",
-  colors: { blue, green, purple, orange, rose, dark },
-  fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+  primaryColor: "amber",
+  colors: { amber, blue, green, red, purple, orange, rose, dark },
+  fontFamily: "'DM Sans Variable', 'Noto Sans SC', -apple-system, 'Segoe UI', sans-serif",
   defaultRadius: "md",
   headings: {
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+    fontWeight: "600",
   },
   shadows: {
     xs: "0 1px 2px rgba(0, 0, 0, 0.05)",
@@ -95,8 +124,45 @@ const MANTINE_THEME = createTheme({
     lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
     xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
   },
+  radius: {
+    xs: "4px",
+    sm: "6px",
+    md: "8px",
+    lg: "12px",
+    xl: "16px",
+  },
+  spacing: {
+    xs: "4px",
+    sm: "8px",
+    md: "12px",
+    lg: "16px",
+    xl: "24px",
+  },
+  components: {
+    Button: {
+      defaultProps: {
+        radius: "md",
+      },
+    },
+    TextInput: {
+      defaultProps: {
+        radius: "md",
+      },
+    },
+    Select: {
+      defaultProps: {
+        radius: "md",
+      },
+    },
+    Tabs: {
+      defaultProps: {
+        radius: "md",
+      },
+    },
+  },
 });
 
+// === 色彩主题系统 ===
 type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
 
 export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: string) {
@@ -111,7 +177,7 @@ export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: strin
     };
   }
   if (themeName === "default") {
-    return { ...MANTINE_THEME, primaryColor: "blue" };
+    return { ...MANTINE_THEME, primaryColor: "amber" };
   }
   return { ...MANTINE_THEME, primaryColor: themeName };
 }

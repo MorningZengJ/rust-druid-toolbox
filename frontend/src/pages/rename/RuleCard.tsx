@@ -1,4 +1,4 @@
-import { TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { TextInput, Checkbox, Group, Stack, ActionIcon, Text } from "@mantine/core";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
@@ -16,32 +16,40 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
   const updateReplaceInfo = useRenameStore((s) => s.updateReplaceInfo);
   const removeReplaceInfo = useRenameStore((s) => s.removeReplaceInfo);
 
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
-
   const collapsed = rulesCollapsed[index] ?? false;
 
   return (
     <div
       style={{
-        borderRadius: theme.radius.md,
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
-        transition: "all 150ms ease",
+        borderRadius: 8,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-overlay)",
+        transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
         overflow: "hidden",
+        position: "relative",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = isDark
-          ? "rgba(255, 255, 255, 0.1)"
-          : "rgba(0, 0, 0, 0.1)";
+        e.currentTarget.style.borderColor = "var(--border-strong)";
+        e.currentTarget.style.boxShadow = "var(--shadow-sm)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = isDark
-          ? "rgba(255, 255, 255, 0.06)"
-          : "rgba(0, 0, 0, 0.06)";
+        e.currentTarget.style.borderColor = "var(--border-default)";
+        e.currentTarget.style.boxShadow = "none";
       }}
     >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+        }}
+      />
+
       <Group gap={4} px="xs" py={6} align="center">
         <ActionIcon
           variant="subtle"
@@ -54,7 +62,7 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
         </ActionIcon>
 
         <Text size="xs" fw={500} c="dimmed" style={{ flex: 1 }} truncate>
-          <Text span size="xs" fw={600} c={isDark ? theme.colors.dark[1] : theme.colors.gray[7]}>
+          <Text span size="xs" fw={600} style={{ color: "var(--text-primary)" }}>
             {t("rules.ruleNumber", { index: index + 1 })}
           </Text>
           {!collapsed && (
@@ -69,7 +77,7 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
             checked={rule.enable}
             onChange={(e) => updateReplaceInfo(index, { enable: e.currentTarget.checked })}
             size="xs"
-            color={theme.primaryColor}
+            color="amber"
           />
           <ActionIcon
             variant="subtle"
@@ -89,8 +97,8 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
           px="sm"
           py="xs"
           style={{
-            borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
-            backgroundColor: isDark ? "rgba(255, 255, 255, 0.01)" : "rgba(0, 0, 0, 0.01)",
+            borderTop: "1px solid var(--border-subtle)",
+            backgroundColor: "var(--surface-panel)",
           }}
         >
           <Group gap="xs" align="center">
@@ -104,9 +112,10 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
               radius="md"
               styles={{
                 input: {
-                  fontFamily: "monospace",
-                  backgroundColor: isDark ? theme.colors.dark[6] : theme.white,
-                  borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "var(--surface-overlay)",
+                  borderColor: "var(--border-default)",
+                  color: "var(--text-primary)",
                 },
               }}
             />
@@ -122,9 +131,10 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
               radius="md"
               styles={{
                 input: {
-                  fontFamily: "monospace",
-                  backgroundColor: isDark ? theme.colors.dark[6] : theme.white,
-                  borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "var(--surface-overlay)",
+                  borderColor: "var(--border-default)",
+                  color: "var(--text-primary)",
                 },
               }}
             />
@@ -135,7 +145,7 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
                 checked={rule.isRegex}
                 onChange={(e) => updateReplaceInfo(index, { isRegex: e.currentTarget.checked })}
                 size="xs"
-                color={theme.primaryColor}
+                color="amber"
               />
               <Text size="xs" c="dimmed">{t("rules.regex")}</Text>
             </Group>

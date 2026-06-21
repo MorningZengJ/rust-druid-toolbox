@@ -21,7 +21,7 @@ interface FileIconProps {
 }
 
 const iconMap: Record<string, { icon: LucideIcon; color: string }> = {
-  dir: { icon: FolderOpen, color: "#3b82f6" },
+  dir: { icon: FolderOpen, color: "var(--accent-primary)" },
   png: { icon: Image, color: "#22c55e" },
   jpg: { icon: Image, color: "#22c55e" },
   jpeg: { icon: Image, color: "#22c55e" },

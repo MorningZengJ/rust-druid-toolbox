@@ -1,4 +1,4 @@
-import { Button, Group, Text, Stack, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { Button, Group, Text, Stack } from "@mantine/core";
 import { Plus, Trash, ListChecks } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
@@ -10,10 +10,6 @@ export default function RuleList() {
   const addReplaceInfo = useRenameStore((s) => s.addReplaceInfo);
   const clearAllRules = useRenameStore((s) => s.clearAllRules);
 
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
-
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <Group
@@ -22,12 +18,12 @@ export default function RuleList() {
         px="sm"
         py={6}
         style={{
-          borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
-          backgroundColor: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
+          borderBottom: "1px solid var(--border-subtle)",
+          backgroundColor: "var(--surface-panel)",
         }}
       >
         <Group gap={6} align="center">
-          <ListChecks size={14} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[6] }} />
+          <ListChecks size={14} style={{ color: "var(--text-muted)" }} />
           <Text size="xs" fw={600} c="dimmed">
             {t("rules.title")} ({replaceInfos.length})
           </Text>
@@ -50,6 +46,7 @@ export default function RuleList() {
             leftSection={<Plus size={12} />}
             onClick={addReplaceInfo}
             radius="md"
+            color="amber"
           >
             {t("rules.addRule")}
           </Button>

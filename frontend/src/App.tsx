@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Flex, Box, Text, useComputedColorScheme, useMantineTheme, Tooltip } from "@mantine/core";
+import { Flex, Box, Text, Tooltip } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import {
   PenLine,
@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useWindowState } from "@/hooks/useWindowState";
 import { useTheme } from "@/hooks/useTheme";
+import { useComputedColorScheme } from "@mantine/core";
 import { useUpdateStore } from "@/stores/updateStore";
 import RenamePage from "@/pages/rename/RenamePage";
 import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
@@ -23,12 +24,21 @@ type Page = "rename" | "ascii-art" | "video-tool" | "settings";
 function App() {
   const { t } = useTranslation("common");
   const [activePage, setActivePage] = useState<Page>("rename");
+  const [pageVisible, setPageVisible] = useState(true);
   const colorScheme = useComputedColorScheme();
   const { colorMode, setColorMode } = useTheme();
-  const theme = useMantineTheme();
   useWindowState();
 
   const isDark = colorScheme === "dark";
+
+  const handlePageChange = (page: Page) => {
+    if (page === activePage) return;
+    setPageVisible(false);
+    setTimeout(() => {
+      setActivePage(page);
+      setPageVisible(true);
+    }, 150);
+  };
 
   const navItems: { id: Page; label: string; icon: React.ReactNode; description: string }[] = [
     { id: "rename", label: t("navigation.rename"), icon: <PenLine size={20} />, description: t("navigation.renameDesc") },
@@ -36,7 +46,6 @@ function App() {
     { id: "video-tool", label: t("navigation.videoTool"), icon: <Wrench size={20} />, description: t("navigation.videoToolDesc") },
   ];
 
-  // Auto-check for updates on startup
   const updateInit = useUpdateStore((s) => s.init);
 
   useEffect(() => {
@@ -55,14 +64,14 @@ function App() {
   return (
     <ModalsProvider>
       <Flex h="100vh" w="100vw" style={{ overflow: "hidden" }}>
-        {/* Navigation sidebar */}
+        {/* === Navigation sidebar === */}
         <Flex
           direction="column"
-          w={80}
+          w={72}
           py="md"
           style={{
-            borderRight: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-            backgroundColor: isDark ? theme.colors.dark[8] : theme.colors.gray[0],
+            borderRight: "1px solid var(--border-default)",
+            backgroundColor: "var(--surface-base)",
             position: "relative",
             zIndex: 10,
           }}
@@ -74,14 +83,35 @@ function App() {
               h={36}
               style={{
                 borderRadius: 10,
-                background: `linear-gradient(135deg, ${theme.colors[theme.primaryColor][5]}, ${theme.colors[theme.primaryColor][7]})`,
+                background: "linear-gradient(135deg, var(--accent-primary), var(--accent-dark))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: `0 2px 8px ${theme.colors[theme.primaryColor][5]}40`,
+                boxShadow: "0 2px 12px var(--accent-glow)",
+                position: "relative",
               }}
             >
-              <Text size="sm" fw={700} c="white" style={{ fontFamily: "monospace" }}>D</Text>
+              <Text
+                size="sm"
+                fw={700}
+                c="var(--surface-base)"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                T
+              </Text>
+              <Box
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 24,
+                  height: 4,
+                  borderRadius: "50%",
+                  background: "var(--accent-glow)",
+                  filter: "blur(3px)",
+                }}
+              />
             </Box>
           </Flex>
 
@@ -98,7 +128,7 @@ function App() {
                   offset={12}
                 >
                   <Box
-                    onClick={() => setActivePage(item.id)}
+                    onClick={() => handlePageChange(item.id)}
                     style={{
                       position: "relative",
                       display: "flex",
@@ -106,20 +136,14 @@ function App() {
                       alignItems: "center",
                       gap: 4,
                       padding: "10px 8px",
-                      borderRadius: theme.radius.md,
+                      borderRadius: 10,
                       cursor: "pointer",
-                      backgroundColor: isActive
-                        ? isDark
-                          ? "rgba(255, 255, 255, 0.06)"
-                          : "rgba(0, 0, 0, 0.04)"
-                        : "transparent",
-                      transition: "all 150ms ease",
+                      backgroundColor: isActive ? "var(--accent-glow)" : "transparent",
+                      transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.backgroundColor = isDark
-                          ? "rgba(255, 255, 255, 0.04)"
-                          : "rgba(0, 0, 0, 0.03)";
+                        e.currentTarget.style.backgroundColor = "var(--border-subtle)";
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -128,7 +152,6 @@ function App() {
                       }
                     }}
                   >
-                    {/* Active indicator bar */}
                     {isActive && (
                       <Box
                         style={{
@@ -138,19 +161,17 @@ function App() {
                           transform: "translateY(-50%)",
                           width: 3,
                           height: 20,
-                          borderRadius: "0 2px 2px 0",
-                          backgroundColor: theme.colors[theme.primaryColor][5],
+                          borderRadius: "0 3px 3px 0",
+                          backgroundColor: "var(--accent-primary)",
+                          boxShadow: "0 0 8px var(--accent-glow)",
                         }}
                       />
                     )}
                     <Box
                       style={{
-                        color: isActive
-                          ? theme.colors[theme.primaryColor][isDark ? 4 : 6]
-                          : isDark
-                            ? theme.colors.dark[2]
-                            : theme.colors.gray[6],
-                        transition: "color 150ms ease",
+                        color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
+                        transition: "all 200ms ease",
+                        transform: isActive ? "scale(1.05)" : "scale(1)",
                       }}
                     >
                       {item.icon}
@@ -159,16 +180,11 @@ function App() {
                       size="xs"
                       fw={isActive ? 600 : 400}
                       style={{
-                        color: isActive
-                          ? isDark
-                            ? theme.colors.dark[0]
-                            : theme.colors.gray[8]
-                          : isDark
-                            ? theme.colors.dark[2]
-                            : theme.colors.gray[6],
-                        transition: "color 150ms ease",
+                        color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+                        transition: "color 200ms ease",
                         lineHeight: 1,
                         whiteSpace: "nowrap",
+                        fontFamily: "var(--font-body)",
                       }}
                     >
                       {item.label}
@@ -185,7 +201,7 @@ function App() {
               style={{
                 width: 24,
                 height: 1,
-                backgroundColor: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)",
+                backgroundColor: "var(--border-default)",
                 margin: "4px auto 8px",
               }}
             />
@@ -199,15 +215,13 @@ function App() {
                   alignItems: "center",
                   gap: 4,
                   padding: "10px 8px",
-                  borderRadius: theme.radius.md,
+                  borderRadius: 10,
                   cursor: "pointer",
                   backgroundColor: "transparent",
-                  transition: "all 150ms ease",
+                  transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDark
-                    ? "rgba(255, 255, 255, 0.04)"
-                    : "rgba(0, 0, 0, 0.03)";
+                  e.currentTarget.style.backgroundColor = "var(--border-subtle)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
@@ -215,8 +229,8 @@ function App() {
               >
                 <Box
                   style={{
-                    color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
-                    transition: "color 150ms ease",
+                    color: "var(--text-muted)",
+                    transition: "color 200ms ease",
                   }}
                 >
                   {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -225,10 +239,11 @@ function App() {
                   size="xs"
                   fw={400}
                   style={{
-                    color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
-                    transition: "color 150ms ease",
+                    color: "var(--text-muted)",
+                    transition: "color 200ms ease",
                     lineHeight: 1,
                     whiteSpace: "nowrap",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
                   {isDark ? t("theme.light") : t("theme.dark")}
@@ -237,7 +252,7 @@ function App() {
             </Tooltip>
             <Tooltip label={t("navigation.settings")} position="right" withArrow offset={12}>
               <Box
-                onClick={() => setActivePage("settings")}
+                onClick={() => handlePageChange("settings")}
                 style={{
                   position: "relative",
                   display: "flex",
@@ -245,20 +260,14 @@ function App() {
                   alignItems: "center",
                   gap: 4,
                   padding: "10px 8px",
-                  borderRadius: theme.radius.md,
+                  borderRadius: 10,
                   cursor: "pointer",
-                  backgroundColor: activePage === "settings"
-                    ? isDark
-                      ? "rgba(255, 255, 255, 0.06)"
-                      : "rgba(0, 0, 0, 0.04)"
-                    : "transparent",
-                  transition: "all 150ms ease",
+                  backgroundColor: activePage === "settings" ? "var(--accent-glow)" : "transparent",
+                  transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
                 onMouseEnter={(e) => {
                   if (activePage !== "settings") {
-                    e.currentTarget.style.backgroundColor = isDark
-                      ? "rgba(255, 255, 255, 0.04)"
-                      : "rgba(0, 0, 0, 0.03)";
+                    e.currentTarget.style.backgroundColor = "var(--border-subtle)";
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -276,19 +285,17 @@ function App() {
                       transform: "translateY(-50%)",
                       width: 3,
                       height: 20,
-                      borderRadius: "0 2px 2px 0",
-                      backgroundColor: theme.colors[theme.primaryColor][5],
+                      borderRadius: "0 3px 3px 0",
+                      backgroundColor: "var(--accent-primary)",
+                      boxShadow: "0 0 8px var(--accent-glow)",
                     }}
                   />
                 )}
                 <Box
                   style={{
-                    color: activePage === "settings"
-                      ? theme.colors[theme.primaryColor][isDark ? 4 : 6]
-                      : isDark
-                        ? theme.colors.dark[2]
-                        : theme.colors.gray[6],
-                    transition: "color 150ms ease",
+                    color: activePage === "settings" ? "var(--accent-primary)" : "var(--text-muted)",
+                    transition: "all 200ms ease",
+                    transform: activePage === "settings" ? "scale(1.05)" : "scale(1)",
                   }}
                 >
                   <Settings size={20} />
@@ -297,16 +304,11 @@ function App() {
                   size="xs"
                   fw={activePage === "settings" ? 600 : 400}
                   style={{
-                    color: activePage === "settings"
-                      ? isDark
-                        ? theme.colors.dark[0]
-                        : theme.colors.gray[8]
-                      : isDark
-                        ? theme.colors.dark[2]
-                        : theme.colors.gray[6],
-                    transition: "color 150ms ease",
+                    color: activePage === "settings" ? "var(--text-primary)" : "var(--text-muted)",
+                    transition: "color 200ms ease",
                     lineHeight: 1,
                     whiteSpace: "nowrap",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
                   {t("navigation.settings")}
@@ -316,21 +318,71 @@ function App() {
           </Flex>
         </Flex>
 
-        {/* Main content */}
-        <Box style={{ flex: 1, overflow: "hidden" }}>
-          <Box h="100%" p="md" style={{ display: activePage === "rename" ? "block" : "none" }}>
-            <RenamePage />
+        {/* === Main content area === */}
+        <Flex direction="column" style={{ flex: 1, overflow: "hidden" }}>
+          <Box
+            style={{
+              flex: 1,
+              overflow: "hidden",
+              padding: 12,
+              opacity: pageVisible ? 1 : 0,
+              transform: pageVisible ? "translateY(0)" : "translateY(6px)",
+              transition: "opacity 150ms ease, transform 150ms ease",
+            }}
+          >
+            <Box h="100%" style={{ display: activePage === "rename" ? "block" : "none" }}>
+              <RenamePage />
+            </Box>
+            <Box h="100%" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
+              <AsciiArtPage />
+            </Box>
+            <Box h="100%" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
+              <VideoToolPage />
+            </Box>
+            <Box h="100%" style={{ display: activePage === "settings" ? "block" : "none" }}>
+              <SettingsPage />
+            </Box>
           </Box>
-          <Box h="100%" p="md" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
-            <AsciiArtPage />
-          </Box>
-          <Box h="100%" p="md" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
-            <VideoToolPage />
-          </Box>
-          <Box h="100%" p="md" style={{ display: activePage === "settings" ? "block" : "none" }}>
-            <SettingsPage />
-          </Box>
-        </Box>
+
+          {/* === Status bar === */}
+          <Flex
+            h={28}
+            px="md"
+            align="center"
+            justify="space-between"
+            style={{
+              borderTop: "1px solid var(--border-subtle)",
+              backgroundColor: "var(--surface-base)",
+              flexShrink: 0,
+            }}
+          >
+            <Flex align="center" gap="md">
+              <Text
+                size="xs"
+                style={{
+                  color: "var(--text-muted)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                }}
+              >
+                {navItems.find((item) => item.id === activePage)?.description || ""}
+              </Text>
+            </Flex>
+            <Flex align="center" gap="md">
+              <Text
+                size="xs"
+                style={{
+                  color: "var(--text-muted)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Tauri Toolbox v0.1.0
+              </Text>
+            </Flex>
+          </Flex>
+        </Flex>
       </Flex>
     </ModalsProvider>
   );

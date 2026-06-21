@@ -10,7 +10,6 @@ import {
   Text,
   Stack,
   Group,
-  useMantineTheme,
 } from "@mantine/core";
 import {
   ResizablePanel,
@@ -33,7 +32,6 @@ import { CodecSelector } from "./components/CodecSelector";
 
 export function ImagesPanel() {
   const { t } = useTranslation("videoTool");
-  const theme = useMantineTheme();
   const imagesFolderPath = useVideoToolStore((s) => s.imagesFolderPath);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "video-tool-images",
@@ -117,188 +115,258 @@ export function ImagesPanel() {
       <ResizablePanel defaultSize={50} minSize={30}>
         <Box
           pos="relative"
-          style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", borderRadius: 8, border: `1px solid ${theme.colors.dark[4]}` }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            overflow: "hidden",
+            borderRadius: 10,
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--surface-raised)",
+          }}
         >
-        <Box px="md" py="xs" style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}>
-          <Text size="sm" fw={500}>{t("images.title")}</Text>
-        </Box>
+          {/* 顶部高光线 */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
 
-        <ScrollArea style={{ flex: 1 }} p="md">
-          <Stack gap="md">
-            <Box>
-              <Text size="sm" fw={500}>{t("images.imageFolder")}</Text>
-              <Box mt={4}>
-                {imagesFolderPath ? (
-                  <Box p="sm" style={{ borderRadius: 6, border: `1px solid ${theme.colors.dark[4]}`, background: theme.colors.dark[3] }}>
-                    <Group gap="xs" mb="xs">
-                      <FolderOpen size={16} color={theme.colors.dark[2]} style={{ flexShrink: 0 }} />
-                      <Text
-                        size="xs"
-                        style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        title={imagesFolderPath}
-                      >
-                        {imagesFolderPath.split(/[/\\]/).pop() || imagesFolderPath}
+          <Box px="md" py="xs" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--surface-panel)" }}>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.title")}</Text>
+          </Box>
+
+          <ScrollArea style={{ flex: 1 }} p="md">
+            <Stack gap="md">
+              <Box>
+                <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.imageFolder")}</Text>
+                <Box mt={4}>
+                  {imagesFolderPath ? (
+                    <Box p="sm" style={{ borderRadius: 8, border: "1px solid var(--border-default)", backgroundColor: "var(--surface-panel)" }}>
+                      <Group gap="xs" mb="xs">
+                        <FolderOpen size={16} style={{ color: "var(--accent-primary)", flexShrink: 0 }} />
+                        <Text
+                          size="xs"
+                          style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--font-mono)" }}
+                          title={imagesFolderPath}
+                        >
+                          {imagesFolderPath.split(/[/\\]/).pop() || imagesFolderPath}
+                        </Text>
+                      </Group>
+                      <Text size="xs" c="dimmed">
+                        {t("images.loadedCount", { count: imagesInputPaths.length })}
                       </Text>
-                    </Group>
-                    <Text size="xs" c="dimmed">
-                      {t("images.loadedCount", { count: imagesInputPaths.length })}
-                    </Text>
-                    <Button
-                      size="compact-sm"
-                      variant="outline"
-                      mt="xs"
-                      fullWidth
+                      <Button
+                        size="compact-sm"
+                        variant="outline"
+                        mt="xs"
+                        fullWidth
+                        onClick={selectFolder}
+                        color="amber"
+                      >
+                        {t("images.changeFolder")}
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box
+                      px="md"
+                      py="xl"
+                      ta="center"
+                      style={{
+                        borderRadius: 8,
+                        border: "1px dashed var(--border-strong)",
+                        cursor: "pointer",
+                        backgroundColor: "var(--surface-panel)",
+                      }}
                       onClick={selectFolder}
                     >
-                      {t("images.changeFolder")}
-                    </Button>
-                  </Box>
-                ) : (
-                  <Box
-                    px="md"
-                    py="xl"
-                    ta="center"
-                    style={{
-                      borderRadius: 4,
-                      border: `1px dashed ${theme.colors.dark[3]}`,
-                      cursor: "pointer",
-                    }}
-                    onClick={selectFolder}
-                  >
-                    <Text size="xs" c="dimmed">{t("images.dropHint")}</Text>
-                  </Box>
+                      <Text size="xs" c="dimmed">{t("images.dropHint")}</Text>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+
+              <Box>
+                <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.fps")}</Text>
+                <NumberInput
+                  mt={4}
+                  value={imagesFps}
+                  onChange={(v) => setImagesFps(typeof v === "number" ? v : 24)}
+                  min={1}
+                  max={60}
+                  styles={{
+                    input: {
+                      backgroundColor: "var(--surface-panel)",
+                      borderColor: "var(--border-default)",
+                      color: "var(--text-primary)",
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.outputFormat")}</Text>
+                <Select
+                  mt={4}
+                  value={imagesOutputFormat}
+                  onChange={(v) => v && setImagesOutputFormat(v)}
+                  data={[
+                    { value: "mp4", label: "MP4" },
+                    { value: "mkv", label: "MKV" },
+                    { value: "gif", label: "GIF" },
+                  ]}
+                  styles={{
+                    input: {
+                      backgroundColor: "var(--surface-panel)",
+                      borderColor: "var(--border-default)",
+                      color: "var(--text-primary)",
+                    },
+                  }}
+                />
+              </Box>
+
+              {imagesOutputFormat !== "gif" && (
+                <CodecSelector
+                  codec={imagesVideoCodec}
+                  onCodecChange={setImagesVideoCodec}
+                  qualityPreset={imagesQualityPreset}
+                  onQualityPresetChange={setImagesQualityPreset}
+                  videoBitrate={imagesVideoBitrate}
+                  onVideoBitrateChange={setImagesVideoBitrate}
+                  showStreamCopy={false}
+                  showBitrate={true}
+                />
+              )}
+
+              <Box>
+                <Group gap="xs" mb="xs">
+                  <Checkbox
+                    checked={imagesResolution !== null}
+                    onChange={(e) =>
+                      setImagesResolution(e.currentTarget.checked ? [1920, 1080] : null)
+                    }
+                    color="amber"
+                  />
+                  <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.customResolution")}</Text>
+                </Group>
+                {imagesResolution && (
+                  <Group gap="xs">
+                    <NumberInput
+                      value={imagesResolution[0]}
+                      onChange={(v) =>
+                        setImagesResolution([
+                          typeof v === "number" ? v : 1920,
+                          imagesResolution[1],
+                        ])
+                      }
+                      placeholder={t("images.widthPlaceholder")}
+                      style={{ flex: 1 }}
+                      styles={{
+                        input: {
+                          backgroundColor: "var(--surface-panel)",
+                          borderColor: "var(--border-default)",
+                          color: "var(--text-primary)",
+                        },
+                      }}
+                    />
+                    <NumberInput
+                      value={imagesResolution[1]}
+                      onChange={(v) =>
+                        setImagesResolution([
+                          imagesResolution[0],
+                          typeof v === "number" ? v : 1080,
+                        ])
+                      }
+                      placeholder={t("images.heightPlaceholder")}
+                      style={{ flex: 1 }}
+                      styles={{
+                        input: {
+                          backgroundColor: "var(--surface-panel)",
+                          borderColor: "var(--border-default)",
+                          color: "var(--text-primary)",
+                        },
+                      }}
+                    />
+                  </Group>
                 )}
               </Box>
-            </Box>
 
-            <Box>
-              <Text size="sm" fw={500}>{t("images.fps")}</Text>
-              <NumberInput
-                mt={4}
-                value={imagesFps}
-                onChange={(v) => setImagesFps(typeof v === "number" ? v : 24)}
-                min={1}
-                max={60}
-              />
-            </Box>
-
-            <Box>
-              <Text size="sm" fw={500}>{t("images.outputFormat")}</Text>
-              <Select
-                mt={4}
-                value={imagesOutputFormat}
-                onChange={(v) => v && setImagesOutputFormat(v)}
-                data={[
-                  { value: "mp4", label: "MP4" },
-                  { value: "mkv", label: "MKV" },
-                  { value: "gif", label: "GIF" },
-                ]}
-              />
-            </Box>
-
-            {imagesOutputFormat !== "gif" && (
-              <CodecSelector
-                codec={imagesVideoCodec}
-                onCodecChange={setImagesVideoCodec}
-                qualityPreset={imagesQualityPreset}
-                onQualityPresetChange={setImagesQualityPreset}
-                videoBitrate={imagesVideoBitrate}
-                onVideoBitrateChange={setImagesVideoBitrate}
-                showStreamCopy={false}
-                showBitrate={true}
-              />
-            )}
-
-            <Box>
-              <Group gap="xs" mb="xs">
-                <Checkbox
-                  checked={imagesResolution !== null}
-                  onChange={(e) =>
-                    setImagesResolution(e.currentTarget.checked ? [1920, 1080] : null)
-                  }
-                />
-                <Text size="sm" fw={500}>{t("images.customResolution")}</Text>
-              </Group>
-              {imagesResolution && (
-                <Group gap="xs">
-                  <NumberInput
-                    value={imagesResolution[0]}
-                    onChange={(v) =>
-                      setImagesResolution([
-                        typeof v === "number" ? v : 1920,
-                        imagesResolution[1],
-                      ])
-                    }
-                    placeholder={t("images.widthPlaceholder")}
+              <Box>
+                <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.audio")}</Text>
+                <Group mt={4} gap="xs">
+                  <TextInput
+                    value={imagesAudioPath || ""}
+                    readOnly
+                    placeholder={t("images.audioPlaceholder")}
                     style={{ flex: 1 }}
+                    size="xs"
+                    styles={{
+                      input: {
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: "var(--surface-panel)",
+                        borderColor: "var(--border-default)",
+                        color: "var(--text-primary)",
+                      },
+                    }}
                   />
-                  <NumberInput
-                    value={imagesResolution[1]}
-                    onChange={(v) =>
-                      setImagesResolution([
-                        imagesResolution[0],
-                        typeof v === "number" ? v : 1080,
-                      ])
-                    }
-                    placeholder={t("images.heightPlaceholder")}
-                    style={{ flex: 1 }}
-                  />
-                </Group>
-              )}
-            </Box>
-
-            <Box>
-              <Text size="sm" fw={500}>{t("images.audio")}</Text>
-              <Group mt={4} gap="xs">
-                <TextInput
-                  value={imagesAudioPath || ""}
-                  readOnly
-                  placeholder={t("images.audioPlaceholder")}
-                  style={{ flex: 1 }}
-                  size="xs"
-                />
-                <Button variant="outline" onClick={selectAudio} style={{ padding: "0 8px" }}>
-                  <Music size={16} />
-                </Button>
-                {imagesAudioPath && (
-                  <Button
-                    variant="outline"
-                    color="red"
-                    onClick={() => setImagesAudioPath(null)}
-                    style={{ padding: "0 8px" }}
-                  >
-                    <Trash2 size={16} />
+                  <Button variant="outline" onClick={selectAudio} style={{ padding: "0 8px" }} color="amber">
+                    <Music size={16} />
                   </Button>
-                )}
-              </Group>
-            </Box>
+                  {imagesAudioPath && (
+                    <Button
+                      variant="outline"
+                      color="red"
+                      onClick={() => setImagesAudioPath(null)}
+                      style={{ padding: "0 8px" }}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
+                </Group>
+              </Box>
 
-            <Box>
-              <Text size="sm" fw={500}>{t("images.outputPath")}</Text>
-              <Group mt={4} gap="xs">
-                <TextInput
-                  value={imagesOutputPath}
-                  onChange={(e) => setImagesOutputPath(e.currentTarget.value)}
-                  placeholder={t("images.outputPathPlaceholder")}
-                  style={{ flex: 1 }}
-                  size="xs"
-                />
-                <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }}>
-                  <FolderOpen size={16} />
-                </Button>
-              </Group>
-            </Box>
+              <Box>
+                <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.outputPath")}</Text>
+                <Group mt={4} gap="xs">
+                  <TextInput
+                    value={imagesOutputPath}
+                    onChange={(e) => setImagesOutputPath(e.currentTarget.value)}
+                    placeholder={t("images.outputPathPlaceholder")}
+                    style={{ flex: 1 }}
+                    size="xs"
+                    styles={{
+                      input: {
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: "var(--surface-panel)",
+                        borderColor: "var(--border-default)",
+                        color: "var(--text-primary)",
+                      },
+                    }}
+                  />
+                  <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }} color="amber">
+                    <FolderOpen size={16} />
+                  </Button>
+                </Group>
+              </Box>
 
-            <Button
-              fullWidth
-              onClick={runImagesToVideo}
-              disabled={isProcessing || imagesInputPaths.length === 0}
-              leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
-            >
-              {t("images.startGenerate")}
-            </Button>
-          </Stack>
-        </ScrollArea>
+              <Button
+                fullWidth
+                onClick={runImagesToVideo}
+                disabled={isProcessing || imagesInputPaths.length === 0}
+                leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
+                color="amber"
+              >
+                {t("images.startGenerate")}
+              </Button>
+            </Stack>
+          </ScrollArea>
         </Box>
       </ResizablePanel>
 

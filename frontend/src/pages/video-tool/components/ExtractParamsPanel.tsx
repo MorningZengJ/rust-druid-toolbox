@@ -10,7 +10,6 @@ import {
   Stack,
   Group,
   Progress,
-  useMantineTheme,
 } from "@mantine/core";
 import {
   Play,
@@ -29,7 +28,6 @@ export function ExtractParamsPanel({
   logSection: React.ReactNode;
 }) {
   const { t } = useTranslation("videoTool");
-  const theme = useMantineTheme();
   const extractVideoPath = useVideoToolStore((s) => s.extractVideoPath);
   const extractVideoInfo = useVideoToolStore((s) => s.extractVideoInfo);
   const extractParams = useVideoToolStore((s) => s.extractParams);
@@ -41,15 +39,20 @@ export function ExtractParamsPanel({
   const setExtractOutputDir = useVideoToolStore((s) => s.setExtractOutputDir);
   const extractEstimatedTimeRemaining = useVideoToolStore((s) => s.extractEstimatedTimeRemaining);
 
-  const borderColor = theme.colors.dark[4];
-  const mutedBg = theme.colors.dark[3];
-
   const handleBrowseOutputDir = async () => {
     const { open } = await import("@tauri-apps/plugin-dialog");
     const selected = await open({ directory: true });
     if (selected) {
       setExtractOutputDir(selected as string);
     }
+  };
+
+  const selectStyles = {
+    input: {
+      backgroundColor: "var(--surface-panel)",
+      borderColor: "var(--border-default)",
+      color: "var(--text-primary)",
+    },
   };
 
   return (
@@ -59,35 +62,51 @@ export function ExtractParamsPanel({
         flexDirection: "column",
         height: "100%",
         overflow: "hidden",
-        borderRadius: 8,
-        border: `1px solid ${borderColor}`,
+        borderRadius: 10,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-raised)",
+        position: "relative",
       }}
     >
-      <Flex align="center" px="sm" py="xs" style={{ borderBottom: `1px solid ${borderColor}` }}>
-        <Text size="xs" fw={500} c="dimmed">{t("extract.params")}</Text>
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
+      <Flex align="center" px="sm" py="xs" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--surface-panel)" }}>
+        <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>{t("extract.params")}</Text>
       </Flex>
 
       <Box style={{ flex: 1, overflowY: "auto" }}>
         <Stack gap="md" p="sm">
           {extractVideoInfo && (
-            <Box p="xs" style={{ borderRadius: 4, border: `1px solid ${borderColor}`, background: mutedBg }}>
+            <Box p="xs" style={{ borderRadius: 8, border: "1px solid var(--border-default)", backgroundColor: "var(--surface-panel)" }}>
               <Group gap={4} mb={4}>
-                <Film size={12} color={theme.colors.dark[2]} />
-                <Text size="xs" fw={500} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <Film size={12} style={{ color: "var(--accent-primary)" }} />
+                <Text size="xs" fw={500} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--font-mono)" }}>
                   {extractVideoPath.split(/[/\\]/).pop()}
                 </Text>
               </Group>
               <Box style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
                 <Text size="xs" c="dimmed">{t("extract.videoInfo.resolution", { width: extractVideoInfo.width, height: extractVideoInfo.height })}</Text>
-                <Text size="xs" c="dimmed">{t("extract.videoInfo.fps", { fps: extractVideoInfo.fps.toFixed(1) })}</Text>
-                <Text size="xs" c="dimmed">{t("extract.videoInfo.duration", { duration: extractVideoInfo.duration.toFixed(1) })}</Text>
-                <Text size="xs" c="dimmed">{t("extract.videoInfo.totalFrames", { count: extractVideoInfo.totalFrames })}</Text>
+                <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>{t("extract.videoInfo.fps", { fps: extractVideoInfo.fps.toFixed(1) })}</Text>
+                <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>{t("extract.videoInfo.duration", { duration: extractVideoInfo.duration.toFixed(1) })}</Text>
+                <Text size="xs" c="dimmed" style={{ fontFamily: "var(--font-mono)" }}>{t("extract.videoInfo.totalFrames", { count: extractVideoInfo.totalFrames })}</Text>
               </Box>
             </Box>
           )}
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">{t("extract.outputPath")}</Text>
+            <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>{t("extract.outputPath")}</Text>
             <Group gap={4}>
               <TextInput
                 size="xs"
@@ -95,15 +114,23 @@ export function ExtractParamsPanel({
                 value={extractOutputDir}
                 onChange={(e) => setExtractOutputDir(e.currentTarget.value)}
                 placeholder={t("extract.outputPathPlaceholder")}
+                styles={{
+                  input: {
+                    fontFamily: "var(--font-mono)",
+                    backgroundColor: "var(--surface-panel)",
+                    borderColor: "var(--border-default)",
+                    color: "var(--text-primary)",
+                  },
+                }}
               />
-              <Button variant="outline" size="compact-sm" style={{ width: 32, height: 32, padding: 0 }} onClick={handleBrowseOutputDir}>
+              <Button variant="outline" size="compact-sm" style={{ width: 32, height: 32, padding: 0 }} onClick={handleBrowseOutputDir} color="amber">
                 <FolderOpen size={14} />
               </Button>
             </Group>
           </Stack>
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">{t("extract.extractMode")}</Text>
+            <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>{t("extract.extractMode")}</Text>
             <Select
               size="xs"
               value={extractParams.mode}
@@ -114,12 +141,13 @@ export function ExtractParamsPanel({
                 { value: "byCount", label: t("extract.modes.byCount") },
                 { value: "byTimePoints", label: t("extract.modes.byTimePoints") },
               ]}
+              styles={selectStyles}
             />
           </Stack>
 
           {extractParams.mode === "byInterval" && (
             <Stack gap={4}>
-              <Text size="xs" fw={500} c="dimmed">
+              <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>
                 {t("extract.interval", { value: extractParams.intervalSecs.toFixed(1) })}
               </Text>
               <Slider
@@ -128,26 +156,28 @@ export function ExtractParamsPanel({
                 min={0.1}
                 max={30}
                 step={0.1}
+                color="amber"
               />
             </Stack>
           )}
 
           {extractParams.mode === "byCount" && (
             <Stack gap={4}>
-              <Text size="xs" fw={500} c="dimmed">{t("extract.frameCount")}</Text>
+              <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>{t("extract.frameCount")}</Text>
               <NumberInput
                 size="xs"
                 value={extractParams.frameCount}
                 onChange={(v) => setExtractParams({ frameCount: typeof v === "number" ? v : 10 })}
                 min={1}
                 max={1000}
+                styles={selectStyles}
               />
             </Stack>
           )}
 
           {extractParams.mode === "byTimePoints" && (
             <Stack gap={4}>
-              <Text size="xs" fw={500} c="dimmed">
+              <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>
                 {t("extract.timePoints")}
               </Text>
               <TextInput
@@ -160,12 +190,20 @@ export function ExtractParamsPanel({
                     .filter((n) => !isNaN(n));
                   setExtractParams({ timePoints: points });
                 }}
+                styles={{
+                  input: {
+                    fontFamily: "var(--font-mono)",
+                    backgroundColor: "var(--surface-panel)",
+                    borderColor: "var(--border-default)",
+                    color: "var(--text-primary)",
+                  },
+                }}
               />
             </Stack>
           )}
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">{t("extract.outputFormat")}</Text>
+            <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>{t("extract.outputFormat")}</Text>
             <Select
               size="xs"
               value={extractParams.outputFormat}
@@ -174,12 +212,13 @@ export function ExtractParamsPanel({
                 { value: "png", label: "PNG" },
                 { value: "jpeg", label: "JPEG" },
               ]}
+              styles={selectStyles}
             />
           </Stack>
 
           {extractParams.outputFormat === "jpeg" && (
             <Stack gap={4}>
-              <Text size="xs" fw={500} c="dimmed">
+              <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>
                 {t("extract.jpegQuality", { value: extractParams.jpegQuality })}
               </Text>
               <Slider
@@ -188,12 +227,13 @@ export function ExtractParamsPanel({
                 min={1}
                 max={100}
                 step={1}
+                color="amber"
               />
             </Stack>
           )}
 
           <Stack gap={4}>
-            <Text size="xs" fw={500} c="dimmed">
+            <Text size="xs" fw={500} c="dimmed" style={{ fontFamily: "var(--font-body)" }}>
               {t("extract.scaleWidth")}
             </Text>
             <NumberInput
@@ -203,6 +243,7 @@ export function ExtractParamsPanel({
               onChange={(v) => {
                 setExtractParams({ resizeWidth: typeof v === "number" ? v : undefined });
               }}
+              styles={selectStyles}
             />
           </Stack>
 
@@ -211,6 +252,7 @@ export function ExtractParamsPanel({
             disabled={!extractVideoPath || isExtracting}
             onClick={runExtractFrames}
             leftSection={isExtracting ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={14} />}
+            color="amber"
           >
             {isExtracting ? (
               <>
@@ -225,7 +267,7 @@ export function ExtractParamsPanel({
           </Button>
 
           {isExtracting && (
-            <Progress value={extractProgress} size="sm" radius="xl" />
+            <Progress value={extractProgress} size="sm" radius="xl" color="amber" />
           )}
         </Stack>
       </Box>

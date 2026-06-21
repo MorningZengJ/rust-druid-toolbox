@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Flex, Box, Text, Progress, useMantineTheme } from "@mantine/core";
+import { Flex, Box, Text, Progress } from "@mantine/core";
 import { Loader2, Image as ImageIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
@@ -25,7 +25,6 @@ export function PreviewPanel() {
   const activeTab = useAsciiArtStore((s) => s.activeTab);
   const setActiveTab = useAsciiArtStore((s) => s.setActiveTab);
   const loadImageFromFile = useAsciiArtStore((s) => s.loadImageFromFile);
-  const theme = useMantineTheme();
 
   const {
     displayRef,
@@ -72,10 +71,26 @@ export function PreviewPanel() {
       style={{
         flex: 1,
         overflow: "hidden",
-        borderRadius: theme.radius.md,
-        border: `1px solid ${theme.colors.dark[4]}`,
+        borderRadius: 10,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-raised)",
+        position: "relative",
       }}
     >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
       <PreviewToolbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -91,7 +106,7 @@ export function PreviewPanel() {
         onExportPng={handleExportPng}
       />
 
-      {isConverting && <Progress value={progress} size="xs" radius={0} />}
+      {isConverting && <Progress value={progress} size="xs" radius={0} color="amber" />}
 
       <Box
         ref={displayRef}
@@ -120,10 +135,10 @@ export function PreviewPanel() {
               top: 8,
               left: 8,
               right: 8,
-              border: `1px solid ${theme.colors.red[5]}`,
-              borderRadius: theme.radius.sm,
-              backgroundColor: `${theme.colors.red[0]}`,
-              color: theme.colors.red[7],
+              border: "1px solid var(--status-error-border)",
+              borderRadius: 8,
+              backgroundColor: "var(--status-error-bg)",
+              color: "var(--status-error)",
               zIndex: 10,
             }}
           >
@@ -169,6 +184,7 @@ export function PreviewPanel() {
                   style={{
                     animation: "spin 1s linear infinite",
                     marginRight: 8,
+                    color: "var(--accent-primary)",
                   }}
                 />
                 <Text size="sm">{t("preview.converting")}</Text>

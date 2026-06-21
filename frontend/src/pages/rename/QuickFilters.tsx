@@ -34,6 +34,7 @@ export default function QuickFilters() {
         leftSection={<Layers size={12} />}
         onClick={() => toggleQuickFilter("all")}
         radius="md"
+        color={isActive("all") ? "amber" : "gray"}
       >
         {t("filter.quickFilters.all")}
       </Button>
@@ -43,6 +44,7 @@ export default function QuickFilters() {
         leftSection={<Folder size={12} />}
         onClick={() => toggleQuickFilter("folder")}
         radius="md"
+        color={isActive("folder") ? "amber" : "gray"}
       >
         {t("filter.quickFilters.folders")}
       </Button>
@@ -52,6 +54,7 @@ export default function QuickFilters() {
         leftSection={<File size={12} />}
         onClick={() => toggleQuickFilter("file")}
         radius="md"
+        color={isActive("file") ? "amber" : "gray"}
       >
         {t("filter.quickFilters.files")}
       </Button>
@@ -59,6 +62,7 @@ export default function QuickFilters() {
         <Badge
           key={ext}
           variant={isActive({ extension: ext }) ? "filled" : "outline"}
+          color={isActive({ extension: ext }) ? "amber" : "gray"}
           style={{ cursor: "pointer" }}
           onClick={() => toggleQuickFilter({ extension: ext })}
           radius="sm"

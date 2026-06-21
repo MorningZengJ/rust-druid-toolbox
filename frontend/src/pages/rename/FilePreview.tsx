@@ -5,8 +5,6 @@ import {
   Group,
   Flex,
   Box,
-  useMantineTheme,
-  useComputedColorScheme,
 } from "@mantine/core";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -43,10 +41,6 @@ export default function FilePreview() {
   const loadFiles = useRenameStore((s) => s.loadFiles);
   const sortColumns = useRenameStore((s) => s.sortColumns);
   const setSortColumns = useRenameStore((s) => s.setSortColumns);
-
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
 
   // Column sizing state
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({
@@ -136,26 +130,24 @@ export default function FilePreview() {
   const getRowBg = useCallback(
     (row: FileRow) => {
       if (row.hasConflict) {
-        return isDark ? "rgba(239, 68, 68, 0.08)" : "rgba(239, 68, 68, 0.05)";
+        return "var(--status-error-bg)";
       }
       if (selectedFile?.path === row.path) {
-        return isDark
-          ? "rgba(255, 255, 255, 0.04)"
-          : "rgba(0, 0, 0, 0.03)";
+        return "var(--accent-glow)";
       }
       return "transparent";
     },
-    [isDark, selectedFile]
+    [selectedFile]
   );
 
   const getNewTextColor = useCallback(
     (row: FileRow) => {
       const changed = row.newName !== row.name;
-      if (!changed) return isDark ? theme.colors.dark[2] : theme.colors.gray[6];
-      if (row.hasConflict) return theme.colors.red[isDark ? 4 : 7];
-      return theme.colors.green[isDark ? 4 : 8];
+      if (!changed) return "var(--text-muted)";
+      if (row.hasConflict) return "var(--status-error)";
+      return "var(--status-success-alt)";
     },
-    [isDark, theme]
+    []
   );
 
   // Column definitions
@@ -183,7 +175,7 @@ export default function FilePreview() {
         header: t("preview.columns.name"),
         enableSorting: true,
         cell: ({ row }) => (
-          <Text truncate size="sm" style={{ fontFamily: "monospace" }}>
+          <Text truncate size="sm" style={{ fontFamily: "var(--font-mono)" }}>
             {row.original.name}
           </Text>
         ),
@@ -198,7 +190,7 @@ export default function FilePreview() {
             size="sm"
             fw={row.original.hasConflict ? 600 : undefined}
             c={getNewTextColor(row.original)}
-            style={{ fontFamily: "monospace" }}
+            style={{ fontFamily: "var(--font-mono)" }}
           >
             {row.original.newName}
           </Text>
@@ -219,7 +211,7 @@ export default function FilePreview() {
         header: t("preview.columns.size"),
         enableSorting: true,
         cell: ({ row }) => (
-          <Text size="xs" c="dimmed" ta="right" style={{ fontFamily: "monospace" }}>
+          <Text size="xs" c="dimmed" ta="right" style={{ fontFamily: "var(--font-mono)" }}>
             {row.original.size}
           </Text>
         ),
@@ -262,10 +254,8 @@ export default function FilePreview() {
 
       const currentSort = header.column.getIsSorted();
       if (currentSort === "asc") {
-        // Ascending → Descending
         header.column.toggleSorting(true, true);
       } else if (currentSort === "desc") {
-        // Descending → Remove
         const newSorting = sorting.filter((s) => s.id !== header.column.id);
         setSortColumns(
           newSorting.map((s) => ({
@@ -274,7 +264,6 @@ export default function FilePreview() {
           }))
         );
       } else {
-        // Not sorted → Add ascending
         header.column.toggleSorting(false, true);
       }
     },
@@ -286,22 +275,35 @@ export default function FilePreview() {
       direction="column"
       h="100%"
       style={{
-        borderRadius: theme.radius.lg,
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
+        borderRadius: 12,
+        border: "1px solid var(--border-default)",
         overflow: "hidden",
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+        backgroundColor: "var(--surface-overlay)",
+        position: "relative",
       }}
     >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
       <Group
         justify="space-between"
         align="center"
         px="sm"
         py={6}
         style={{
-          borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
-          backgroundColor: isDark
-            ? "rgba(255, 255, 255, 0.02)"
-            : "rgba(0, 0, 0, 0.01)",
+          borderBottom: "1px solid var(--border-subtle)",
+          backgroundColor: "var(--surface-panel)",
         }}
       >
         <Text size="xs" fw={600} c="dimmed">
@@ -316,8 +318,7 @@ export default function FilePreview() {
           {hasMore && (
             <Text
               size="xs"
-              c={theme.primaryColor}
-              style={{ cursor: "pointer", textDecoration: "underline" }}
+              style={{ cursor: "pointer", textDecoration: "underline", color: "var(--accent-primary)" }}
               onClick={loadMore}
             >
               {t("preview.loadMore", { current: displayLimit, total: filterFileList.length })}
@@ -332,13 +333,13 @@ export default function FilePreview() {
         px="sm"
         py={4}
         style={{
-          borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}`,
+          borderBottom: "1px solid var(--border-default)",
           fontSize: 12,
-          fontWeight: 500,
-          color: isDark ? theme.colors.dark[2] : theme.colors.gray[6],
-          backgroundColor: isDark
-            ? "rgba(255, 255, 255, 0.02)"
-            : "rgba(0, 0, 0, 0.01)",
+          fontWeight: 600,
+          color: "var(--text-secondary)",
+          backgroundColor: "var(--surface-panel)",
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
         }}
       >
         {headerGroup.headers.map((header) => (
@@ -418,16 +419,14 @@ export default function FilePreview() {
                   onDoubleClick={() => handleDoubleClick(file)}
                   style={{
                     cursor: "pointer",
-                    borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.03)"}`,
+                    borderBottom: "1px solid var(--border-subtle)",
                     fontSize: 14,
                     backgroundColor: getRowBg(file),
                     transition: "background-color 100ms ease",
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected && !file.hasConflict) {
-                      e.currentTarget.style.backgroundColor = isDark
-                        ? "rgba(255, 255, 255, 0.03)"
-                        : "rgba(0, 0, 0, 0.02)";
+                      e.currentTarget.style.backgroundColor = "var(--accent-glow)";
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -471,7 +470,7 @@ function SortIndicator({
   const Icon = sorted === "asc" ? ChevronUp : ChevronDown;
   return (
     <Group gap={1} align="center" style={{ display: "inline-flex" }}>
-      <Icon size={12} />
+      <Icon size={12} style={{ color: "var(--accent-primary)" }} />
       {showIndex && sortIndex >= 0 && (
         <Text size="xs" c="dimmed">
           {sortIndex + 1}

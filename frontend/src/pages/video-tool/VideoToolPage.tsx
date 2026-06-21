@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Button, Tabs, Box, Text, Stack, Group, Center, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { Button, Tabs, Box, Text, Stack, Group, Center } from "@mantine/core";
 import {
   Merge,
   Images,
@@ -23,9 +23,6 @@ export default function VideoToolPage() {
   const checkEncoders = useVideoToolStore((s) => s.checkEncoders);
   const activeTab = useVideoToolStore((s) => s.activeTab);
   const setActiveTab = useVideoToolStore((s) => s.setActiveTab);
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     checkFfmpeg();
@@ -41,19 +38,33 @@ export default function VideoToolPage() {
               width: 64,
               height: 64,
               borderRadius: 16,
-              backgroundColor: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+              backgroundColor: "var(--surface-panel)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              position: "relative",
             }}
           >
-            <AlertCircle size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
+            <AlertCircle size={32} style={{ color: "var(--text-muted)" }} />
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+                borderRadius: 16,
+              }}
+            />
           </div>
-          <Text size="lg" fw={600}>{t("ffmpeg.notInstalled")}</Text>
-          <Text size="sm" c="dimmed" ta="center" maw={360}>
+          <Text size="lg" fw={600} style={{ fontFamily: "var(--font-display)" }}>
+            {t("ffmpeg.notInstalled")}
+          </Text>
+          <Text size="sm" c="dimmed" ta="center" maw={360} style={{ fontFamily: "var(--font-body)" }}>
             {t("ffmpeg.notInstalledDesc")}
           </Text>
-          <Button mt="md" onClick={checkFfmpeg} radius="md">
+          <Button mt="md" onClick={checkFfmpeg} radius="md" color="amber">
             {t("ffmpeg.recheck")}
           </Button>
         </Stack>
@@ -76,16 +87,30 @@ export default function VideoToolPage() {
               width: 64,
               height: 64,
               borderRadius: 16,
-              backgroundColor: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+              backgroundColor: "var(--surface-panel)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              position: "relative",
             }}
           >
-            <AlertCircle size={32} style={{ color: isDark ? theme.colors.dark[2] : theme.colors.gray[5] }} />
+            <AlertCircle size={32} style={{ color: "var(--text-muted)" }} />
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+                borderRadius: 16,
+              }}
+            />
           </div>
-          <Text size="lg" fw={600}>{t("ffmpeg.noEncoder")}</Text>
-          <Text size="sm" c="dimmed" ta="center" maw={400}>
+          <Text size="lg" fw={600} style={{ fontFamily: "var(--font-display)" }}>
+            {t("ffmpeg.noEncoder")}
+          </Text>
+          <Text size="sm" c="dimmed" ta="center" maw={400} style={{ fontFamily: "var(--font-body)" }}>
             {t("ffmpeg.noEncoderDesc")}
             <br />
             {t("ffmpeg.installHint")}
@@ -95,22 +120,36 @@ export default function VideoToolPage() {
             mt="md"
             p="md"
             style={{
-              borderRadius: theme.radius.md,
-              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-              backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+              borderRadius: 10,
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--surface-overlay)",
+              position: "relative",
             }}
           >
-            <Text size="xs" fw={600} mb="xs">{t("ffmpeg.encoderStatus")}</Text>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+                borderRadius: 10,
+              }}
+            />
+            <Text size="xs" fw={600} mb="xs" style={{ fontFamily: "var(--font-body)" }}>
+              {t("ffmpeg.encoderStatus")}
+            </Text>
             {Object.entries(encoderStatus).map(([name, available]) => (
               <Group key={name} gap="xs">
                 <Text size="xs" c={available ? "green" : "red"}>
                   {available ? "✓" : "✗"}
                 </Text>
-                <Text size="xs">{name}</Text>
+                <Text size="xs" style={{ fontFamily: "var(--font-mono)" }}>{name}</Text>
               </Group>
             ))}
           </Box>
-          <Button mt="md" onClick={checkEncoders} radius="md">
+          <Button mt="md" onClick={checkEncoders} radius="md" color="amber">
             {t("ffmpeg.recheck")}
           </Button>
         </Stack>
@@ -125,14 +164,30 @@ export default function VideoToolPage() {
         flexDirection: "column",
         height: "100%",
         overflow: "hidden",
-        borderRadius: theme.radius.lg,
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+        borderRadius: 12,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-overlay)",
+        position: "relative",
       }}
     >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
       <Tabs
         value={activeTab}
         onChange={(v) => setActiveTab(v as VideoToolTab)}
+        color="amber"
         style={{ display: "flex", flexDirection: "column", height: "100%" }}
       >
         <Box px="sm" pt="sm">

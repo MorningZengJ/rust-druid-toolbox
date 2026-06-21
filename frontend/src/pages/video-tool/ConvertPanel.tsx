@@ -7,7 +7,6 @@ import {
   Text,
   Stack,
   Group,
-  useMantineTheme,
 } from "@mantine/core";
 import {
   ResizablePanel,
@@ -33,7 +32,6 @@ import { ConvertProgressPanel } from "./components/ConvertProgressPanel";
 
 export function ConvertPanel() {
   const { t } = useTranslation("videoTool");
-  const theme = useMantineTheme();
   const convertFiles = useVideoToolStore((s) => s.convertFiles);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const addConvertInputs = useVideoToolStore((s) => s.addConvertInputs);
@@ -122,10 +120,25 @@ export function ConvertPanel() {
             flexDirection: "column",
             height: "100%",
             overflow: "hidden",
-            borderRadius: 8,
-            border: `1px solid ${theme.colors.dark[4]}`,
+            borderRadius: 10,
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--surface-raised)",
           }}
         >
+          {/* 顶部高光线 */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
+
           {isDragOver && (
             <Flex
               pos="absolute"
@@ -134,12 +147,12 @@ export function ConvertPanel() {
               justify="center"
               style={{
                 zIndex: 50,
-                borderRadius: 8,
-                border: `2px dashed ${theme.colors.blue[6]}`,
-                background: `${theme.colors.blue[0]}`,
+                borderRadius: 10,
+                border: "2px dashed var(--accent-primary)",
+                backgroundColor: "var(--accent-glow)",
               }}
             >
-              <Stack align="center" gap="xs" c="blue">
+              <Stack align="center" gap="xs" style={{ color: "var(--accent-primary)" }}>
                 <Upload size={32} />
                 <Text size="sm" fw={500}>
                   {t("common.releaseToAdd")}
@@ -150,9 +163,9 @@ export function ConvertPanel() {
           <Box
             px="md"
             py="xs"
-            style={{ borderBottom: `1px solid ${theme.colors.dark[4]}` }}
+            style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--surface-panel)" }}
           >
-            <Text size="sm" fw={500}>
+            <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
               {t("common.formatConversion")}
             </Text>
           </Box>
@@ -161,17 +174,17 @@ export function ConvertPanel() {
             <Stack gap="md">
               <Box>
                 <Group justify="space-between" mb="xs">
-                  <Text size="sm" fw={500}>
+                  <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
                     {t("common.inputFiles", { count: convertFiles.length })}
                   </Text>
                   <Group gap={4}>
-                    <Button size="compact-sm" variant="outline" onClick={addFiles}>
+                    <Button size="compact-sm" variant="outline" onClick={addFiles} color="amber">
                       <Group gap={4}>
                         <Plus size={12} />
                         <Text size="xs">{t("common.add")}</Text>
                       </Group>
                     </Button>
-                    <Button size="compact-sm" variant="outline" onClick={addFolder}>
+                    <Button size="compact-sm" variant="outline" onClick={addFolder} color="amber">
                       <Group gap={4}>
                         <FolderOpen size={12} />
                         <Text size="xs">{t("common.folder")}</Text>
@@ -196,8 +209,9 @@ export function ConvertPanel() {
                         py="xl"
                         ta="center"
                         style={{
-                          borderRadius: 4,
-                          border: `1px dashed ${theme.colors.dark[3]}`,
+                          borderRadius: 8,
+                          border: "1px dashed var(--border-strong)",
+                          backgroundColor: "var(--surface-panel)",
                         }}
                       >
                         <Text size="xs" c="dimmed">
@@ -222,6 +236,7 @@ export function ConvertPanel() {
                     <Play size={16} />
                   )
                 }
+                color="amber"
               >
                 {isProcessing ? t("convert.processing") : t("convert.startConvert")}
               </Button>

@@ -11,6 +11,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@mantine/core": "^9.2.1",
     "@mantine/hooks": "^9.2.1",
     "@mantine/modals": "^9.2.1",

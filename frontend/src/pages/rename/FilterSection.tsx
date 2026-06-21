@@ -1,4 +1,4 @@
-import { Button, TextInput, Checkbox, Group, Stack, ActionIcon, Text, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { Button, TextInput, Checkbox, Group, Stack, ActionIcon, Text } from "@mantine/core";
 import { ChevronDown, ChevronRight, Plus, Trash2, Filter } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useRenameStore } from "@/stores/renameStore";
@@ -11,10 +11,6 @@ export default function FilterSection() {
   const setFilterCollapsed = useRenameStore((s) => s.setFilterCollapsed);
   const filterItems = useRenameStore((s) => s.filterItems);
   const setFilterItems = useRenameStore((s) => s.setFilterItems);
-
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
 
   const addFilter = () => {
     setFilterItems([...filterItems, { keyword: "", isRegex: false }]);
@@ -34,7 +30,7 @@ export default function FilterSection() {
   };
 
   return (
-    <div style={{ borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)"}` }}>
+    <div style={{ borderBottom: "1px solid var(--border-subtle)" }}>
       <button
         style={{
           display: "flex",
@@ -44,11 +40,12 @@ export default function FilterSection() {
           padding: "8px 12px",
           fontSize: 12,
           fontWeight: 600,
-          color: isDark ? theme.colors.dark[1] : theme.colors.gray[7],
+          color: "var(--text-secondary)",
           background: "none",
           border: "none",
           cursor: "pointer",
-          transition: "color 150ms ease",
+          transition: "color 200ms ease",
+          fontFamily: "var(--font-body)",
         }}
         onClick={() => setFilterCollapsed(!filterCollapsed)}
       >
@@ -72,8 +69,10 @@ export default function FilterSection() {
                 radius="md"
                 styles={{
                   input: {
-                    backgroundColor: isDark ? theme.colors.dark[6] : theme.white,
-                    borderColor: isDark ? theme.colors.dark[4] : theme.colors.gray[3],
+                    fontFamily: "var(--font-mono)",
+                    backgroundColor: "var(--surface-overlay)",
+                    borderColor: "var(--border-default)",
+                    color: "var(--text-primary)",
                   },
                 }}
               />
@@ -82,7 +81,7 @@ export default function FilterSection() {
                   checked={filter.isRegex}
                   onChange={(e) => updateFilter(index, { isRegex: e.currentTarget.checked })}
                   size="xs"
-                  color={theme.primaryColor}
+                  color="amber"
                 />
                 <Text size="xs" c="dimmed">{t("rules.regex")}</Text>
               </Group>
@@ -104,6 +103,7 @@ export default function FilterSection() {
             leftSection={<Plus size={12} />}
             onClick={addFilter}
             radius="md"
+            color="amber"
           >
             {t("filter.quickFilters.byExtension")}
           </Button>

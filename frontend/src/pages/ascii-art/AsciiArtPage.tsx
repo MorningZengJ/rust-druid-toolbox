@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Box, useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { Box } from "@mantine/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
 import {
@@ -17,9 +17,6 @@ export default function AsciiArtPage() {
   const loadImageFromPath = useAsciiArtStore((s) => s.loadImageFromPath);
   const loadImageFromPaste = useAsciiArtStore((s) => s.loadImageFromPaste);
   const cleanup = useAsciiArtStore((s) => s.cleanup);
-  const theme = useMantineTheme();
-  const colorScheme = useComputedColorScheme();
-  const isDark = colorScheme === "dark";
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "ascii-art-page",
     storage: localStorage,
@@ -77,12 +74,27 @@ export default function AsciiArtPage() {
         flexDirection: "column",
         height: "100%",
         overflow: "hidden",
-        borderRadius: theme.radius.lg,
-        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}`,
-        backgroundColor: isDark ? theme.colors.dark[7] : theme.white,
+        borderRadius: 12,
+        border: "1px solid var(--border-default)",
+        backgroundColor: "var(--surface-overlay)",
+        position: "relative",
       }}
       onPaste={(e) => e.preventDefault()}
     >
+      {/* 顶部高光线 */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--accent-glow), transparent)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+
       <ResizablePanelGroup
         id="ascii-art-page"
         orientation="horizontal"

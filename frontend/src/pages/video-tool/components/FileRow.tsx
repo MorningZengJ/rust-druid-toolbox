@@ -1,4 +1,4 @@
-import { Button, Flex, Text, useMantineTheme } from "@mantine/core";
+import { Button, Flex, Text } from "@mantine/core";
 import { Loader2, Circle, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import type { ConvertFileItem } from "@/types";
 
@@ -13,12 +13,11 @@ export function FileRow({
   onRemove: (index: number) => void;
   isProcessing: boolean;
 }) {
-  const theme = useMantineTheme();
   const statusIcon = {
-    pending: <Circle size={10} color={theme.colors.gray[5]} fill={theme.colors.gray[5]} />,
-    converting: <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} color={theme.colors.blue[6]} />,
-    done: <CheckCircle2 size={12} color={theme.colors.green[6]} />,
-    error: <XCircle size={12} color={theme.colors.red[6]} />,
+    pending: <Circle size={10} style={{ color: "var(--text-muted)" }} fill="var(--text-muted)" />,
+    converting: <Loader2 size={12} style={{ animation: "spin 1s linear infinite", color: "var(--accent-primary)" }} />,
+    done: <CheckCircle2 size={12} style={{ color: "var(--status-success)" }} />,
+    error: <XCircle size={12} style={{ color: "var(--status-error)" }} />,
   };
 
   return (
@@ -27,7 +26,11 @@ export function FileRow({
       gap={4}
       px="xs"
       py={4}
-      style={{ borderRadius: 4, background: theme.colors.dark[3] }}
+      style={{
+        borderRadius: 6,
+        backgroundColor: "var(--surface-panel)",
+        border: "1px solid var(--border-subtle)",
+      }}
     >
       {statusIcon[file.status]}
       <Text
@@ -37,6 +40,7 @@ export function FileRow({
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          fontFamily: "var(--font-mono)",
         }}
         title={file.inputPath}
       >
