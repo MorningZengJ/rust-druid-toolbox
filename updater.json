@@ -1,10 +1,10 @@
 {
   "version": "0.1.4",
-  "notes": "修复 MSI 构建锁定问题，优化构建流程",
-  "pub_date": "2026-06-22T00:00:00Z",
+  "notes": "",
+  "pub_date": "2026-06-22T09:59:46Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUV3REOHVsbmpGVXJ1djhPNHB0cWN0Vm9kMHRwV1RQOFJzVy9yYkZPQjRlT21mSTVLMnBBRDRxZGlXeGhaTWd2Y2hMZm5kVVczWEI4ZElpdDBUTC9sNWxpUjhFeVp6aWdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTE1MzkwCWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0LXNldHVwLmV4ZQp5TytWZ1pteGl0N2QzZER3M1NXMTR2Q3dNaXhnYzUxOHgrbjBEM2hmYTFBT082THVZVGpRMDFMd0h3bytiSVdpckpZcUw2VEJlcExYempOK3NKaU9Ddz09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbHlmRlQrSlZoQk0yUW50dGdiWktXTmR2ZWRJZXdxcS9SS05jbzIycWJLdzBZZTNFeHQxRm5Qek5CbjZ0ZFc2SGJ1SDFqeW1WakpLSkJEdEZVR0NWc0FzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTIyMzg2CWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0LXNldHVwLmV4ZQpLQkl3RStzMDQ5SysvN1FSQ0lMM2U4MFpjNkhJQ2JqbVF6a3ExNmtBSXJrV0ZOWU5BbDNwcHVYVGFvUnJoTks3Z0llTmpRN3JRbG5IdVhuVHN2UFNCQT09Cg==",
       "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64-setup.exe"
     },
     "windows-x86_64-msi": {
