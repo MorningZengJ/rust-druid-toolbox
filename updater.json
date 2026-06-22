@@ -1,11 +1,15 @@
 {
-  "version": "0.1.3",
-  "notes": "UI 主题系统升级（设计令牌 + 页面切换动画），国际化支持 17 种语言，共享 settingsStore 单例，配置校验，清理过时文档",
+  "version": "0.1.4",
+  "notes": "修复 MSI 构建锁定问题，优化构建流程",
   "pub_date": "2026-06-22T00:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTFFQdHQyUWpXbmhPT3FxRWhGR3M3WDdiSk0zQ2d5K2Era2xWWitnREppUDIyR0R4RlgrMXdNeTJld21EdlB3RVByMHBsZEFSS0cyOVRIS1l2MTFtY2sxSnN2T2JtdWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTAxMDYwCWZpbGU6TVRvb2xib3hfMC4xLjNfeDY0LXNldHVwLmV4ZQo2YVY1KzRYOUFiWlRJM0Zsa3pwUGR0cHVzVTNVRWJsWDNsejB1aWJrMzkxcWZNRjIxME1QMUtsZTRtaHJEbHo5ajE0MFlja3V5S0xRV0ovVVRDcTFCZz09Cg==",
-      "url": "https://github.com/MorningZengJ/rust-druid-toolbox/releases/download/v0.1.3/MToolbox_0.1.3_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTFFQdHQyUWpXbmwrMEdpRXE3eXJBbEJ4U3FmVTZTaDF1by90OGduSHdteWFtQnRSZjA5MkNvZ3RyTFZaTUdzdHdiUUMxTEk4ZEU3UFMwRTJ0d0VhMTJrNHpLN1gvdHdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTEzMzEwCWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0LXNldHVwLmV4ZQp1ZTIycGhVMTNaWVNaVkpncTJVVHNDR29TOEVJVTlKZmd6bGNIMFFlLzJCR0VGSS9QQUFaTHdyenhLTlRnbDFsVVhtSWlmRDZkTWZjZ0Y4a3VIWjhDZz09Cg==",
+      "url": "https://github.com/MorningZengJ/rust-druid-toolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64-setup.exe"
+    },
+    "windows-x86_64-msi": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTFFQdHQyUWpXbmc5dmpEUlpGVVVNTi82cmVzUElqZXFwdmhCcUp4aXhLbGVRYStYSVFKQTlhdlJsSFZVT1Q4RGFtUENkQ1dUMklsMitPVkNUTGZuZkhCemVOdk1ST3dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTEzMzY4CWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0X2VuLVVTLm1zaQpySkdXa1dFWVdydHBYOU1zWFYwbFlUQUNnYjMrbkNxNWtxZU1acWo2amcvOUpndzFMNGl1TDFGZjh4UUR1aEsvdkg1VlFCWkxOL2EvUDdORmZtTlJBZz09Cg==",
+      "url": "https://github.com/MorningZengJ/rust-druid-toolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64_en-US.msi"
     }
   }
 }
