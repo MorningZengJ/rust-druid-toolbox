@@ -6,13 +6,15 @@
     updater.json with correct signatures, creates a git tag, pushes to GitHub,
     and creates a GitHub Release with auto-generated Release Notes.
 .PARAMETER Version
-    New version to publish (semver, e.g. "0.1.5"). If omitted, prompts interactively.
+    New version to publish (semver, e.g. "0.1.5"). If omitted, defaults to current version.
 .PARAMETER SkipBuild
     Skip npm build and cargo tauri build (use after a manual build).
 .PARAMETER SkipPush
     Skip git push and GitHub Release creation (local dry-run).
 .PARAMETER SkipConfirm
     Skip all confirmation prompts (unattended mode).
+.PARAMETER AllowDirty
+    Allow dirty working tree (skip clean check).
 .EXAMPLE
     .\scripts\publish.ps1 -Version "0.1.5"
 .EXAMPLE
@@ -23,12 +25,13 @@ param(
     [string]$Version,
     [switch]$SkipBuild,
     [switch]$SkipPush,
-    [switch]$SkipConfirm
+    [switch]$SkipConfirm,
+    [switch]$AllowDirty
 )
 
 $ErrorActionPreference = "Stop"
 
-# Ensure UTF-8 encoding for git diff / git log (Chinese characters)
+# Ensure UTF-8 for Chinese characters in git diff / git log
 $OutputEncoding = [System.Text.UTF8Encoding]::new()
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::InputEncoding  = [System.Text.Encoding]::UTF8
@@ -79,15 +82,15 @@ function Get-ReleaseNotes {
     } else {
         $log = git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse
     }
-    $lines = @()
+    $lines = New-Object System.Collections.ArrayList
     if ($log) {
-        $lines += "变更摘要 (Changes since ${prevTag}):"
-        $lines += ""
-        $lines += $log
+        [void]$lines.Add("Changes since ${prevTag}:")
+        [void]$lines.Add("")
+        [void]$lines.Add($log)
     } else {
-        $lines += "变更摘要: 无显著变更。"
+        [void]$lines.Add("No changes since last release.")
     }
-    return $lines -join "`r`n"
+    return $lines -join [System.Environment]::NewLine
 }
 
 # ============================================================
@@ -136,9 +139,13 @@ try {
 
     # --- Step 3: Clean working tree ---
     Write-Step -Num 3 -Desc "Checking git working tree..."
-    $status = git status --porcelain
-    if ($status) { throw "Working tree not clean. Commit or stash changes first.`n$status" }
-    Write-Info "Working tree is clean."
+    if (-not $AllowDirty) {
+        $status = git status --porcelain
+        if ($status) { throw "Working tree not clean. Commit or stash changes first.`n$status`nOr use -AllowDirty to skip this check." }
+        Write-Info "Working tree is clean."
+    } else {
+        Write-Warn "Working tree check skipped (-AllowDirty)."
+    }
 
     # ============================================================
     # Phase 1: Version
