@@ -4,9 +4,9 @@
 
 **A lightweight Windows desktop toolbox built with Tauri v2**
 
-[![Version](https://img.shields.io/github/v/release/MorningZengJ/rust-druid-toolbox)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
+[![Version](https://img.shields.io/github/v/release/MorningZengJ/mtoolbox)](https://github.com/MorningZengJ/mtoolbox/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/MorningZengJ/rust-druid-toolbox/total)](https://github.com/MorningZengJ/rust-druid-toolbox/releases)
+[![Downloads](https://img.shields.io/github/downloads/MorningZengJ/mtoolbox/total)](https://github.com/MorningZengJ/mtoolbox/releases)
 
 English | [中文](docs/i18n/README_CN.md)
 
@@ -34,7 +34,7 @@ English | [中文](docs/i18n/README_CN.md)
 
 ### Download Pre-built Binary
 
-Download the latest `.exe` installer from [Releases](https://github.com/MorningZengJ/rust-druid-toolbox/releases).
+Download the latest `.exe` installer from [Releases](https://github.com/MorningZengJ/mtoolbox/releases).
 
 ### Build from Source
 
@@ -56,8 +56,8 @@ winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements
 C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md
 
 # 3. Clone the repository
-git clone https://github.com/MorningZengJ/rust-druid-toolbox.git
-cd rust-druid-toolbox
+git clone https://github.com/MorningZengJ/mtoolbox.git
+cd mtoolbox
 
 # 4. Install Tauri CLI (one-time)
 cargo install tauri-cli --version "^2" --locked
@@ -85,7 +85,7 @@ cargo build --manifest-path src-tauri/Cargo.toml --release
 ## Project Structure
 
 ```
-rust-druid-toolbox/
+mtoolbox/
 ├── frontend/                  # React frontend
 │   └── src/
 │       ├── pages/             # Feature pages (rename, ascii-art, video-tool, settings)

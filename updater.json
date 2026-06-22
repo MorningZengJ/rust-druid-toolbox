@@ -5,11 +5,11 @@
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTFFQdHQyUWpXbmwrMEdpRXE3eXJBbEJ4U3FmVTZTaDF1by90OGduSHdteWFtQnRSZjA5MkNvZ3RyTFZaTUdzdHdiUUMxTEk4ZEU3UFMwRTJ0d0VhMTJrNHpLN1gvdHdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTEzMzEwCWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0LXNldHVwLmV4ZQp1ZTIycGhVMTNaWVNaVkpncTJVVHNDR29TOEVJVTlKZmd6bGNIMFFlLzJCR0VGSS9QQUFaTHdyenhLTlRnbDFsVVhtSWlmRDZkTWZjZ0Y4a3VIWjhDZz09Cg==",
-      "url": "https://github.com/MorningZengJ/rust-druid-toolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64-setup.exe"
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64-setup.exe"
     },
     "windows-x86_64-msi": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTFFQdHQyUWpXbmc5dmpEUlpGVVVNTi82cmVzUElqZXFwdmhCcUp4aXhLbGVRYStYSVFKQTlhdlJsSFZVT1Q4RGFtUENkQ1dUMklsMitPVkNUTGZuZkhCemVOdk1ST3dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTEzMzY4CWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0X2VuLVVTLm1zaQpySkdXa1dFWVdydHBYOU1zWFYwbFlUQUNnYjMrbkNxNWtxZU1acWo2amcvOUpndzFMNGl1TDFGZjh4UUR1aEsvdkg1VlFCWkxOL2EvUDdORmZtTlJBZz09Cg==",
-      "url": "https://github.com/MorningZengJ/rust-druid-toolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64_en-US.msi"
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.4/MToolbox_0.1.4_x64_en-US.msi"
     }
   }
 }
