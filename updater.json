@@ -1,7 +1,7 @@
 {
   "version": "0.1.4",
-  "notes": "",
-  "pub_date": "2026-06-22T09:59:46Z",
+  "notes": "Changes since v0.1.4:\n\n- fix: 替换 Tauri 更新密钥对并修正签名路径，新增一键发布脚本 - chore: 优化发布脚本版本输入交互，默认使用当前版本 - fix: 修复发布脚本 UTF-8 编码和 Git Changelog 生成逻辑 - refactor: 改进发布脚本跨平台兼容性和灵活性 - fix: 修复发布脚本 JSON 编码问题，改用纯 UTF-8 无 BOM 写入 - fix: 统一 Get-Content 读取编码为 UTF-8 - feat: 发布脚本自动填充 updater.json 的 release notes - chore: bump version to 0.1.4",
+  "pub_date": "2026-06-22T10:02:42Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbHlmRlQrSlZoQk0yUW50dGdiWktXTmR2ZWRJZXdxcS9SS05jbzIycWJLdzBZZTNFeHQxRm5Qek5CbjZ0ZFc2SGJ1SDFqeW1WakpLSkJEdEZVR0NWc0FzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTIyMzg2CWZpbGU6TVRvb2xib3hfMC4xLjRfeDY0LXNldHVwLmV4ZQpLQkl3RStzMDQ5SysvN1FSQ0lMM2U4MFpjNkhJQ2JqbVF6a3ExNmtBSXJrV0ZOWU5BbDNwcHVYVGFvUnJoTks3Z0llTmpRN3JRbG5IdVhuVHN2UFNCQT09Cg==",
