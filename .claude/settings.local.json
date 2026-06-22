@@ -112,7 +112,8 @@
       "Bash(sed -i 's/#define CONFIG_LIBOPUS_ENCODER 0/#define CONFIG_LIBOPUS_ENCODER 1/' \"C:/vcpkg/ffmpeg-manual/include/config_components.h\")",
       "Bash(sed -i 's/#define CONFIG_LIBVORBIS_ENCODER 0/#define CONFIG_LIBVORBIS_ENCODER 1/' \"C:/vcpkg/ffmpeg-manual/include/config_components.h\")",
       "Bash(sed -i 's/#define CONFIG_LIBOPUS_DECODER 0/#define CONFIG_LIBOPUS_DECODER 1/' \"C:/vcpkg/ffmpeg-manual/include/config_components.h\")",
-      "Bash(sed -i 's/#define CONFIG_LIBVORBIS_DECODER 0/#define CONFIG_LIBVORBIS_DECODER 1/' \"C:/vcpkg/ffmpeg-manual/include/config_components.h\")"
+      "Bash(sed -i 's/#define CONFIG_LIBVORBIS_DECODER 0/#define CONFIG_LIBVORBIS_DECODER 1/' \"C:/vcpkg/ffmpeg-manual/include/config_components.h\")",
+      "mcp__codegraph__codegraph_files"
     ]
   }
 }

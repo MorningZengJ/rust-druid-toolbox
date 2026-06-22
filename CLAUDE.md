@@ -1,28 +1,15 @@
-# Claude 项目指引
+# Claude Project Context
 
-**每次会话开始必须按顺序阅读以下文件，它们是本项目的权威上下文：**
+This repository uses `.claude/` as the authoritative project context for Claude sessions.
 
-1. `.claude/system.md` — 系统架构、模块边界、依赖关系、已知风险
-2. `.claude/policy.md` — 开发规范、代码风格、测试策略、禁止事项
-3. `.claude/rule.md` — Agent 行为规则、修改流程、不确定性处理
+At the start of a new Claude session, read these files in order:
 
-## 核心原则
+1. `.claude/system.md`
+2. `.claude/policy.md`
+3. `.claude/rule.md`
 
-- 不确定时先搜索源码、配置、测试和文档，找到依据再行动
-- 找不到依据或存在冲突时，必须向用户询问，禁止臆测
-- 已有公共能力可复用时，禁止重复造轮子
-- 修改前查已有实现，修改后说明验证结果
+For later tasks in the same session, reuse the already-loaded context unless one of these files changed, the task depends on details not yet inspected, or there is uncertainty that requires re-checking the source.
 
-## 架构质量
+Use those files as the source of project architecture, engineering policy, and collaboration rules.
 
-- 单文件 <= 500 行，超过 300 行优先考虑拆分
-- 新增功能优先新建模块，不要持续扩展已有大文件
-- 生成代码前先分析影响范围、给出模块拆分方案、判断是否需要新增文件
-- 不要为了速度牺牲架构质量
-
-## 开发策略
-
-- 获得需求后必须先制定计划（plan），经用户明确同意后才执行
-- 优先评估现有模块、公共能力或成熟生态是否可复用
-- 禁止重复造轮子，已有成熟依赖可显著降低复杂度时优先引入依赖
-- 优先选择社区主流、长期维护、生态稳定的库
+When facts are unclear or missing, search the repository source, configuration, tests, deployment files, and existing docs first. If evidence is still missing or contradictory, ask the user for confirmation before treating assumptions as facts.
