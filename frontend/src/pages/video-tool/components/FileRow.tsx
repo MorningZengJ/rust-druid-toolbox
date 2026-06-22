@@ -49,9 +49,11 @@ export function FileRow({
       {file.error && (
         <Text
           size="xs"
-          c="red"
+          style={{
+            color: "var(--status-error)",
+            maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}
           title={file.error}
-          style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
           {file.error}
         </Text>

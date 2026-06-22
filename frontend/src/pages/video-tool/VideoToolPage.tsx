@@ -64,7 +64,7 @@ export default function VideoToolPage() {
           <Text size="sm" c="dimmed" ta="center" maw={360} style={{ fontFamily: "var(--font-body)" }}>
             {t("ffmpeg.notInstalledDesc")}
           </Text>
-          <Button mt="md" onClick={checkFfmpeg} radius="md" color="amber">
+          <Button mt="md" onClick={checkFfmpeg} radius="md">
             {t("ffmpeg.recheck")}
           </Button>
         </Stack>
@@ -142,14 +142,14 @@ export default function VideoToolPage() {
             </Text>
             {Object.entries(encoderStatus).map(([name, available]) => (
               <Group key={name} gap="xs">
-                <Text size="xs" c={available ? "green" : "red"}>
+                <Text size="xs" style={{ color: available ? "var(--status-success)" : "var(--status-error)" }}>
                   {available ? "✓" : "✗"}
                 </Text>
                 <Text size="xs" style={{ fontFamily: "var(--font-mono)" }}>{name}</Text>
               </Group>
             ))}
           </Box>
-          <Button mt="md" onClick={checkEncoders} radius="md" color="amber">
+          <Button mt="md" onClick={checkEncoders} radius="md">
             {t("ffmpeg.recheck")}
           </Button>
         </Stack>
@@ -187,7 +187,6 @@ export default function VideoToolPage() {
       <Tabs
         value={activeTab}
         onChange={(v) => setActiveTab(v as VideoToolTab)}
-        color="amber"
         style={{ display: "flex", flexDirection: "column", height: "100%" }}
       >
         <Box px="sm" pt="sm">

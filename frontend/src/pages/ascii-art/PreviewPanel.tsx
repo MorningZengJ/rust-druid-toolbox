@@ -106,7 +106,7 @@ export function PreviewPanel() {
         onExportPng={handleExportPng}
       />
 
-      {isConverting && <Progress value={progress} size="xs" radius={0} color="amber" />}
+      {isConverting && <Progress value={progress} size="xs" radius={0} />}
 
       <Box
         ref={displayRef}

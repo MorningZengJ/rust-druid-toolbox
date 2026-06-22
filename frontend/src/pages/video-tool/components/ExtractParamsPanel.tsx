@@ -123,7 +123,7 @@ export function ExtractParamsPanel({
                   },
                 }}
               />
-              <Button variant="outline" size="compact-sm" style={{ width: 32, height: 32, padding: 0 }} onClick={handleBrowseOutputDir} color="amber">
+              <Button variant="outline" size="compact-sm" style={{ width: 32, height: 32, padding: 0 }} onClick={handleBrowseOutputDir}>
                 <FolderOpen size={14} />
               </Button>
             </Group>
@@ -156,7 +156,6 @@ export function ExtractParamsPanel({
                 min={0.1}
                 max={30}
                 step={0.1}
-                color="amber"
               />
             </Stack>
           )}
@@ -227,7 +226,6 @@ export function ExtractParamsPanel({
                 min={1}
                 max={100}
                 step={1}
-                color="amber"
               />
             </Stack>
           )}
@@ -252,7 +250,6 @@ export function ExtractParamsPanel({
             disabled={!extractVideoPath || isExtracting}
             onClick={runExtractFrames}
             leftSection={isExtracting ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={14} />}
-            color="amber"
           >
             {isExtracting ? (
               <>
@@ -267,7 +264,7 @@ export function ExtractParamsPanel({
           </Button>
 
           {isExtracting && (
-            <Progress value={extractProgress} size="sm" radius="xl" color="amber" />
+            <Progress value={extractProgress} size="sm" radius="xl" />
           )}
         </Stack>
       </Box>

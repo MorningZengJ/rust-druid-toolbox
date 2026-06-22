@@ -66,7 +66,6 @@ export default function UpdateSection() {
         return (
           <Badge
             variant="light"
-            color="teal"
             leftSection={<Sparkles size={12} />}
             styles={{ root: { textTransform: "none" } }}
           >
@@ -192,7 +191,6 @@ export default function UpdateSection() {
               animated
               size="sm"
               radius="xl"
-              color="amber"
             />
           </Stack>
         );
@@ -220,7 +218,7 @@ export default function UpdateSection() {
           <Stack gap="xs">
             <Group gap="xs">
               <AlertCircle size={14} style={{ color: "var(--status-error)" }} />
-              <Text size="sm" c="red">
+              <Text size="sm" style={{ color: "var(--status-error)" }}>
                 {error || t("update.status.errorDefault")}
               </Text>
             </Group>
@@ -257,7 +255,6 @@ export default function UpdateSection() {
             leftSection={<Download size={14} />}
             onClick={downloadAndInstall}
             radius="md"
-            color="amber"
           >
             {t("update.actions.downloadInstall")}
           </Button>
@@ -297,7 +294,6 @@ export default function UpdateSection() {
         leftSection={<RefreshCw size={14} />}
         onClick={checkForUpdate}
         radius="md"
-        color="amber"
       >
         {t("update.actions.checkUpdate")}
       </Button>
@@ -339,7 +335,6 @@ export default function UpdateSection() {
           <Tooltip label={t("update.currentVersion")} position="left" withArrow>
             <Badge
               variant="filled"
-              color="amber"
               styles={{
                 root: {
                   fontFamily: "var(--font-mono)",
@@ -389,7 +384,6 @@ export default function UpdateSection() {
             checked={autoCheck}
             onChange={(e) => setAutoCheck(e.currentTarget.checked)}
             size="sm"
-            color="amber"
           />
         </Group>
       </Box>

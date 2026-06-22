@@ -216,6 +216,17 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+export type ColorThemeKey = "default" | "blue" | "green" | "purple" | "orange" | "rose";
+
+export const THEME_PALETTES: Record<ColorThemeKey, string> = {
+  default: amber[5],
+  blue: blue[5],
+  green: green[5],
+  purple: purple[5],
+  orange: orange[5],
+  rose: rose[5],
+};
+
 function generateColorTuple(hex: string): MantineColorsTuple {
   const [h, s] = hexToHsl(hex);
   return [

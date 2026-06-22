@@ -70,7 +70,6 @@ export function ConvertProgressPanel() {
               value={convertBatchProgress.overallProgress * 100}
               size="sm"
               radius="xl"
-              color="amber"
             />
           </Box>
         )}
@@ -89,7 +88,6 @@ export function ConvertProgressPanel() {
               value={convertCurrentFileProgress * 100}
               size="sm"
               radius="xl"
-              color="teal"
             />
           </Box>
         )}
@@ -108,7 +106,7 @@ export function ConvertProgressPanel() {
             }}
           >
             <AlertCircle size={16} style={{ color: "var(--status-error)", flexShrink: 0 }} />
-            <Text size="sm" c="red">
+            <Text size="sm" style={{ color: "var(--status-error)" }}>
               {errorMessage}
             </Text>
           </Flex>
@@ -134,14 +132,14 @@ export function ConvertProgressPanel() {
             {convertBatchResult.failCount > 0 ? (
               <>
                 <AlertCircle size={16} style={{ color: "var(--status-warning)", flexShrink: 0 }} />
-                <Text size="sm" c="yellow">
+                <Text size="sm" style={{ color: "var(--status-warning)" }}>
                   {t("convertProgress.completedWithResult", { success: convertBatchResult.successCount, fail: convertBatchResult.failCount })}
                 </Text>
               </>
             ) : (
               <>
                 <CheckCircle2 size={16} style={{ color: "var(--status-success)", flexShrink: 0 }} />
-                <Text size="sm" c="green">
+                <Text size="sm" style={{ color: "var(--status-success)" }}>
                   {t("convertProgress.completedAllSuccess", { count: convertBatchResult.successCount })}
                 </Text>
               </>
@@ -172,13 +170,13 @@ export function ConvertProgressPanel() {
               <Text
                 key={i}
                 size="xs"
-                c={
-                  log.level === "error"
-                    ? "red"
+                style={{
+                  color: log.level === "error"
+                    ? "var(--status-error)"
                     : log.level === "warn"
-                      ? "yellow"
-                      : "dimmed"
-                }
+                      ? "var(--status-warning)"
+                      : "var(--text-muted)",
+                }}
               >
                 {log.message}
               </Text>

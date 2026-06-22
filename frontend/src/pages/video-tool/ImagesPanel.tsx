@@ -169,7 +169,6 @@ export function ImagesPanel() {
                         mt="xs"
                         fullWidth
                         onClick={selectFolder}
-                        color="amber"
                       >
                         {t("images.changeFolder")}
                       </Button>
@@ -252,7 +251,6 @@ export function ImagesPanel() {
                     onChange={(e) =>
                       setImagesResolution(e.currentTarget.checked ? [1920, 1080] : null)
                     }
-                    color="amber"
                   />
                   <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("images.customResolution")}</Text>
                 </Group>
@@ -316,7 +314,7 @@ export function ImagesPanel() {
                       },
                     }}
                   />
-                  <Button variant="outline" onClick={selectAudio} style={{ padding: "0 8px" }} color="amber">
+                  <Button variant="outline" onClick={selectAudio} style={{ padding: "0 8px" }}>
                     <Music size={16} />
                   </Button>
                   {imagesAudioPath && (
@@ -350,7 +348,7 @@ export function ImagesPanel() {
                       },
                     }}
                   />
-                  <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }} color="amber">
+                  <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }}>
                     <FolderOpen size={16} />
                   </Button>
                 </Group>
@@ -361,7 +359,6 @@ export function ImagesPanel() {
                 onClick={runImagesToVideo}
                 disabled={isProcessing || imagesInputPaths.length === 0}
                 leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
-                color="amber"
               >
                 {t("images.startGenerate")}
               </Button>

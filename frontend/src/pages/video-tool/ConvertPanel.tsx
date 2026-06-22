@@ -178,13 +178,13 @@ export function ConvertPanel() {
                     {t("common.inputFiles", { count: convertFiles.length })}
                   </Text>
                   <Group gap={4}>
-                    <Button size="compact-sm" variant="outline" onClick={addFiles} color="amber">
+                    <Button size="compact-sm" variant="outline" onClick={addFiles}>
                       <Group gap={4}>
                         <Plus size={12} />
                         <Text size="xs">{t("common.add")}</Text>
                       </Group>
                     </Button>
-                    <Button size="compact-sm" variant="outline" onClick={addFolder} color="amber">
+                    <Button size="compact-sm" variant="outline" onClick={addFolder}>
                       <Group gap={4}>
                         <FolderOpen size={12} />
                         <Text size="xs">{t("common.folder")}</Text>
@@ -236,7 +236,6 @@ export function ConvertPanel() {
                     <Play size={16} />
                   )
                 }
-                color="amber"
               >
                 {isProcessing ? t("convert.processing") : t("convert.startConvert")}
               </Button>

@@ -184,7 +184,7 @@ export function MergePanel() {
                   <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>
                     {t("merge.inputFiles", { count: mergeInputPaths.length })}
                   </Text>
-                  <Button size="compact-sm" variant="outline" onClick={addFiles} color="amber">
+                  <Button size="compact-sm" variant="outline" onClick={addFiles}>
                     <Group gap={4}>
                       <Plus size={12} />
                       <Text size="xs">{t("merge.addFile")}</Text>
@@ -281,7 +281,6 @@ export function MergePanel() {
                 <Checkbox
                   checked={mergeReencode}
                   onChange={(e) => setMergeReencode(e.currentTarget.checked)}
-                  color="amber"
                 />
                 <Text size="xs" style={{ fontFamily: "var(--font-body)" }}>{t("merge.reencodeMode")}</Text>
               </Group>
@@ -315,7 +314,7 @@ export function MergePanel() {
                       },
                     }}
                   />
-                  <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }} color="amber">
+                  <Button variant="outline" onClick={selectOutput} style={{ padding: "0 8px" }}>
                     <FolderOpen size={16} />
                   </Button>
                 </Group>
@@ -326,7 +325,6 @@ export function MergePanel() {
                 onClick={runMerge}
                 disabled={isProcessing || mergeInputPaths.length < 2}
                 leftSection={isProcessing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Play size={16} />}
-                color="amber"
               >
                 {t("merge.startMerge")}
               </Button>

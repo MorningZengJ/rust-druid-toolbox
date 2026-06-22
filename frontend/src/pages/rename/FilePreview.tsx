@@ -189,8 +189,10 @@ export default function FilePreview() {
             truncate
             size="sm"
             fw={row.original.hasConflict ? 600 : undefined}
-            c={getNewTextColor(row.original)}
-            style={{ fontFamily: "var(--font-mono)" }}
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: getNewTextColor(row.original),
+            }}
           >
             {row.original.newName}
           </Text>

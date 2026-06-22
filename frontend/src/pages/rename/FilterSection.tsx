@@ -81,7 +81,6 @@ export default function FilterSection() {
                   checked={filter.isRegex}
                   onChange={(e) => updateFilter(index, { isRegex: e.currentTarget.checked })}
                   size="xs"
-                  color="amber"
                 />
                 <Text size="xs" c="dimmed">{t("rules.regex")}</Text>
               </Group>
@@ -103,7 +102,6 @@ export default function FilterSection() {
             leftSection={<Plus size={12} />}
             onClick={addFilter}
             radius="md"
-            color="amber"
           >
             {t("filter.quickFilters.byExtension")}
           </Button>

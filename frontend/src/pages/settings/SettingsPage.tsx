@@ -103,7 +103,6 @@ export default function SettingsPage() {
                   leftSection={mode.icon}
                   onClick={() => setColorMode(mode.value)}
                   radius="md"
-                  color={colorMode === mode.value ? "amber" : "gray"}
                   style={{
                     transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
                     ...(colorMode === mode.value
@@ -209,7 +208,7 @@ export default function SettingsPage() {
                     },
                   }}
                 />
-                <Button size="compact-sm" onClick={handleCustomColorApply} radius="md" color="amber">
+                <Button size="compact-sm" onClick={handleCustomColorApply} radius="md">
                   {t("theme.apply")}
                 </Button>
                 {isCustomActive && (

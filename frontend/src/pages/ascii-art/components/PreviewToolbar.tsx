@@ -64,7 +64,6 @@ export function PreviewToolbar({
         <Tabs
           value={activeTab}
           onChange={(v) => setActiveTab((v ?? "original") as "original" | "ascii")}
-          color="amber"
         >
           <Tabs.List>
             <Tabs.Tab value="original" leftSection={<ImageIcon size={12} />}>
@@ -113,7 +112,6 @@ export function PreviewToolbar({
           disabled={!hasOutput}
           leftSection={<Copy size={14} />}
           onClick={copyToClipboard}
-          color="amber"
         >
           {t("preview.toolbar.copy")}
         </Button>
@@ -124,7 +122,6 @@ export function PreviewToolbar({
               size="compact-xs"
               disabled={!hasOutput}
               leftSection={<Download size={14} />}
-              color="amber"
             >
               {t("preview.toolbar.export")}
             </Button>

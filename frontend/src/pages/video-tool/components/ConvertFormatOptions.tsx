@@ -49,7 +49,6 @@ export function ConvertFormatOptions() {
             style={{ flex: 1 }}
             leftSection={<FileVideo size={16} />}
             onClick={() => setConvertTarget("video")}
-            color="amber"
           >
             {t("convert.videoFormat")}
           </Button>
@@ -58,7 +57,6 @@ export function ConvertFormatOptions() {
             style={{ flex: 1 }}
             leftSection={<Music size={16} />}
             onClick={() => setConvertTarget("audio")}
-            color="amber"
           >
             {t("convert.audioFormat")}
           </Button>

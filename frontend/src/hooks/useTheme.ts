@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMantineColorScheme } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/themeStore";
+import { THEME_PALETTES } from "@/mantine-theme";
 import type { ColorMode, ColorTheme } from "@/stores/themeStore";
 
 export type { ColorMode, ColorTheme };
@@ -10,12 +11,12 @@ export function useColorThemes() {
   const { t } = useTranslation("common");
 
   const COLOR_THEMES: { value: ColorTheme; label: string; color: string }[] = [
-    { value: "default", label: t("colors.default"), color: "#F5A623" },
-    { value: "blue", label: t("colors.blue"), color: "#1a52ff" },
-    { value: "green", label: t("colors.green"), color: "#0cc04b" },
-    { value: "purple", label: t("colors.purple"), color: "#6a10ff" },
-    { value: "orange", label: t("colors.orange"), color: "#ff8200" },
-    { value: "rose", label: t("colors.rose"), color: "#ff0050" },
+    { value: "default", label: t("colors.default"), color: THEME_PALETTES.default },
+    { value: "blue", label: t("colors.blue"), color: THEME_PALETTES.blue },
+    { value: "green", label: t("colors.green"), color: THEME_PALETTES.green },
+    { value: "purple", label: t("colors.purple"), color: THEME_PALETTES.purple },
+    { value: "orange", label: t("colors.orange"), color: THEME_PALETTES.orange },
+    { value: "rose", label: t("colors.rose"), color: THEME_PALETTES.rose },
   ];
 
   return COLOR_THEMES;

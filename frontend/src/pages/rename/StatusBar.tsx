@@ -47,7 +47,7 @@ export default function StatusBar() {
         </Text>
 
         {hasChanges && (
-          <Badge variant="light" size="sm" radius="sm" color="amber">
+          <Badge variant="light" size="sm" radius="sm">
             {t("status.ruleCount", { count: activeRules.length })}
           </Badge>
         )}
@@ -72,7 +72,6 @@ export default function StatusBar() {
         disabled={!hasChanges || hasConflicts || filterFileList.length === 0}
         onClick={handleExecute}
         radius="md"
-        color="amber"
       >
         {t("status.executeRename")}
       </Button>

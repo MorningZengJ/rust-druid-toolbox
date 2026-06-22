@@ -129,7 +129,6 @@ export default function RenamePage() {
                 value={(loadingProgress.processed / loadingProgress.total) * 100}
                 size="sm"
                 radius="xl"
-                color="amber"
                 animated
               />
             </Box>

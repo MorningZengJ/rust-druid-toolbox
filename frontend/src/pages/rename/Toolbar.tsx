@@ -34,7 +34,6 @@ export default function Toolbar() {
         <Tooltip label={t("toolbar.selectDirectory")} withArrow>
           <ActionIcon
             variant="light"
-            color="amber"
             size="sm"
             radius="md"
             onClick={chooseDirectory}

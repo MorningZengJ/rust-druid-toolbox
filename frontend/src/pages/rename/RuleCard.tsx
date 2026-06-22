@@ -77,7 +77,6 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
             checked={rule.enable}
             onChange={(e) => updateReplaceInfo(index, { enable: e.currentTarget.checked })}
             size="xs"
-            color="amber"
           />
           <ActionIcon
             variant="subtle"
@@ -145,7 +144,6 @@ export default function RuleCard({ rule, index }: RuleCardProps) {
                 checked={rule.isRegex}
                 onChange={(e) => updateReplaceInfo(index, { isRegex: e.currentTarget.checked })}
                 size="xs"
-                color="amber"
               />
               <Text size="xs" c="dimmed">{t("rules.regex")}</Text>
             </Group>

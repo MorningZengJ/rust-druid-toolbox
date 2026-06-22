@@ -46,7 +46,6 @@ export default function RuleList() {
             leftSection={<Plus size={12} />}
             onClick={addReplaceInfo}
             radius="md"
-            color="amber"
           >
             {t("rules.addRule")}
           </Button>

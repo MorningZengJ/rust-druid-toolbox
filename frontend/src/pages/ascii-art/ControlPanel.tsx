@@ -82,7 +82,6 @@ export function ControlPanel() {
               min={300}
               max={2000}
               step={10}
-              color="amber"
             />
           </Box>
 
@@ -146,7 +145,6 @@ export function ControlPanel() {
               min={0.1}
               max={3.0}
               step={0.1}
-              color="amber"
             />
           </Box>
 
@@ -162,7 +160,6 @@ export function ControlPanel() {
               min={-1.0}
               max={1.0}
               step={0.1}
-              color="amber"
             />
           </Box>
 
@@ -178,7 +175,6 @@ export function ControlPanel() {
               min={0.0}
               max={2.0}
               step={0.1}
-              color="amber"
             />
           </Box>
 
@@ -194,7 +190,6 @@ export function ControlPanel() {
               min={0.3}
               max={1.0}
               step={0.05}
-              color="amber"
             />
           </Box>
 
@@ -204,7 +199,6 @@ export function ControlPanel() {
             label={t("control.invertColors")}
             checked={params.invert}
             onChange={(e) => setParams({ invert: e.currentTarget.checked })}
-            color="amber"
           />
 
           {/* Color mode */}

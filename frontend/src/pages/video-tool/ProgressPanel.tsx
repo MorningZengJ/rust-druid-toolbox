@@ -55,7 +55,7 @@ export function ProgressPanel() {
               <Text size="xs" style={{ fontFamily: "var(--font-body)" }}>{t("progress.processing")}</Text>
               <Text size="xs" style={{ fontFamily: "var(--font-mono)" }}>{Math.round(progress * 100)}%</Text>
             </Flex>
-            <Progress value={progress * 100} size="sm" radius="xl" color="amber" />
+            <Progress value={progress * 100} size="sm" radius="xl" />
           </Box>
         )}
 
@@ -101,7 +101,7 @@ export function ProgressPanel() {
             }}
           >
             <AlertCircle size={16} style={{ color: "var(--status-error)", flexShrink: 0 }} />
-            <Text size="sm" c="red">{errorMessage}</Text>
+            <Text size="sm" style={{ color: "var(--status-error)" }}>{errorMessage}</Text>
           </Flex>
         )}
 
@@ -119,7 +119,7 @@ export function ProgressPanel() {
             }}
           >
             <CheckCircle2 size={16} style={{ color: "var(--status-success)", flexShrink: 0 }} />
-            <Text size="sm" c="green">{t("progress.completed")}</Text>
+            <Text size="sm" style={{ color: "var(--status-success)" }}>{t("progress.completed")}</Text>
           </Flex>
         )}
       </Box>
@@ -134,7 +134,13 @@ export function ProgressPanel() {
               <Text
                 key={i}
                 size="xs"
-                c={log.level === "error" ? "red" : log.level === "warn" ? "yellow" : "dimmed"}
+                style={{
+                  color: log.level === "error"
+                    ? "var(--status-error)"
+                    : log.level === "warn"
+                      ? "var(--status-warning)"
+                      : "var(--text-muted)",
+                }}
               >
                 {log.message}
               </Text>
