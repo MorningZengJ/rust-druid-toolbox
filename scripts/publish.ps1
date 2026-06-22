@@ -171,22 +171,22 @@ try {
     # Cargo.toml: version = "X.Y.Z"
     $content = Get-Content $CargoToml -Raw
     $content = $content -replace '(^version\s*=\s*")[^"]+(")', "`${1}$Version`${2}"
-    Set-Content -Path $CargoToml -Value $content -NoNewline
+    [System.IO.File]::WriteAllText($CargoToml, $content, (New-Object System.Text.UTF8Encoding $false))
 
     # tauri.conf.json: "version": "X.Y.Z"
     $content = Get-Content $TauriConf -Raw
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
-    Set-Content -Path $TauriConf -Value $content -NoNewline
+    [System.IO.File]::WriteAllText($TauriConf, $content, (New-Object System.Text.UTF8Encoding $false))
 
     # package.json: "version": "X.Y.Z"
     $content = Get-Content $PackageJson -Raw
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
-    Set-Content -Path $PackageJson -Value $content -NoNewline
+    [System.IO.File]::WriteAllText($PackageJson, $content, (New-Object System.Text.UTF8Encoding $false))
 
     # updater.json: just version for now, full regen in Step 8
     $content = Get-Content $UpdaterJson -Raw
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
-    Set-Content -Path $UpdaterJson -Value $content -NoNewline
+    [System.IO.File]::WriteAllText($UpdaterJson, $content, (New-Object System.Text.UTF8Encoding $false))
 
     Write-Info "Version updated."
     git diff
@@ -235,23 +235,34 @@ try {
     if (-not (Test-Path $nsisSigFile)) { throw "NSIS .sig not found: $nsisSigFile" }
     if (-not (Test-Path $msiSigFile))  { throw "MSI .sig not found: $msiSigFile" }
 
+    $nsisSig = Get-Content $nsisSigFile -Raw
+    $msiSig  = Get-Content $msiSigFile -Raw
+    $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     $releaseBase = "https://github.com/${RepoOwner}/${RepoName}/releases/download/v${Version}"
-    $updater = @{
-        version  = $Version
-        notes    = ""
-        pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-        platforms = @{
-            "windows-x86_64" = @{
-                signature = Get-Content $nsisSigFile -Raw
-                url       = "${releaseBase}/${ProductName}_${Version}_x64-setup.exe"
-            }
-            "windows-x86_64-msi" = @{
-                signature = Get-Content $msiSigFile -Raw
-                url       = "${releaseBase}/${ProductName}_${Version}_x64_en-US.msi"
-            }
-        }
+
+    # Build JSON manually to avoid ConvertTo-Json encoding issues with PowerShell 5.x
+    $nsisUrl  = "${releaseBase}/${ProductName}_${Version}_x64-setup.exe"
+    $msiUrl   = "${releaseBase}/${ProductName}_${Version}_x64_en-US.msi"
+    $jsonStr = @"
+{
+  "version": "${Version}",
+  "notes": "",
+  "pub_date": "${pubDate}",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "${nsisSig}",
+      "url": "${nsisUrl}"
+    },
+    "windows-x86_64-msi": {
+      "signature": "${msiSig}",
+      "url": "${msiUrl}"
     }
-    $updater | ConvertTo-Json -Depth 4 | Set-Content -Path $UpdaterJson -NoNewline -Encoding UTF8
+  }
+}
+"@
+    # Write UTF-8 WITHOUT BOM (Tauri updater requires pure UTF-8)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($UpdaterJson, $jsonStr, $utf8NoBom)
     Write-Info "updater.json generated."
 
     # ============================================================
@@ -302,7 +313,7 @@ try {
             $notes    = Get-ReleaseNotes
             $notesTmp = [System.IO.Path]::GetTempFileName()
             try {
-                Set-Content -Path $notesTmp -Value $notes -Encoding UTF8
+                [System.IO.File]::WriteAllText($notesTmp, $notes, (New-Object System.Text.UTF8Encoding $false))
 
                 $artifacts = @(
                     "$BundleNsisDir/${ProductName}_${Version}_x64-setup.exe"
