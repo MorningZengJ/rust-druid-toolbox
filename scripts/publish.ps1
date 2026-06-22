@@ -72,7 +72,7 @@ function Confirm-Action {
 }
 
 function Get-CurrentVersion {
-    return (Get-Content $TauriConf -Raw | ConvertFrom-Json).version
+    return (Get-Content $TauriConf -Raw -Encoding UTF8 | ConvertFrom-Json).version
 }
 
 function Get-ReleaseNotes {
@@ -169,22 +169,22 @@ try {
     Write-Step -Num 5 -Desc "Updating version in config files..."
 
     # Cargo.toml: version = "X.Y.Z"
-    $content = Get-Content $CargoToml -Raw
+    $content = Get-Content $CargoToml -Raw -Encoding UTF8
     $content = $content -replace '(^version\s*=\s*")[^"]+(")', "`${1}$Version`${2}"
     [System.IO.File]::WriteAllText($CargoToml, $content, (New-Object System.Text.UTF8Encoding $false))
 
     # tauri.conf.json: "version": "X.Y.Z"
-    $content = Get-Content $TauriConf -Raw
+    $content = Get-Content $TauriConf -Raw -Encoding UTF8
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
     [System.IO.File]::WriteAllText($TauriConf, $content, (New-Object System.Text.UTF8Encoding $false))
 
     # package.json: "version": "X.Y.Z"
-    $content = Get-Content $PackageJson -Raw
+    $content = Get-Content $PackageJson -Raw -Encoding UTF8
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
     [System.IO.File]::WriteAllText($PackageJson, $content, (New-Object System.Text.UTF8Encoding $false))
 
     # updater.json: just version for now, full regen in Step 8
-    $content = Get-Content $UpdaterJson -Raw
+    $content = Get-Content $UpdaterJson -Raw -Encoding UTF8
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
     [System.IO.File]::WriteAllText($UpdaterJson, $content, (New-Object System.Text.UTF8Encoding $false))
 
@@ -235,8 +235,8 @@ try {
     if (-not (Test-Path $nsisSigFile)) { throw "NSIS .sig not found: $nsisSigFile" }
     if (-not (Test-Path $msiSigFile))  { throw "MSI .sig not found: $msiSigFile" }
 
-    $nsisSig = Get-Content $nsisSigFile -Raw
-    $msiSig  = Get-Content $msiSigFile -Raw
+    $nsisSig = Get-Content $nsisSigFile -Raw -Encoding UTF8
+    $msiSig  = Get-Content $msiSigFile -Raw -Encoding UTF8
     $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     $releaseBase = "https://github.com/${RepoOwner}/${RepoName}/releases/download/v${Version}"
 
