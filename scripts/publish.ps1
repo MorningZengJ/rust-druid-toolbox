@@ -78,19 +78,21 @@ function Get-CurrentVersion {
 function Get-ReleaseNotes {
     $prevTag = git tag --sort=-version:refname | Select-Object -First 1
     if (-not $prevTag) {
-        $log = git log --pretty=format:"- %s" --reverse
-    } else {
-        $log = git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse
+        return ""
     }
-    $lines = New-Object System.Collections.ArrayList
-    if ($log) {
-        [void]$lines.Add("Changes since ${prevTag}:")
-        [void]$lines.Add("")
-        [void]$lines.Add($log)
-    } else {
-        [void]$lines.Add("No changes since last release.")
-    }
-    return $lines -join [System.Environment]::NewLine
+    $log = git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse 2>$null
+    if (-not $log) { return "" }
+    return "Changes since ${prevTag}:`r`n`r`n${log}"
+}
+
+function Escape-JsonString {
+    param([string]$S)
+    $S = $S -replace '\\', '\\'
+    $S = $S -replace '"', '\"'
+    $S = $S -replace "`r`n", '\n'
+    $S = $S -replace "`n", '\n'
+    $S = $S -replace "`t", '\t'
+    return $S
 }
 
 # ============================================================
@@ -243,10 +245,11 @@ try {
     # Build JSON manually to avoid ConvertTo-Json encoding issues with PowerShell 5.x
     $nsisUrl  = "${releaseBase}/${ProductName}_${Version}_x64-setup.exe"
     $msiUrl   = "${releaseBase}/${ProductName}_${Version}_x64_en-US.msi"
+    $notesEscaped = Escape-JsonString (Get-ReleaseNotes)
     $jsonStr = @"
 {
   "version": "${Version}",
-  "notes": "",
+  "notes": "${notesEscaped}",
   "pub_date": "${pubDate}",
   "platforms": {
     "windows-x86_64": {
