@@ -27,6 +27,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# Ensure UTF-8 encoding for git diff / git log (Chinese characters)
+$OutputEncoding = [System.Text.UTF8Encoding]::new()
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+
 $RepoRoot = Resolve-Path "$PSScriptRoot/.."
 
 # --- Constants ---
@@ -68,14 +74,20 @@ function Get-CurrentVersion {
 
 function Get-ReleaseNotes {
     $prevTag = git tag --sort=-version:refname | Select-Object -First 1
-    if ($prevTag) {
-        $log = git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse
-    } else {
+    if (-not $prevTag) {
         $log = git log --pretty=format:"- %s" --reverse
+    } else {
+        $log = git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse
     }
-    $lines = @("## What's Changed", "")
-    if ($log) { $lines += $log } else { $lines += "- No significant changes recorded." }
-    return $lines -join "`n"
+    $lines = @()
+    if ($log) {
+        $lines += "变更摘要 (Changes since ${prevTag}):"
+        $lines += ""
+        $lines += $log
+    } else {
+        $lines += "变更摘要: 无显著变更。"
+    }
+    return $lines -join "`r`n"
 }
 
 # ============================================================
