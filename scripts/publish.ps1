@@ -138,9 +138,8 @@ try {
     Write-Info "Current version: $currentVersion"
 
     if (-not $Version) {
-        $input = Read-Host "Enter new version (current: $currentVersion, Enter to abort)"
-        if (-not $input) { throw "Aborted by user." }
-        $Version = $input
+        $input = Read-Host "Enter new version (default: $currentVersion)"
+        if (-not $input) { $Version = $currentVersion } else { $Version = $input }
     }
     if ($Version -notmatch '^\d+\.\d+\.\d+$') {
         throw "Invalid version format: '$Version'. Expected semver (e.g., 0.1.5)."
