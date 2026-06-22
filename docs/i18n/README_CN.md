@@ -126,7 +126,7 @@ $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 cargo tauri build
 
 # 3. 获取签名
-Get-Content src-tauri\target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
+Get-Content target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
 
 # 4. 更新 updater.json（版本、签名、URL）
 

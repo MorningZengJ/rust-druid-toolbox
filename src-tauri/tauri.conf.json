@@ -44,7 +44,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUyQzU3ODk2MkUzRkI0RDYKUlRXV3REOHVsbmpGVWdVSTNnWWlrenNBei9YeUovUXIxTXZudHcwVEh5ZTI5YzE5TncyTkZORnEK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk3RUE5RDQ0NDgzNjA5OUUKUldTZUNUWklSSjNxbDJaRGJOUHdNNzJqY2kyTkdtRTZtRmxqTEZaOVE0YlV3MGpPQVZwbWUveWsK",
       "endpoints": [
         "https://raw.githubusercontent.com/MorningZengJ/mtoolbox/master/updater.json"
       ],
