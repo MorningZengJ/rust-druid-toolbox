@@ -44,6 +44,7 @@ Download the latest `.exe` installer from [Releases](https://github.com/MorningZ
 - [Rust](https://www.rust-lang.org/tools/install) (stable)
 - [LLVM](https://llvm.org/) (required for FFmpeg static linking)
 - [vcpkg](https://github.com/microsoft/vcpkg) with FFmpeg static libraries
+- [Tauri CLI](https://v2.tauri.app/) (`cargo install tauri-cli --version "^2" --locked`)
 
 **Setup:**
 
@@ -58,16 +59,22 @@ C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md
 git clone https://github.com/MorningZengJ/rust-druid-toolbox.git
 cd rust-druid-toolbox
 
-# 4. Install frontend dependencies
+# 4. Install Tauri CLI (one-time)
+cargo install tauri-cli --version "^2" --locked
+
+# 5. Install frontend dependencies
 cd frontend && npm install && cd ..
 
-# 5. Run in development mode
-npm run tauri dev
+# 6. Run in development mode
+cargo tauri dev
 ```
 
 **Build for Production:**
 
 ```bash
+# Full build with bundling (NSIS installer on Windows)
+cargo tauri build
+
 # Build without video features (no FFmpeg dependency)
 cargo build --manifest-path src-tauri/Cargo.toml --no-default-features --release
 
@@ -97,7 +104,7 @@ rust-druid-toolbox/
 
 ```bash
 # Run development server
-npm run tauri dev
+cargo tauri dev
 
 # Frontend build check
 cd frontend && npm run build
@@ -120,17 +127,17 @@ cargo check --manifest-path src-tauri/Cargo.toml --features video-frame
 # 2. Build with signing
 $env:TAURI_SIGNING_PRIVATE_KEY = "path\to\your\key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
-npm run tauri build
+cargo tauri build
 
 # 3. Get signature
-Get-Content target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
+Get-Content src-tauri\target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
 
 # 4. Update updater.json (version, signature, URL)
 
 # 5. Create GitHub Release
 gh release create vx.x.x --title "MToolbox vx.x.x" --notes "Release notes" \
-  target/release/bundle/nsis/*.exe \
-  target/release/bundle/nsis/*.exe.sig
+  src-tauri/target/release/bundle/nsis/*.exe \
+  src-tauri/target/release/bundle/nsis/*.exe.sig
 ```
 
 ## License

@@ -334,9 +334,9 @@ src-tauri/                       # Tauri 后端（Rust）
 
 ## 构建与运行
 
-- **Tauri 开发**: `npm run tauri dev`（项目根目录）
+- **Tauri 开发**: `cargo tauri dev`（项目根目录）
 - **前端构建**: `cd frontend && npm run build`
-- **Tauri 构建**: `npx tauri build`
+- **Tauri 构建**: `cargo tauri build`
 - **Rust 检查**: `cargo check --manifest-path src-tauri/Cargo.toml`
 - **Rust 测试**: `cargo test --manifest-path src-tauri/Cargo.toml`
 - **FFmpeg 编译检查**: `cargo check --manifest-path src-tauri/Cargo.toml --features video-frame`（默认已包含）

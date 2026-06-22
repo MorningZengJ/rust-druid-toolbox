@@ -82,7 +82,7 @@
 
 - **Rust**: `cargo test`，保留 rename_logic.rs 的 8 个单元测试，新增业务逻辑应补充测试
 - **前端**: 暂无测试框架，手动验证关键交互流程
-- **端到端**: `npm run tauri dev` 手动验证所有功能
+- **端到端**: `cargo tauri dev` 手动验证所有功能
 
 ## 禁止事项
 

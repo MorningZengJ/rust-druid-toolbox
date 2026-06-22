@@ -40,6 +40,7 @@
 - [Rust](https://www.rust-lang.org/tools/install)（stable）
 - [LLVM](https://llvm.org/)（FFmpeg 静态编译需要）
 - [vcpkg](https://github.com/microsoft/vcpkg) 及 FFmpeg 静态库
+- [Tauri CLI](https://v2.tauri.app/)（`cargo install tauri-cli --version "^2" --locked`）
 
 **搭建步骤：**
 
@@ -54,16 +55,22 @@ C:\vcpkg\vcpkg install ffmpeg:x64-windows-static-md
 git clone https://github.com/MorningZengJ/rust-druid-toolbox.git
 cd rust-druid-toolbox
 
-# 4. 安装前端依赖
+# 4. 安装 Tauri CLI（一次性）
+cargo install tauri-cli --version "^2" --locked
+
+# 5. 安装前端依赖
 cd frontend && npm install && cd ..
 
-# 5. 开发模式运行
-npm run tauri dev
+# 6. 开发模式运行
+cargo tauri dev
 ```
 
 **生产构建：**
 
 ```bash
+# 完整构建（含打包，Windows 上生成 NSIS 安装程序）
+cargo tauri build
+
 # 不含视频功能（无需 FFmpeg）
 cargo build --manifest-path src-tauri/Cargo.toml --no-default-features --release
 
@@ -93,7 +100,7 @@ rust-druid-toolbox/
 
 ```bash
 # 运行开发服务器
-npm run tauri dev
+cargo tauri dev
 
 # 前端构建检查
 cd frontend && npm run build
@@ -116,17 +123,17 @@ cargo check --manifest-path src-tauri/Cargo.toml --features video-frame
 # 2. 带签名构建
 $env:TAURI_SIGNING_PRIVATE_KEY = "路径\到\你的\密钥"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
-npm run tauri build
+cargo tauri build
 
 # 3. 获取签名
-Get-Content target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
+Get-Content src-tauri\target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
 
 # 4. 更新 updater.json（版本、签名、URL）
 
 # 5. 创建 GitHub Release
 gh release create vx.x.x --title "MToolbox vx.x.x" --notes "更新说明" \
-  target/release/bundle/nsis/*.exe \
-  target/release/bundle/nsis/*.exe.sig
+  src-tauri/target/release/bundle/nsis/*.exe \
+  src-tauri/target/release/bundle/nsis/*.exe.sig
 ```
 
 ## 许可证
