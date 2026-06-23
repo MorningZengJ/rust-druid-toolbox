@@ -1,15 +1,15 @@
 {
-  "version": "0.1.6",
-  "notes": "Changes since v0.1.5:\n\n- feat: 增强更新系统，支持错误分类/重试/离线检测，版本升至 0.1.6",
-  "pub_date": "2026-06-23T02:51:06Z",
+  "version": "0.1.7",
+  "notes": "Changes since v0.1.6:\n\n- fix: 修复 publish.ps1 MSI 构建 light.exe 文件锁定问题 - chore: enforce CRLF line endings via .gitattributes - feat: 自定义主题颜色系统与设置页面重构",
+  "pub_date": "2026-06-23T09:51:59Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDVqZEZNYWk2cW1zUHpVWlNyVzQ3dzhBY2xvWXZhQThoVzRQMThBMER6a2FBRkkwVmlBZm5kK0hkU0Y4dmRCRUt1cmRNK3NyUDRiQnB0bitXYm8rR2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTgyNjE3CWZpbGU6TVRvb2xib3hfMC4xLjZfeDY0LXNldHVwLmV4ZQpXR1cyNFRzYmNad214YWZBNVRrekdKcUE2K3pkWWI5OFJoU3BySCsyUHNCTyt1Q21PWUJyVEJMYnh3OFp2L01BN3ozNTh1bTc0ZXhXSmdwTEQ0VVlEUT09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.6/MToolbox_0.1.6_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDN5Q2NpbGpCekcxdTZSTnJHVlN4Y0xKMEdNL3VhdjdaZEJJOEJkejlXRDQ3am5ZR3E3ZnhiWmRCQ3Q3blhKUVFVRlU0bUR3YkVzbzZSbGY3UnhNZ0FFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjA4MTI4CWZpbGU6TVRvb2xib3hfMC4xLjdfeDY0LXNldHVwLmV4ZQpXVlBWaFNycC9yM3IxRTZ0bmNJakdmN0pTNnFLMXovQXZSY1UzcUhQdzYxdkdLeURUTFI4NGdoaGNoamFMNEtmbU51aFR4Y0NHanNUR3M0eU5lcXhDdz09Cg==",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.7/MToolbox_0.1.7_x64-setup.exe"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDBER2NIaHFKTTdBc3ZYeFlQS1pHTXBQTEl6VzROQ2xrb0x1bHBjSFE3RDJ1QzhRUW0xVUl2SjBTSjQxMS9zRnhaMFFLNk01NUMzV3d1d3JBclVMb1FvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTgyOTczCWZpbGU6TVRvb2xib3hfMC4xLjZfeDY0X2VuLVVTLm1zaQpiOXBNaWJtUkppZVNpeGpIQ1phWnMxUlZKeVN3aDJZOG82MzFtMGlBTEJTWDh4K2RlN2ZXNkJpZzVJb2ZBQnA0TVp3UWFKb2NlSUM5M29PdTNFc0dDUT09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.6/MToolbox_0.1.6_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDlsK1VZSmlJZlpBUTdVaUVpb1k0RU5tdEZzUUdaeTQwdUpOMVlZVmhTcnpHRUNpNE5hZVljYXRpQ0FGS0ZXcWFCdFkwaGRmYitYY09JMng5cjI0QlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjA4MzE4CWZpbGU6TVRvb2xib3hfMC4xLjdfeDY0X2VuLVVTLm1zaQpYSWFDa0I4dGQ3OTlScjFSKzdjWjdtTXorNU1KRExDRVZ6Qk9CM0dvaURLYThmYVZyZGprMDN4UzB0WkIwd2lpWlJwMFFMa3B3dWgwK3JUU21aT2RBUT09Cg==",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.7/MToolbox_0.1.7_x64_en-US.msi"
     }
   }
 }
