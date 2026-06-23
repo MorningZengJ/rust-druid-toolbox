@@ -185,16 +185,11 @@ try {
     $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
     [System.IO.File]::WriteAllText($PackageJson, $content, (New-Object System.Text.UTF8Encoding $false))
 
-    # updater.json: just version for now, full regen in Step 8
-    $content = Get-Content $UpdaterJson -Raw -Encoding UTF8
-    $content = $content -replace '("version"\s*:\s*")[^"]+(")', "`${1}$Version`${2}"
-    [System.IO.File]::WriteAllText($UpdaterJson, $content, (New-Object System.Text.UTF8Encoding $false))
-
     Write-Info "Version updated."
     git diff
 
     if (-not (Confirm-Action "Does the version bump look correct?")) {
-        git checkout -- $CargoToml $TauriConf $UpdaterJson $PackageJson
+        git checkout -- $CargoToml $TauriConf $PackageJson
         throw "Aborted by user."
     }
 
@@ -267,6 +262,21 @@ try {
     $utf8NoBom = New-Object System.Text.UTF8Encoding $false
     [System.IO.File]::WriteAllText($UpdaterJson, $jsonStr, $utf8NoBom)
     Write-Info "updater.json generated."
+
+    # Validate the generated updater.json
+    try {
+        $validateJson = Get-Content $UpdaterJson -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($validateJson.version -ne $Version) {
+            throw "updater.json version mismatch: expected $Version, got $($validateJson.version)"
+        }
+        $platformNames = $validateJson.platforms | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name
+        if ($platformNames.Count -eq 0) {
+            throw "updater.json has no platforms defined"
+        }
+        Write-Info "updater.json validated (version: $Version, platforms: $platformNames)"
+    } catch {
+        throw "updater.json validation failed: $_"
+    }
 
     # ============================================================
     # Phase 4: Git
@@ -361,7 +371,8 @@ try {
     Write-Err $_.Exception.Message
     Write-Host ""
     Write-Warn "Recovery:"
-    Write-Warn "  Revert version bump: git checkout -- src-tauri/Cargo.toml src-tauri/tauri.conf.json updater.json frontend/package.json"
+    Write-Warn "  Revert version bump: git checkout -- src-tauri/Cargo.toml src-tauri/tauri.conf.json frontend/package.json"
+    Write-Warn "  Revert updater.json: git checkout -- updater.json"
     try { if (git rev-parse --verify "v${Version}" 2>$null) { Write-Warn "  Delete local tag: git tag -d v${Version}" } } catch {}
     exit 1
 }

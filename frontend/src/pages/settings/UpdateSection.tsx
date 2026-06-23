@@ -33,6 +33,7 @@ export default function UpdateSection() {
     releaseNotes,
     progress,
     error,
+    errorCode,
     autoCheck,
     checkForUpdate,
     downloadAndInstall,
@@ -40,6 +41,24 @@ export default function UpdateSection() {
   } = useUpdateStore();
 
   const status: UpdateStatus = useUpdateStore((s) => s.status);
+
+  const getErrorMessage = (): string => {
+    if (!error && !errorCode) return t("update.status.errorDefault");
+    switch (errorCode) {
+      case "offline":
+        return t("update.error.offline");
+      case "network":
+        return t("update.error.network");
+      case "timeout":
+        return t("update.error.timeout");
+      case "signature":
+        return t("update.error.signature");
+      case "parse":
+        return t("update.error.parse");
+      default:
+        return t("update.error.unknown", { detail: error ?? "" });
+    }
+  };
 
   const formatBytes = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -219,7 +238,7 @@ export default function UpdateSection() {
             <Group gap="xs">
               <AlertCircle size={14} style={{ color: "var(--status-error)" }} />
               <Text size="sm" style={{ color: "var(--status-error)" }}>
-                {error || t("update.status.errorDefault")}
+                {getErrorMessage()}
               </Text>
             </Group>
           </Stack>

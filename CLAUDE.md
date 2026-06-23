@@ -13,3 +13,5 @@ For later tasks in the same session, reuse the already-loaded context unless one
 Use those files as the source of project architecture, engineering policy, and collaboration rules.
 
 When facts are unclear or missing, search the repository source, configuration, tests, deployment files, and existing docs first. If evidence is still missing or contradictory, ask the user for confirmation before treating assumptions as facts.
+
+严禁编辑`tauri.conf.json`文件的`bundle`的`targets`属性

@@ -47,6 +47,7 @@ function App() {
   ];
 
   const updateInit = useUpdateStore((s) => s.init);
+  const currentVersion = useUpdateStore((s) => s.currentVersion);
 
   useEffect(() => {
     updateInit().then(() => {
@@ -378,7 +379,7 @@ function App() {
                   letterSpacing: "0.02em",
                 }}
               >
-                Tauri Toolbox v0.1.0
+                Tauri Toolbox{currentVersion ? ` v${currentVersion}` : ""}
               </Text>
             </Flex>
           </Flex>

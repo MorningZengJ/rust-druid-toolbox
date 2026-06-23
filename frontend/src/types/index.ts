@@ -285,3 +285,12 @@ export interface UpdateProgress {
   totalBytes: number | null;
   percentage: number;
 }
+
+/** Machine-readable error classification for update failures */
+export type UpdateErrorCode =
+  | "offline"
+  | "network"
+  | "timeout"
+  | "signature"
+  | "parse"
+  | null;
