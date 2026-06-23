@@ -1,0 +1,14 @@
+# Enforce CRLF line endings for all text files.
+# Git normalizes to LF on commit (internal storage) and converts to CRLF on checkout.
+* text=auto eol=crlf
+
+# Binary files — prevent accidental EOL conversion
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.icns binary
+*.ttf  binary
+*.otf  binary
