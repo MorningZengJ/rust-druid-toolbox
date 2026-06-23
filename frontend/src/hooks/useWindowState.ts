@@ -25,7 +25,7 @@ export function useWindowState() {
 
     async function saveState() {
       const [size, position, maximized, scaleFactor] = await Promise.all([
-        win.outerSize(),
+        win.innerSize(),
         win.outerPosition(),
         win.isMaximized(),
         win.scaleFactor(),
