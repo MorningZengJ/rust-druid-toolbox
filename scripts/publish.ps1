@@ -130,13 +130,33 @@ try {
 
     # --- Step 2: Signing key ---
     Write-Step -Num 2 -Desc "Checking signing key..."
-    if ($env:TAURI_SIGNING_PRIVATE_KEY) {
-        Write-Info "Using TAURI_SIGNING_PRIVATE_KEY."
-    } elseif ($env:TAURI_PRIVATE_KEY) {
+
+    # Resolve legacy TAURI_PRIVATE_KEY fallback
+    if ((-not $env:TAURI_SIGNING_PRIVATE_KEY) -and $env:TAURI_PRIVATE_KEY) {
         Write-Info "Using TAURI_PRIVATE_KEY (legacy fallback)."
         $env:TAURI_SIGNING_PRIVATE_KEY = $env:TAURI_PRIVATE_KEY
+    }
+
+    if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
+        throw "TAURI_SIGNING_PRIVATE_KEY not set. Set it before running, e.g.:`n  `$env:TAURI_SIGNING_PRIVATE_KEY = `"<key-file-path-or-content>`""
+    }
+
+    # Detect if the value is a file path rather than inline key content
+    if (Test-Path $env:TAURI_SIGNING_PRIVATE_KEY -PathType Leaf) {
+        Write-Info "TAURI_SIGNING_PRIVATE_KEY is a file path, reading contents..."
+        $keyContent = Get-Content $env:TAURI_SIGNING_PRIVATE_KEY -Raw
+        # Save original path for MSI manual signing fallback
+        $env:TAURI_SIGNING_PRIVATE_KEY_PATH = $env:TAURI_SIGNING_PRIVATE_KEY
+        # Set inline content so both `cargo tauri build` and `signer sign` can use it
+        $env:TAURI_SIGNING_PRIVATE_KEY = $keyContent.Trim()
+        Write-Info "Key loaded from file."
     } else {
-        throw "TAURI_SIGNING_PRIVATE_KEY not set. Set it before running, e.g.:`n  `$env:TAURI_SIGNING_PRIVATE_KEY = `"<key-content>`""
+        Write-Info "Using TAURI_SIGNING_PRIVATE_KEY as inline key content."
+    }
+
+    # Ensure password env exists (empty password for unencrypted keys)
+    if (-not (Test-Path "env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD")) {
+        $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
     }
 
     # --- Step 3: Clean working tree ---
@@ -209,12 +229,81 @@ try {
 
         # --- Step 7: Tauri ---
         Write-Step -Num 7 -Desc "Building Tauri app (this may take a while)..."
+
+        # 7a: NSIS — build separately to avoid WiX light.exe file-lock contention
+        Write-Info "Building NSIS installer..."
         Push-Location $RepoRoot
         try {
-            cargo tauri build
-            if ($LASTEXITCODE -ne 0) { throw "Tauri build failed. Check the error above." }
-            Write-Info "Tauri app built."
+            cargo tauri build --bundles nsis
+            if ($LASTEXITCODE -ne 0) { throw "NSIS build failed. Check the error above." }
+            Write-Info "NSIS installer built."
         } finally { Pop-Location }
+
+        # 7b: MSI — built separately; light.exe may fail due to file locking
+        Write-Info "Building MSI installer..."
+        Push-Location $RepoRoot
+        try {
+            cargo tauri build --bundles msi
+            if ($LASTEXITCODE -eq 0) {
+                Write-Info "MSI installer built."
+            } else {
+                # light.exe often fails with IOException (file locked by another process).
+                # Fall back to manual invocation after a short delay.
+                Write-Warn "cargo tauri build --bundles msi failed (likely light.exe file lock)."
+                Write-Info "Attempting manual MSI build via light.exe + retry..."
+
+                $wixObj   = "$RepoRoot/target/release/wix/x64/main.wixobj"
+                $wxl      = "$RepoRoot/target/release/wix/x64/locale.wxl"
+                $msiOut   = "$BundleMsiDir/${ProductName}_${Version}_x64_en-US.msi"
+                $wixTools = "$env:LOCALAPPDATA/tauri/WixTools314"
+                $lightExe = "$wixTools/light.exe"
+
+                if (-not (Test-Path $wixObj)) {
+                    throw "WiX object file not found: $wixObj. MSI build cannot proceed."
+                }
+
+                # Ensure output directory exists
+                New-Item -ItemType Directory -Force -Path $BundleMsiDir | Out-Null
+
+                # Short delay to let lingering file handles release
+                Start-Sleep -Seconds 3
+
+                $lightArgs = @(
+                    "-nologo",
+                    "-sval",
+                    "-ext", "WixUtilExtension",
+                    "-ext", "WixUIExtension",
+                    "-out", $msiOut,
+                    $wixObj,
+                    "-loc", $wxl,
+                    "-cultures:en-US"
+                )
+                & $lightExe @lightArgs
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Manual light.exe invocation failed (exit code: $LASTEXITCODE). Try closing other programs or restarting."
+                }
+                Write-Info "MSI built via manual light.exe."
+            }
+        } finally { Pop-Location }
+
+        # 7c: Sign MSI manually if it wasn't auto-signed
+        $msiSigPath = "$BundleMsiDir/${ProductName}_${Version}_x64_en-US.msi.sig"
+        if (-not (Test-Path $msiSigPath)) {
+            Write-Info "MSI not auto-signed, signing manually..."
+            Push-Location $RepoRoot
+            try {
+                $msiFile = "$BundleMsiDir/${ProductName}_${Version}_x64_en-US.msi"
+                if ($env:TAURI_SIGNING_PRIVATE_KEY_PATH) {
+                    cargo tauri signer sign --private-key-path $env:TAURI_SIGNING_PRIVATE_KEY_PATH $msiFile
+                } else {
+                    cargo tauri signer sign --private-key $env:TAURI_SIGNING_PRIVATE_KEY $msiFile
+                }
+                if ($LASTEXITCODE -ne 0) { throw "MSI signing failed." }
+                Write-Info "MSI signed."
+            } finally { Pop-Location }
+        } else {
+            Write-Info "MSI already signed."
+        }
     } else {
         Write-Info "  Step 6 & 7: Build skipped (-SkipBuild)."
     }
