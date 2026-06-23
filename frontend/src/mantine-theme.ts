@@ -1,5 +1,6 @@
 import { createTheme } from "@mantine/core";
 import type { MantineColorsTuple } from "@mantine/core";
+import { hexToHsl, hslToHex, hexToRgba, blendOver, rgbaToHex } from "@/lib/color";
 
 // === 琥珀金主色调 ===
 const amber: MantineColorsTuple = [
@@ -163,7 +164,7 @@ const MANTINE_THEME = createTheme({
 });
 
 // === 色彩主题系统 ===
-type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
+export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
 
 export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: string) {
   if (customPrimary) {
@@ -182,43 +183,7 @@ export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: strin
   return { ...MANTINE_THEME, primaryColor: themeName };
 }
 
-function hexToHsl(hex: string): [number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return [0, 0, l];
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
-  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) h = ((b - r) / d + 2) / 6;
-  else h = ((r - g) / d + 4) / 6;
-  return [h * 360, s * 100, l * 100];
-}
-
-function hslToHex(h: number, s: number, l: number): string {
-  s /= 100;
-  l /= 100;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; }
-  else if (h < 120) { r = x; g = c; }
-  else if (h < 180) { g = c; b = x; }
-  else if (h < 240) { g = x; b = c; }
-  else if (h < 300) { r = x; b = c; }
-  else { r = c; b = x; }
-  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
-export type ColorThemeKey = "default" | "blue" | "green" | "purple" | "orange" | "rose";
-
-export const THEME_PALETTES: Record<ColorThemeKey, string> = {
+export const THEME_PALETTES: Record<ColorTheme, string> = {
   default: amber[5],
   blue: blue[5],
   green: green[5],
@@ -227,15 +192,40 @@ export const THEME_PALETTES: Record<ColorThemeKey, string> = {
   rose: rose[5],
 };
 
-function generateColorTuple(hex: string): MantineColorsTuple {
-  const [h, s] = hexToHsl(hex);
+export interface PresetThemeConfig {
+  key: ColorTheme;
+  /** 锚点色 (index-5) */
+  anchorHex: string;
+  /** 亮色变体 (index-4)，用于 hover/active 状态 */
+  accentHex: string;
+  /** 完整 10 阶色板 */
+  tuple: MantineColorsTuple;
+}
+
+export const PRESET_THEMES: Record<ColorTheme, PresetThemeConfig> = {
+  default: { key: "default", anchorHex: amber[5], accentHex: amber[4], tuple: amber },
+  blue:    { key: "blue",    anchorHex: blue[5],    accentHex: blue[4],    tuple: blue },
+  green:   { key: "green",   anchorHex: green[5],   accentHex: green[4],   tuple: green },
+  purple:  { key: "purple",  anchorHex: purple[5],  accentHex: purple[4],  tuple: purple },
+  orange:  { key: "orange",  anchorHex: orange[5],  accentHex: orange[4],  tuple: orange },
+  rose:    { key: "rose",    anchorHex: rose[5],    accentHex: rose[4],    tuple: rose },
+};
+
+export function generateColorTuple(hex: string): MantineColorsTuple {
+  // 如果包含 alpha < 255，blend 到默认亮色表面产生等效不透明色
+  const rgba = hexToRgba(hex);
+  const effectiveRgb = rgba.a < 255
+    ? blendOver(rgba.r, rgba.g, rgba.b, rgba.a, 245, 245, 247)
+    : { r: rgba.r, g: rgba.g, b: rgba.b };
+  const effectiveHex = rgbaToHex(effectiveRgb.r, effectiveRgb.g, effectiveRgb.b);
+  const [h, s] = hexToHsl(effectiveHex);
   return [
     hslToHex(h, Math.max(s - 30, 10), 95),
     hslToHex(h, Math.max(s - 20, 15), 88),
     hslToHex(h, Math.max(s - 10, 20), 78),
     hslToHex(h, s, 68),
     hslToHex(h, s, 58),
-    hex,
+    effectiveHex,
     hslToHex(h, Math.min(s + 5, 100), 45),
     hslToHex(h, Math.min(s + 5, 100), 38),
     hslToHex(h, Math.min(s + 5, 100), 30),

@@ -8,11 +8,13 @@
   },
   "theme": {
     "title": "カラーテーマ",
-    "customColor": "カスタムカラー",
-    "colorPlaceholder": "#3b82f6 (HEX カラーコード)",
-    "apply": "適用",
+    "custom": "カスタム",
     "clear": "クリア",
-    "currentCustom": "現在のカスタム: {{color}}"
+    "currentCustom": "カスタム: {{color}}",
+    "opacity": "不透明度",
+    "palette": "パレット",
+    "accentLabel": "アクセント",
+    "lightLabel": "ライト"
   },
   "language": {
     "title": "言語",

@@ -110,7 +110,8 @@
     "green": "绿色",
     "purple": "紫色",
     "orange": "橙色",
-    "rose": "玫红"
+    "rose": "玫红",
+    "custom": "自定义"
   },
   "time": {
     "seconds": "{{count}}秒",

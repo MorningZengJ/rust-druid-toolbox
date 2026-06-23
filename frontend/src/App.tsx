@@ -84,34 +84,17 @@ function App() {
               h={36}
               style={{
                 borderRadius: 10,
-                background: "linear-gradient(135deg, var(--accent-primary), var(--accent-dark))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 2px 12px var(--accent-glow)",
-                position: "relative",
               }}
             >
-              <Text
-                size="sm"
-                fw={700}
-                c="var(--surface-base)"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                T
-              </Text>
-              <Box
-                style={{
-                  position: "absolute",
-                  bottom: -4,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 24,
-                  height: 4,
-                  borderRadius: "50%",
-                  background: "var(--accent-glow)",
-                  filter: "blur(3px)",
-                }}
+              <img
+                src="/icon.png"
+                width={36}
+                height={36}
+                style={{ borderRadius: 10, objectFit: "contain" }}
+                alt="MToolbox"
               />
             </Box>
           </Flex>

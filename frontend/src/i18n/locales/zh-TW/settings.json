@@ -8,11 +8,13 @@
   },
   "theme": {
     "title": "顏色主題",
-    "customColor": "自訂顏色",
-    "colorPlaceholder": "#3b82f6 (HEX 色碼)",
-    "apply": "套用",
+    "custom": "自訂",
     "clear": "清除",
-    "currentCustom": "目前自訂: {{color}}"
+    "currentCustom": "自訂: {{color}}",
+    "opacity": "不透明度",
+    "palette": "色板",
+    "accentLabel": "強調色",
+    "lightLabel": "亮色"
   },
   "language": {
     "title": "語言",

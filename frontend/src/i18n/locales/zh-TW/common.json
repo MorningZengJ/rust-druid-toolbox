@@ -110,7 +110,8 @@
     "green": "Green",
     "purple": "Purple",
     "orange": "Orange",
-    "rose": "Rose"
+    "rose": "Rose",
+    "custom": "自訂"
   },
   "time": {
     "seconds": "{{count}}s",

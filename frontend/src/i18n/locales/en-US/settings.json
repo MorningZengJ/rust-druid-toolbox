@@ -8,11 +8,13 @@
   },
   "theme": {
     "title": "Color Theme",
-    "customColor": "Custom Color",
-    "colorPlaceholder": "#3b82f6 (HEX color value)",
-    "apply": "Apply",
+    "custom": "Custom",
     "clear": "Clear",
-    "currentCustom": "Current custom: {{color}}"
+    "currentCustom": "Custom: {{color}}",
+    "opacity": "Opacity",
+    "palette": "PALETTE",
+    "accentLabel": "Accent",
+    "lightLabel": "Light"
   },
   "language": {
     "title": "Language",

@@ -89,17 +89,18 @@ body,
 *::before,
 *::after {
   box-sizing: border-box;
+  transition: background-color 300ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
 }
 
 /* === 选中文本样式 === */
 ::selection {
-  background-color: rgba(245, 166, 35, 0.2);
+  background-color: var(--accent-glow);
   color: inherit;
 }
 
 /* === 键盘焦点样式 === */
 :focus-visible {
-  outline: 2px solid rgba(245, 166, 35, 0.5);
+  outline: 2px solid var(--accent-glow);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -183,6 +184,44 @@ body,
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
+}
+
+/* === 调色板预览区域 === */
+.palette-preview-area {
+  position: relative;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background-color: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.palette-preview-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: radial-gradient(circle, var(--text-primary) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events: none;
+}
+
+.palette-label {
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* === 色块浮起动画 === */
+.theme-swatch:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.theme-swatch:active {
+  transform: translateY(0) !important;
 }
 
 /* === 噪点纹理叠加（暗色主题） === */

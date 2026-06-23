@@ -16,7 +16,6 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  Package,
   ArrowUpCircle,
   Sparkles,
 } from "lucide-react";
@@ -332,20 +331,13 @@ export default function UpdateSection() {
       >
         <Group justify="space-between" align="center">
           <Group gap="sm">
-            <Box
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "linear-gradient(135deg, var(--accent-primary), var(--accent-dark))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 8px var(--accent-glow)",
-              }}
-            >
-              <Package size={16} color="white" />
-            </Box>
+            <img
+              src="/icon.png"
+              width={32}
+              height={32}
+              style={{ borderRadius: 8, objectFit: "contain" }}
+              alt="MToolbox"
+            />
             <div>
               <Text size="sm" fw={600} style={{ fontFamily: "var(--font-display)" }}>Tauri Toolbox</Text>
               <Text size="xs" c="dimmed">{t("update.appDescription")}</Text>

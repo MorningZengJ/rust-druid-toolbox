@@ -8,11 +8,13 @@
   },
   "theme": {
     "title": "",
-    "customColor": "",
-    "colorPlaceholder": "",
-    "apply": "",
+    "custom": "",
     "clear": "",
-    "currentCustom": ""
+    "currentCustom": "",
+    "opacity": "Непрозрачность",
+    "palette": "PALETTE",
+    "accentLabel": "Accent",
+    "lightLabel": "Light"
   },
   "language": {
     "title": "",

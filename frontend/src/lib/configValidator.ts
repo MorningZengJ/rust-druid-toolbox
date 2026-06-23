@@ -5,6 +5,8 @@
  * 读取时必须校验类型和范围，不盲信文件内容。
  */
 
+import type { ColorTheme } from "@/mantine-theme";
+
 // ---- 窗口状态 ----
 
 export interface WindowState {
@@ -62,7 +64,7 @@ export function validateColorMode(raw: unknown): "light" | "dark" | "system" {
   return "system";
 }
 
-export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
+export type { ColorTheme } from "@/mantine-theme";
 
 export function validateColorTheme(raw: unknown): ColorTheme {
   if (typeof raw === "string" && VALID_COLOR_THEMES.has(raw)) {
@@ -72,7 +74,7 @@ export function validateColorTheme(raw: unknown): ColorTheme {
 }
 
 export function validateCustomPrimary(raw: unknown): string | undefined {
-  if (typeof raw === "string" && /^#[0-9a-fA-F]{6}$/.test(raw)) {
+  if (typeof raw === "string" && /^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(raw)) {
     return raw;
   }
   return undefined;
