@@ -1,15 +1,15 @@
 {
-  "version": "0.1.5",
-  "notes": "Changes since v0.1.4:\n\n- fix: 替换 Tauri 更新密钥对并修正签名路径，新增一键发布脚本 - chore: 优化发布脚本版本输入交互，默认使用当前版本 - fix: 修复发布脚本 UTF-8 编码和 Git Changelog 生成逻辑 - refactor: 改进发布脚本跨平台兼容性和灵活性 - fix: 修复发布脚本 JSON 编码问题，改用纯 UTF-8 无 BOM 写入 - fix: 统一 Get-Content 读取编码为 UTF-8 - feat: 发布脚本自动填充 updater.json 的 release notes - chore: bump version to 0.1.4 - chore: bump version to 0.1.4 - chore: bump version to 0.1.5 - chore: 更新 bundle targets 为 all 并同步 updater.json 至 0.1.5",
-  "pub_date": "2026-06-22T12:37:10Z",
+  "version": "0.1.6",
+  "notes": "Changes since v0.1.5:\n\n- feat: 增强更新系统，支持错误分类/重试/离线检测，版本升至 0.1.6",
+  "pub_date": "2026-06-23T02:51:06Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDJUMFRTUDh5c3EzUkIxMkdnM3VvazgzUEpmSjRPVEUrOUNsRkFYM09COS93TnJBVnM5c1RDSGQ5UzNHZTJiRk41TENsRmFudmYydjlZUVM5L0RsNmdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTMxODMwCWZpbGU6TVRvb2xib3hfMC4xLjVfeDY0LXNldHVwLmV4ZQpTdnNkUy9rbXBYeEhhYzVRdUZ1VUQxa0sxRWJwbWhjZGFqLzNiWmpGMzZSZStTUWJhZCtyeEg0SXNQa3JWV2NidUhoRWViOVVUMnk0dWhHMGpSaHhEUT09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.5/MToolbox_0.1.5_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDVqZEZNYWk2cW1zUHpVWlNyVzQ3dzhBY2xvWXZhQThoVzRQMThBMER6a2FBRkkwVmlBZm5kK0hkU0Y4dmRCRUt1cmRNK3NyUDRiQnB0bitXYm8rR2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTgyNjE3CWZpbGU6TVRvb2xib3hfMC4xLjZfeDY0LXNldHVwLmV4ZQpXR1cyNFRzYmNad214YWZBNVRrekdKcUE2K3pkWWI5OFJoU3BySCsyUHNCTyt1Q21PWUJyVEJMYnh3OFp2L01BN3ozNTh1bTc0ZXhXSmdwTEQ0VVlEUT09Cg==",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.6/MToolbox_0.1.6_x64-setup.exe"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDd0ME5mSUZDWUl2UG5jSDBtT1A0SzdvbWFMak9EMDZmN1N3QkhMNlIzeHZXRDR4YlJFbkdaM1FVZ3JTR1dGZ0tibVliNDlRcVk4c0kreTluVTliYVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTMxODMwCWZpbGU6TVRvb2xib3hfMC4xLjVfeDY0X2VuLVVTLm1zaQpQNlZ3SlhZZFJFVzh5M0FoWkFTY3dQUE02VXFoakVtR1FIUmJ4bXlDclAxRlplR1BkTnBXLzRJcGUrSUJqV0FDRVJqUWZxYWVOeVFaR3JmdUt4dmNBZz09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.5/MToolbox_0.1.5_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDBER2NIaHFKTTdBc3ZYeFlQS1pHTXBQTEl6VzROQ2xrb0x1bHBjSFE3RDJ1QzhRUW0xVUl2SjBTSjQxMS9zRnhaMFFLNk01NUMzV3d1d3JBclVMb1FvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTgyOTczCWZpbGU6TVRvb2xib3hfMC4xLjZfeDY0X2VuLVVTLm1zaQpiOXBNaWJtUkppZVNpeGpIQ1phWnMxUlZKeVN3aDJZOG82MzFtMGlBTEJTWDh4K2RlN2ZXNkJpZzVJb2ZBQnA0TVp3UWFKb2NlSUM5M29PdTNFc0dDUT09Cg==",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.6/MToolbox_0.1.6_x64_en-US.msi"
     }
   }
 }
