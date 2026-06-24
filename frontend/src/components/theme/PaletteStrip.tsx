@@ -4,13 +4,14 @@ import type { MantineColorsTuple } from "@mantine/core";
 interface PaletteStripProps {
   shades: MantineColorsTuple;
   anchorIndex: number;
+  onShadeClick?: (hex: string, index: number) => void;
 }
 
 const BAR_WIDTH = 24;
 const BAR_HEIGHT = 8;
 const GAP = 2;
 
-export default function PaletteStrip({ shades, anchorIndex }: PaletteStripProps) {
+export default function PaletteStrip({ shades, anchorIndex, onShadeClick }: PaletteStripProps) {
   return (
     <Box style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {/* 色阶条 */}
@@ -20,6 +21,7 @@ export default function PaletteStrip({ shades, anchorIndex }: PaletteStripProps)
           return (
             <Tooltip key={i} label={hex.toUpperCase()} withArrow openDelay={300}>
               <Box
+                onClick={() => onShadeClick?.(hex, i)}
                 style={{
                   width: BAR_WIDTH,
                   height: isAnchor ? BAR_HEIGHT + 2 : BAR_HEIGHT,
@@ -31,7 +33,7 @@ export default function PaletteStrip({ shades, anchorIndex }: PaletteStripProps)
                   boxShadow: isAnchor
                     ? "0 1px 3px rgba(0,0,0,0.15)"
                     : "none",
-                  cursor: "pointer",
+                  cursor: onShadeClick ? "pointer" : "default",
                   transition: "transform 120ms ease, filter 120ms ease",
                   alignSelf: "center",
                 }}

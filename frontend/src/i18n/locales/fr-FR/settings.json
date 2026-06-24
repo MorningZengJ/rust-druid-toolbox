@@ -14,7 +14,9 @@
     "opacity": "Opacité",
     "palette": "PALETTE",
     "accentLabel": "Accent",
-    "lightLabel": "Light"
+    "lightLabel": "Light",
+    "shadeSelected": "Shade #{{index}}: {{color}}",
+    "clearShade": "Reset to default shade"
   },
   "language": {
     "title": "",

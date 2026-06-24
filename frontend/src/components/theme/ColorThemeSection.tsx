@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { Stack, Group, Text, Box, ActionIcon } from "@mantine/core";
 import { Palette, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -15,8 +15,10 @@ export default function ColorThemeSection() {
   const {
     colorTheme,
     customPrimary,
+    selectedShadeIndex,
     setColorTheme,
     setCustomPrimary,
+    setSelectedShadeIndex,
   } = useTheme();
   const colorThemes = useColorThemes();
 
@@ -29,6 +31,14 @@ export default function ColorThemeSection() {
     }
     return PRESET_THEMES[colorTheme].tuple;
   }, [colorTheme, customPrimary, isCustomActive]);
+
+  // 点击色阶条：更新 store 中的 selectedShadeIndex
+  const handleShadeClick = useCallback((_hex: string, index: number) => {
+    setSelectedShadeIndex(index);
+  }, [setSelectedShadeIndex]);
+
+  // 视觉锚点索引：未设置时默认 5
+  const visualAnchorIndex = selectedShadeIndex ?? 5;
 
   return (
     <ThemeCard icon={<Palette size={16} />} title={t("theme.title")}>
@@ -65,13 +75,44 @@ export default function ColorThemeSection() {
             >
               {t("theme.palette")}
             </Text>
-            <PaletteStrip shades={activeTuple} anchorIndex={5} />
+            <PaletteStrip shades={activeTuple} anchorIndex={visualAnchorIndex} onShadeClick={handleShadeClick} />
           </Box>
         )}
 
         {/* Hex 信息行 */}
         <Group gap="md" wrap="wrap">
-          {isCustomActive && customPrimary ? (
+          {selectedShadeIndex !== undefined ? (
+            <>
+              <Box
+                w={16}
+                h={16}
+                style={{
+                  borderRadius: "50%",
+                  backgroundColor: activeTuple[selectedShadeIndex],
+                  border: "1px solid var(--border-strong)",
+                }}
+              />
+              <Text
+                size="sm"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}
+              >
+                {t("theme.shadeSelected", {
+                  index: selectedShadeIndex,
+                  color: activeTuple[selectedShadeIndex].toUpperCase(),
+                })}
+              </Text>
+              <ActionIcon
+                size="xs"
+                variant="subtle"
+                color="gray"
+                onClick={() => setSelectedShadeIndex(undefined)}
+                title={t("theme.clearShade")}
+                ml="auto"
+              >
+                <X size={12} />
+              </ActionIcon>
+            </>
+          ) : isCustomActive && customPrimary ? (
             <>
               <Box
                 w={16}

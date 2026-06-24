@@ -14,7 +14,9 @@
     "opacity": "불투명도",
     "palette": "팔레트",
     "accentLabel": "액센트",
-    "lightLabel": "라이트"
+    "lightLabel": "라이트",
+    "shadeSelected": "Shade #{{index}}: {{color}}",
+    "clearShade": "Reset to default shade"
   },
   "language": {
     "title": "언어",

@@ -166,7 +166,26 @@ const MANTINE_THEME = createTheme({
 // === 色彩主题系统 ===
 export type ColorTheme = "default" | "blue" | "green" | "purple" | "orange" | "rose";
 
-export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: string) {
+export function getThemeWithPrimary(themeName: ColorTheme, customPrimary?: string, selectedShadeIndex?: number) {
+  // 1. 确定活跃色板
+  const activeTuple: MantineColorsTuple = customPrimary
+    ? generateColorTuple(customPrimary)
+    : PRESET_THEMES[themeName].tuple;
+
+  // 2. 色阶覆盖：用选中色阶的 hex 重新生成完整色板
+  if (selectedShadeIndex !== undefined) {
+    const shadeHex = activeTuple[selectedShadeIndex];
+    return {
+      ...MANTINE_THEME,
+      primaryColor: "custom" as const,
+      colors: {
+        ...MANTINE_THEME.colors,
+        custom: generateColorTuple(shadeHex),
+      },
+    };
+  }
+
+  // 3. 原有逻辑（无色阶覆盖）
   if (customPrimary) {
     return {
       ...MANTINE_THEME,

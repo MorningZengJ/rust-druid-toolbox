@@ -216,12 +216,11 @@ body,
 
 /* === 色块浮起动画 === */
 .theme-swatch:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: var(--shadow-md) !important;
+  filter: brightness(1.05);
 }
 
 .theme-swatch:active {
-  transform: translateY(0) !important;
+  filter: brightness(0.95);
 }
 
 /* === 噪点纹理叠加（暗色主题） === */

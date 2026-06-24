@@ -14,7 +14,9 @@
     "opacity": "不透明度",
     "palette": "パレット",
     "accentLabel": "アクセント",
-    "lightLabel": "ライト"
+    "lightLabel": "ライト",
+    "shadeSelected": "Shade #{{index}}: {{color}}",
+    "clearShade": "Reset to default shade"
   },
   "language": {
     "title": "言語",

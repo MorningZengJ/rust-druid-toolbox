@@ -80,6 +80,13 @@ export function validateCustomPrimary(raw: unknown): string | undefined {
   return undefined;
 }
 
+export function validateSelectedShadeIndex(raw: unknown): number | undefined {
+  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0 && raw <= 9) {
+    return raw;
+  }
+  return undefined;
+}
+
 // ---- 更新设置 ----
 
 export function validateAutoCheck(raw: unknown): boolean {

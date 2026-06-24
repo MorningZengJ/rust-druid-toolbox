@@ -14,7 +14,9 @@
     "opacity": "不透明度",
     "palette": "色板",
     "accentLabel": "强调色",
-    "lightLabel": "亮色"
+    "lightLabel": "亮色",
+    "shadeSelected": "色阶 #{{index}}: {{color}}",
+    "clearShade": "重置为默认色阶"
   },
   "language": {
     "title": "语言",
