@@ -106,39 +106,77 @@ mtoolbox/
 # Run development server
 cargo tauri dev
 
-# Frontend build check
-cd frontend && npm run build
+# Install frontend dependencies reproducibly
+cd frontend && npm ci
 
-# Rust compilation check
-cargo check --manifest-path src-tauri/Cargo.toml
+# Frontend quality checks
+cd frontend
+npm run lint
+npm run typecheck
+npm run check:i18n
+npm run check:i18n-usage
+npm run build
 
-# Run Rust tests
-cargo test --manifest-path src-tauri/Cargo.toml
+# Full frontend quality gate
+cd frontend && npm run quality
 
-# Check with video features
+# Version consistency check
+node scripts/check-version-consistency.cjs
+
+# Rust baseline without FFmpeg dependency
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml --no-default-features
+cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
+
+# Rust check with default video features (requires FFmpeg static libraries)
 cargo check --manifest-path src-tauri/Cargo.toml --features video-frame
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
+
+Notes:
+
+- `video-frame` is enabled by default and requires LLVM/vcpkg FFmpeg static libraries.
+- i18n completeness reports existing empty translations as warnings; missing keys, type mismatches, and interpolation mismatches are treated as errors.
+- `src-tauri/tauri.conf.json` `bundle.targets` must remain unchanged.
 
 ## Publishing a Release
 
 ```bash
-# 1. Update version in tauri.conf.json and Cargo.toml
+# 1. Update and verify version in all release files:
+#    - frontend/package.json
+#    - src-tauri/Cargo.toml
+#    - src-tauri/tauri.conf.json
+#    - updater.json
+node scripts/check-version-consistency.cjs
 
-# 2. Build with signing
+# 2. Run quality checks before building
+cd frontend && npm ci && npm run quality && cd ..
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml --features video-frame
+cargo test --manifest-path src-tauri/Cargo.toml
+
+# 3. Build with signing
 $env:TAURI_SIGNING_PRIVATE_KEY = "path\to\your\key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 cargo tauri build
 
-# 3. Get signature
+# 4. Get signature
 Get-Content src-tauri\target\release\bundle\nsis\MToolbox_x.x.x_x64-setup.exe.sig
 
-# 4. Update updater.json (version, signature, URL)
+# 5. Update updater.json (version, signature, URL) and re-run version check
+node scripts/check-version-consistency.cjs
 
-# 5. Create GitHub Release
+# 6. Create GitHub Release
 gh release create vx.x.x --title "MToolbox vx.x.x" --notes "Release notes" \
   src-tauri/target/release/bundle/nsis/*.exe \
   src-tauri/target/release/bundle/nsis/*.exe.sig
 ```
+
+Release notes:
+
+- Do not modify `src-tauri/tauri.conf.json` `bundle.targets`; packaging target changes must be handled outside this config key.
+- Use `npm ci` for reproducible frontend installs.
+- Keep `updater.json` version, URLs, and signatures aligned with the release artifact names.
 
 ## License
 

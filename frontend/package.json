@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "check:i18n": "node scripts/check-i18n.cjs",
+    "check:i18n-usage": "node scripts/check-i18n-usage.cjs",
+    "quality": "npm run lint && npm run typecheck && npm run check:i18n && npm run check:i18n-usage && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {

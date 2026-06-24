@@ -1,5 +1,7 @@
-import { useEffect } from "react";
-import { useMantineTheme, useComputedColorScheme } from "@mantine/core";
+import { useLayoutEffect } from "react";
+import { useComputedColorScheme } from "@mantine/core";
+import { useThemeStore } from "@/stores/themeStore";
+import { getThemeWithPrimary } from "@/mantine-theme";
 import { hexToHsl, hslToHex, hexToRgb } from "@/lib/color";
 
 /** 将主色调降低饱和度并调整亮度，生成暗色表面色 */
@@ -11,13 +13,18 @@ export function tintForDarkSurface(hex: string, targetLightness: number): string
 
 /** 主色调同步到 CSS 变量 + 暗色表面色微调 */
 export function CssVariableSync() {
-  const theme = useMantineTheme();
+  const colorTheme = useThemeStore((s) => s.colorTheme);
+  const customPrimary = useThemeStore((s) => s.customPrimary);
+  const selectedShadeIndex = useThemeStore((s) => s.selectedShadeIndex);
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
+
+  // 直接计算主题，与 ThemeProvider 使用相同逻辑，避免 Mantine 上下文传播延迟
+  const theme = getThemeWithPrimary(colorTheme, customPrimary, selectedShadeIndex);
   const primary = theme.colors[theme.primaryColor];
   const primaryHex = primary[5];
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     const accentRgb = hexToRgb(primary[5]);
 
@@ -81,7 +88,7 @@ export function CssVariableSync() {
     root.style.setProperty("--status-warning", "#F59E0B");
     root.style.setProperty("--status-warning-bg", "rgba(245, 158, 11, 0.1)");
     root.style.setProperty("--status-warning-border", "rgba(245, 158, 11, 0.2)");
-  }, [primary, isDark, primaryHex]);
+  }, [colorTheme, customPrimary, selectedShadeIndex, isDark]);
 
   return null;
 }
