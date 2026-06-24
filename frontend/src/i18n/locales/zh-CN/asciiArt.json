@@ -44,6 +44,8 @@
       "original": "原图",
       "ascii": "字符画"
     },
+    "exportFilterName": "PNG 图片",
+    "asciiArtAlt": "字符画",
     "toolbar": {
       "copy": "复制",
       "export": "导出",

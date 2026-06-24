@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { AsciiArtOutput } from "@/types";
 
 interface AsciiContentProps {
@@ -21,6 +22,7 @@ export function AsciiContent({
   contentRef,
   canvasRef,
 }: AsciiContentProps) {
+  const { t } = useTranslation("asciiArt");
   const child = (() => {
     switch (renderMode) {
       case "svg":
@@ -29,7 +31,7 @@ export function AsciiContent({
         return (
           <img
             src={`data:image/svg+xml;base64,${svgBase64}`}
-            alt="ASCII Art"
+            alt={t("preview.asciiArtAlt")}
             style={{ display: "block" }}
           />
         );
@@ -39,7 +41,7 @@ export function AsciiContent({
         return (
           <img
             src={convertFileSrc(output.outputPath)}
-            alt="ASCII Art"
+            alt={t("preview.asciiArtAlt")}
             style={{ display: "block" }}
           />
         );

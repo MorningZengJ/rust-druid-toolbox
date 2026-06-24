@@ -29,7 +29,16 @@ const newKeys = {
       inputFiles: "Input Files ({{count}})",
       add: "Add",
       log: "Log",
-      logEmpty: "No logs"
+      logEmpty: "No logs",
+      folder: "Folder",
+      dropHint: "Drop files here or click Add"
+    },
+    images: {
+      fps: "FPS"
+    },
+    extract: {
+      timePointsPlaceholder: "1.0, 5.0, 10.0",
+      frameAlt: "Frame {{index}}"
     }
   },
   common: {
@@ -51,6 +60,10 @@ const newKeys = {
       video: "Video",
       audio: "Audio",
       media: "Media"
+    },
+    brand: {
+      name: "Tauri Toolbox",
+      logoAlt: "MToolbox logo"
     }
   },
   errors: {
@@ -65,6 +78,24 @@ const newKeys = {
     selectDirectoryFailed: "Failed to select directory: {{error}}",
     getParentFailed: "Failed to get parent directory: {{error}}",
     openFileFailed: "Failed to open file: {{error}}"
+  },
+  settings: {
+    update: {
+      error: {
+        offline: "You are offline. Please connect to the internet and try again.",
+        network: "Cannot reach the update server. Please check your internet connection, firewall, or proxy settings.",
+        timeout: "Connection to update server timed out. Please try again later.",
+        signature: "Update package signature verification failed. Please try again or contact the developer.",
+        parse: "Failed to parse update information. The server returned unexpected data. Please try again later.",
+        unknown: "Update check failed: {{detail}}"
+      }
+    }
+  },
+  asciiArt: {
+    preview: {
+      exportFilterName: "PNG Image",
+      asciiArtAlt: "ASCII Art"
+    }
   }
 };
 
@@ -128,6 +159,28 @@ for (const locale of locales) {
     console.log(`  ✓ errors.json 已更新`);
   } catch (error) {
     console.log(`  ✗ errors.json 更新失败: ${error.message}`);
+  }
+
+  // 更新 settings.json
+  const settingsPath = path.join(LOCALES_DIR, locale, 'settings.json');
+  try {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    const updatedSettings = deepMerge(settings, newKeys.settings);
+    fs.writeFileSync(settingsPath, JSON.stringify(updatedSettings, null, 2) + '\n');
+    console.log(`  ✓ settings.json 已更新`);
+  } catch (error) {
+    console.log(`  ✗ settings.json 更新失败: ${error.message}`);
+  }
+
+  // 更新 asciiArt.json
+  const asciiArtPath = path.join(LOCALES_DIR, locale, 'asciiArt.json');
+  try {
+    const asciiArt = JSON.parse(fs.readFileSync(asciiArtPath, 'utf-8'));
+    const updatedAsciiArt = deepMerge(asciiArt, newKeys.asciiArt);
+    fs.writeFileSync(asciiArtPath, JSON.stringify(updatedAsciiArt, null, 2) + '\n');
+    console.log(`  ✓ asciiArt.json 已更新`);
+  } catch (error) {
+    console.log(`  ✗ asciiArt.json 更新失败: ${error.message}`);
   }
 }
 

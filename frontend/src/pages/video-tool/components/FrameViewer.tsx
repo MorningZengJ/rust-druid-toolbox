@@ -119,7 +119,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
                       >
                         <img
                           src={convertFileSrc(frame.filePath)}
-                          alt={`Frame ${frame.index}`}
+                          alt={t("extract.frameAlt", { index: frame.index })}
                           style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }}
                         />
                         <Box px={4} py={2} ta="center" style={{ backgroundColor: "var(--surface-panel)" }}>
@@ -138,7 +138,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
                   <Box p="sm">
                     <img
                       src={convertFileSrc(extractFrames[extractSelectedFrame].filePath)}
-                      alt={`Frame ${extractFrames[extractSelectedFrame].index}`}
+                      alt={t("extract.frameAlt", { index: extractFrames[extractSelectedFrame].index })}
                       style={{ width: "100%", borderRadius: 8, border: "1px solid var(--border-default)", display: "block" }}
                     />
                     <Stack gap={2} mt="xs">
@@ -169,7 +169,7 @@ export function FrameViewer({ isDragOver }: { isDragOver: boolean }) {
                   >
                     <img
                       src={convertFileSrc(frame.filePath)}
-                      alt={`Frame ${frame.index}`}
+                      alt={t("extract.frameAlt", { index: frame.index })}
                       style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }}
                     />
                     <Box px={4} py={2} ta="center" style={{ backgroundColor: "var(--surface-panel)" }}>

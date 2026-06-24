@@ -123,5 +123,9 @@
     "video": "视频文件",
     "audio": "音频文件",
     "media": "媒体文件"
+  },
+  "brand": {
+    "name": "Tauri Toolbox",
+    "logoAlt": "MToolbox 图标"
   }
 }

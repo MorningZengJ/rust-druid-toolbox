@@ -49,7 +49,7 @@ export function PreviewPanel() {
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
       const filePath = await save({
-        filters: [{ name: t("errors.exportPngFailed", { error: "" }), extensions: ["png"] }],
+        filters: [{ name: t("preview.exportFilterName"), extensions: ["png"] }],
         defaultPath: "ascii_art.png",
       });
       if (!filePath) return;

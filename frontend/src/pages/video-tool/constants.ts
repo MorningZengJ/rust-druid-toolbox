@@ -1,4 +1,4 @@
-import i18n from "@/i18n";
+import type { TFunction } from "i18next";
 
 export const VIDEO_FORMATS = ["mp4", "mkv", "avi", "webm", "mov", "flv"];
 export const AUDIO_FORMATS = ["mp3", "aac", "wav", "flac", "ogg", "opus"];
@@ -27,9 +27,8 @@ export interface CodecOption {
   tooltip: string;
 }
 
-/** 获取翻译后的视频编码器选项 */
-function getVideoCodecs(): CodecOption[] {
-  const t = i18n.getFixedT(null, "videoTool");
+/** 获取翻译后的视频编码器选项（响应式，由调用方传入 t 函数） */
+export function getVideoCodecs(t: TFunction): CodecOption[] {
   return [
     {
       value: "copy",
@@ -64,14 +63,6 @@ function getVideoCodecs(): CodecOption[] {
   ];
 }
 
-/** 保持向后兼容的静态编码器列表 */
-export const VIDEO_CODECS = getVideoCodecs();
-
-/** 格式转换用的编码器（不含流复制） */
-export const CONVERT_VIDEO_CODECS: CodecOption[] = VIDEO_CODECS.filter(
-  (c) => c.value !== "copy"
-);
-
 /** 质量预设选项 */
 export interface QualityPresetOption {
   value: string;
@@ -79,9 +70,8 @@ export interface QualityPresetOption {
   tooltip: string;
 }
 
-/** 获取翻译后的质量预设选项 */
-function getQualityPresets(): QualityPresetOption[] {
-  const t = i18n.getFixedT(null, "videoTool");
+/** 获取翻译后的质量预设选项（响应式，由调用方传入 t 函数） */
+export function getQualityPresets(t: TFunction): QualityPresetOption[] {
   return [
     {
       value: "high",
@@ -100,6 +90,3 @@ function getQualityPresets(): QualityPresetOption[] {
     },
   ];
 }
-
-/** 保持向后兼容的静态质量预设列表 */
-export const QUALITY_PRESETS = getQualityPresets();

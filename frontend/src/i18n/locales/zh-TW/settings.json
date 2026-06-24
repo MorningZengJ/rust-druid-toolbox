@@ -52,6 +52,14 @@
       "error": "檢查失敗",
       "recheck": "重新檢查",
       "checkUpdate": "檢查更新"
+    },
+    "error": {
+      "offline": "You are offline. Please connect to the internet and try again.",
+      "network": "Cannot reach the update server. Please check your internet connection, firewall, or proxy settings.",
+      "timeout": "Connection to update server timed out. Please try again later.",
+      "signature": "Update package signature verification failed. Please try again or contact the developer.",
+      "parse": "Failed to parse update information. The server returned unexpected data. Please try again later.",
+      "unknown": "Update check failed: {{detail}}"
     }
   }
 }

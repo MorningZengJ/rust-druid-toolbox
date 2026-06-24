@@ -94,7 +94,7 @@ function App() {
                 width={36}
                 height={36}
                 style={{ borderRadius: 10, objectFit: "contain" }}
-                alt="MToolbox"
+                alt={t("brand.logoAlt")}
               />
             </Box>
           </Flex>
@@ -362,7 +362,7 @@ function App() {
                   letterSpacing: "0.02em",
                 }}
               >
-                Tauri Toolbox{currentVersion ? ` v${currentVersion}` : ""}
+                {t("brand.name")}{currentVersion ? ` v${currentVersion}` : ""}
               </Text>
             </Flex>
           </Flex>

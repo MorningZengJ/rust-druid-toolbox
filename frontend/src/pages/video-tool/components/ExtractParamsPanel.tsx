@@ -181,7 +181,7 @@ export function ExtractParamsPanel({
               </Text>
               <TextInput
                 size="xs"
-                placeholder="1.0, 5.0, 10.0"
+                placeholder={t("extract.timePointsPlaceholder")}
                 onChange={(e) => {
                   const points = e.currentTarget.value
                     .split(",")

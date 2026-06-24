@@ -5,14 +5,14 @@ import { useVideoToolStore } from "@/stores/videoToolStore";
 
 function formatEta(ms: number, t: (key: string, options?: any) => string): string {
   const totalSec = Math.ceil(ms / 1000);
-  if (totalSec < 60) return t("common.time.seconds", { count: totalSec });
+  if (totalSec < 60) return t("time.seconds", { count: totalSec });
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
-  return t("common.time.minutesSeconds", { minutes: min, seconds: sec });
+  return t("time.minutesSeconds", { minutes: min, seconds: sec });
 }
 
 export function ProgressPanel() {
-  const { t } = useTranslation("videoTool");
+  const { t } = useTranslation(["videoTool", "common"]);
   const isProcessing = useVideoToolStore((s) => s.isProcessing);
   const progress = useVideoToolStore((s) => s.progress);
   const logs = useVideoToolStore((s) => s.logs);

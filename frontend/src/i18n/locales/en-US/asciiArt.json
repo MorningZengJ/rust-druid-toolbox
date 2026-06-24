@@ -44,6 +44,8 @@
       "original": "Original",
       "ascii": "ASCII Art"
     },
+    "exportFilterName": "PNG Image",
+    "asciiArtAlt": "ASCII Art",
     "toolbar": {
       "copy": "Copy",
       "export": "Export",

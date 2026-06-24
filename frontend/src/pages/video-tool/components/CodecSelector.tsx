@@ -1,12 +1,10 @@
+import { useMemo } from "react";
 import { Box, Select, Text, TextInput, Tooltip, Group } from "@mantine/core";
 import type { ComboboxLikeRenderOptionInput, ComboboxItem } from "@mantine/core";
 import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  VIDEO_CODECS,
-  CONVERT_VIDEO_CODECS,
-  QUALITY_PRESETS,
-} from "../constants";
+import { getVideoCodecs, getQualityPresets } from "../constants";
+import type { CodecOption, QualityPresetOption } from "../constants";
 
 interface CodecSelectorProps {
   codec: string;
@@ -19,9 +17,13 @@ interface CodecSelectorProps {
   showBitrate?: boolean;
 }
 
-function renderCodecOption(item: ComboboxLikeRenderOptionInput<ComboboxItem<string>>) {
-  const tooltip = VIDEO_CODECS.find((c) => c.value === item.option.value)?.tooltip
-    ?? QUALITY_PRESETS.find((p) => p.value === item.option.value)?.tooltip;
+function renderCodecOption(
+  item: ComboboxLikeRenderOptionInput<ComboboxItem<string>>,
+  codecs: CodecOption[],
+  qualityOptions: QualityPresetOption[],
+) {
+  const tooltip = codecs.find((c) => c.value === item.option.value)?.tooltip
+    ?? qualityOptions.find((p) => p.value === item.option.value)?.tooltip;
   return (
     <Group gap={6} wrap="nowrap">
       <Text size="sm">{item.option.label}</Text>
@@ -51,10 +53,17 @@ export function CodecSelector({
   showBitrate = true,
 }: CodecSelectorProps) {
   const { t } = useTranslation("videoTool");
-  const codecs = showStreamCopy ? VIDEO_CODECS : CONVERT_VIDEO_CODECS;
+
+  const codecs = useMemo(() => {
+    const all = getVideoCodecs(t);
+    return showStreamCopy ? all : all.filter((c) => c.value !== "copy");
+  }, [t, showStreamCopy]);
+
+  const qualityOptions = useMemo(() => getQualityPresets(t), [t]);
+
   const isLossless = codec === "ffv1" || codec === "copy";
   const selectedCodec = codecs.find((c) => c.value === codec);
-  const selectedPreset = QUALITY_PRESETS.find((p) => p.value === qualityPreset);
+  const selectedPreset = qualityOptions.find((p) => p.value === qualityPreset);
 
   const selectStyles = {
     input: {
@@ -83,7 +92,7 @@ export function CodecSelector({
             value: c.value,
             label: c.label,
           }))}
-          renderOption={renderCodecOption}
+          renderOption={(item) => renderCodecOption(item, codecs, qualityOptions)}
           styles={selectStyles}
         />
       </Box>
@@ -102,11 +111,11 @@ export function CodecSelector({
             mt={4}
             value={qualityPreset}
             onChange={(v) => v && onQualityPresetChange(v)}
-            data={QUALITY_PRESETS.map((p) => ({
+            data={qualityOptions.map((p) => ({
               value: p.value,
               label: p.label,
             }))}
-            renderOption={renderCodecOption}
+            renderOption={(item) => renderCodecOption(item, codecs, qualityOptions)}
             styles={selectStyles}
           />
         </Box>

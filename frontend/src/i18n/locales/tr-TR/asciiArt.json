@@ -52,7 +52,9 @@
       "exportTxt": "",
       "exportHtml": "",
       "timeRemaining": ""
-    }
+    },
+    "exportFilterName": "PNG Image",
+    "asciiArtAlt": "ASCII Art"
   },
   "errors": {
     "loadImageFailed": "",

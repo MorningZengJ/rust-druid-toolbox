@@ -24,7 +24,7 @@ import { useUpdateStore } from "@/stores/updateStore";
 import type { UpdateStatus } from "@/types";
 
 export default function UpdateSection() {
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation(["settings", "common"]);
 
   const {
     currentVersion,
@@ -336,10 +336,10 @@ export default function UpdateSection() {
               width={32}
               height={32}
               style={{ borderRadius: 8, objectFit: "contain" }}
-              alt="MToolbox"
+              alt={t("brand.logoAlt")}
             />
             <div>
-              <Text size="sm" fw={600} style={{ fontFamily: "var(--font-display)" }}>Tauri Toolbox</Text>
+              <Text size="sm" fw={600} style={{ fontFamily: "var(--font-display)" }}>{t("brand.name")}</Text>
               <Text size="xs" c="dimmed">{t("update.appDescription")}</Text>
             </div>
           </Group>

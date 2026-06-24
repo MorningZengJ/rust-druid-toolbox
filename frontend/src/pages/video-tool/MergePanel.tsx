@@ -84,7 +84,7 @@ export function MergePanel() {
       multiple: true,
       filters: [
         {
-          name: t("errors.ffmpegNotInstalled"),
+          name: t("common.mediaFiles"),
           extensions: VIDEO_EXTENSIONS,
         },
       ],
@@ -111,7 +111,7 @@ export function MergePanel() {
     const path = await save({
       filters: [
         {
-          name: t("errors.ffmpegNotInstalled"),
+          name: t("common.mediaFiles"),
           extensions: [mergeOutputFormat],
         },
       ],

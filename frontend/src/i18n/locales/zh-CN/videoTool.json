@@ -42,6 +42,7 @@
     "outputPath": "输出路径",
     "outputPathPlaceholder": "选择输出文件路径",
     "startGenerate": "生成视频",
+    "fps": "帧率",
     "selectFolderHint": "请先选择图片文件夹",
     "noImagesHint": "文件夹中未找到图片文件",
     "setOutputPathHint": "请设置输出路径"
@@ -90,7 +91,9 @@
     "setParamsHint": "设置参数后点击\"提取帧\"",
     "frameIndex": "帧索引: {{index}}",
     "timestamp": "时间戳: {{time}}s",
-    "filename": "文件名: {{name}}"
+    "filename": "文件名: {{name}}",
+    "frameAlt": "帧 {{index}}",
+    "timePointsPlaceholder": "1.0, 5.0, 10.0"
   },
   "progress": {
     "title": "进度",
@@ -185,6 +188,8 @@
     "inputFiles": "输入文件 ({{count}})",
     "add": "添加",
     "log": "日志",
-    "logEmpty": "暂无日志"
+    "logEmpty": "暂无日志",
+    "folder": "文件夹",
+    "dropHint": "拖拽文件到此处，或点击添加"
   }
 }

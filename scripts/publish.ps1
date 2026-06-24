@@ -329,7 +329,8 @@ try {
     # Build JSON manually to avoid ConvertTo-Json encoding issues with PowerShell 5.x
     $nsisUrl  = "${releaseBase}/${ProductName}_${Version}_x64-setup.exe"
     $msiUrl   = "${releaseBase}/${ProductName}_${Version}_x64_en-US.msi"
-    $notesEscaped = Escape-JsonString (Get-ReleaseNotes)
+    $releaseNotes = Get-ReleaseNotes
+    $notesEscaped = Escape-JsonString $releaseNotes
     $jsonStr = @"
 {
   "version": "${Version}",
@@ -412,7 +413,7 @@ try {
         if (-not (Confirm-Action "Create GitHub Release v${Version}?")) {
             Write-Warn "Release skipped."
         } else {
-            $notes    = Get-ReleaseNotes
+            $notes    = $releaseNotes
             $notesTmp = [System.IO.Path]::GetTempFileName()
             try {
                 [System.IO.File]::WriteAllText($notesTmp, $notes, (New-Object System.Text.UTF8Encoding $false))

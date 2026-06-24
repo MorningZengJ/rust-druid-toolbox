@@ -42,6 +42,7 @@
     "outputPath": "Output Path",
     "outputPathPlaceholder": "Select output file path",
     "startGenerate": "Generate Video",
+    "fps": "FPS",
     "selectFolderHint": "Please select image folder first",
     "noImagesHint": "No images found in folder",
     "setOutputPathHint": "Please set output path"
@@ -90,7 +91,9 @@
     "setParamsHint": "Set parameters then click 'Extract Frames'",
     "frameIndex": "Frame Index: {{index}}",
     "timestamp": "Timestamp: {{time}}s",
-    "filename": "Filename: {{name}}"
+    "filename": "Filename: {{name}}",
+    "frameAlt": "Frame {{index}}",
+    "timePointsPlaceholder": "1.0, 5.0, 10.0"
   },
   "progress": {
     "title": "Progress",
@@ -185,6 +188,8 @@
     "inputFiles": "Input Files ({{count}})",
     "add": "Add",
     "log": "Log",
-    "logEmpty": "No logs"
+    "logEmpty": "No logs",
+    "folder": "Folder",
+    "dropHint": "Drop files here or click Add"
   }
 }

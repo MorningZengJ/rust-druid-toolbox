@@ -20,7 +20,7 @@ import FilePreview from "./FilePreview";
 import StatusBar from "./StatusBar";
 
 export default function RenamePage() {
-  const { t } = useTranslation("rename");
+  const { t } = useTranslation(["rename", "common"]);
   const loading = useRenameStore((s) => s.loading);
   const loadingProgress = useRenameStore((s) => s.loadingProgress);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -119,9 +119,9 @@ export default function RenamePage() {
           <Text size="sm" fw={500} style={{ color: "var(--text-secondary)" }}>
             {loadingProgress
               ? loadingProgress.phase === "scanning"
-                ? t("errors.loadFilesFailed", { error: "" })
-                : `${t("errors.loadFilesFailed", { error: "" })}: ${loadingProgress.processed} / ${loadingProgress.total}`
-              : t("errors.loadFilesFailed", { error: "" })}
+                ? t("status.scanning")
+                : `${t("status.loading")}: ${loadingProgress.processed} / ${loadingProgress.total}`
+              : t("status.loading")}
           </Text>
           {loadingProgress && loadingProgress.phase === "calculating" && loadingProgress.total > 0 && (
             <Box w="60%" maw={400}>
