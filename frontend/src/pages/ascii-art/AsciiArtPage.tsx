@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Box } from "@mantine/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAsciiArtStore } from "@/stores/asciiArtStore";
+import { useActiveTauriDrop } from "@/hooks/useActiveTauriDrop";
 import {
   ResizablePanel,
   ResizablePanelGroup,
@@ -28,22 +28,14 @@ export default function AsciiArtPage() {
     };
   }, [cleanup]);
 
-  useEffect(() => {
-    const unlisten = getCurrentWindow().onDragDropEvent((event) => {
-      if (event.payload.type === "drop") {
-        const imagePath = event.payload.paths.find((p) => {
-          const ext = p.split(".").pop()?.toLowerCase() ?? "";
-          return IMAGE_EXTENSIONS.includes(ext);
-        });
-        if (imagePath) {
-          loadImageFromPath(imagePath);
-        }
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [loadImageFromPath]);
+  // 使用统一拖放 hook —— PageContainer 条件挂载保证只有 active 页面注册
+  useActiveTauriDrop({
+    enabled: true,
+    extensions: IMAGE_EXTENSIONS,
+    onDrop: (paths) => {
+      if (paths.length > 0) loadImageFromPath(paths[0]);
+    },
+  });
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {

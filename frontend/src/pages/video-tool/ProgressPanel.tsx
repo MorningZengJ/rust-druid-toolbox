@@ -1,9 +1,11 @@
-import { Box, Flex, Text, ScrollArea, Stack, Progress, Group } from "@mantine/core";
+import { useCallback } from "react";
+import { Box, Flex, Text, Progress, Stack, Group } from "@mantine/core";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Virtuoso } from "react-virtuoso";
 import { useVideoToolStore } from "@/stores/videoToolStore";
 
-function formatEta(ms: number, t: (key: string, options?: any) => string): string {
+function formatEta(ms: number, t: (key: string, options?: Record<string, unknown>) => string): string {
   const totalSec = Math.ceil(ms / 1000);
   if (totalSec < 60) return t("time.seconds", { count: totalSec });
   const min = Math.floor(totalSec / 60);
@@ -18,6 +20,27 @@ export function ProgressPanel() {
   const logs = useVideoToolStore((s) => s.logs);
   const errorMessage = useVideoToolStore((s) => s.errorMessage);
   const mergeProgressDetail = useVideoToolStore((s) => s.mergeProgressDetail);
+  const logRow = useCallback(
+    (_index: number, log: (typeof logs)[number]) => (
+      <Text
+        size="xs"
+        style={{
+          fontFamily: "var(--font-mono)",
+          padding: "1px 0",
+          color:
+            log.level === "error"
+              ? "var(--status-error)"
+              : log.level === "warn"
+                ? "var(--status-warning)"
+                : "var(--text-muted)",
+        }}
+      >
+        {log.message}
+      </Text>
+    ),
+    [],
+  );
+
 
   return (
     <Flex
@@ -31,7 +54,7 @@ export function ProgressPanel() {
         position: "relative",
       }}
     >
-      {/* 顶部高光线 */}
+      {/* Top glow line */}
       <div
         style={{
           position: "absolute",
@@ -48,7 +71,7 @@ export function ProgressPanel() {
       <Box px="md" py="xs" style={{ borderBottom: "1px solid var(--border-subtle)", backgroundColor: "var(--surface-panel)" }}>
         <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("progress.title")}</Text>
       </Box>
-      <Box p="md">
+      <Box p="md" style={{ flexShrink: 0 }}>
         {isProcessing && (
           <Box mb="md">
             <Flex justify="space-between" mb={4}>
@@ -89,16 +112,8 @@ export function ProgressPanel() {
 
         {errorMessage && (
           <Flex
-            align="center"
-            gap="xs"
-            mb="md"
-            px="sm"
-            py="xs"
-            style={{
-              borderRadius: 8,
-              backgroundColor: "var(--status-error-bg)",
-              border: "1px solid var(--status-error-border)",
-            }}
+            align="center" gap="xs" mb="md" px="sm" py="xs"
+            style={{ borderRadius: 8, backgroundColor: "var(--status-error-bg)", border: "1px solid var(--status-error-border)" }}
           >
             <AlertCircle size={16} style={{ color: "var(--status-error)", flexShrink: 0 }} />
             <Text size="sm" style={{ color: "var(--status-error)" }}>{errorMessage}</Text>
@@ -107,16 +122,8 @@ export function ProgressPanel() {
 
         {!isProcessing && progress >= 1 && !errorMessage && (
           <Flex
-            align="center"
-            gap="xs"
-            mb="md"
-            px="sm"
-            py="xs"
-            style={{
-              borderRadius: 8,
-              backgroundColor: "var(--status-success-bg)",
-              border: "1px solid var(--status-success-border)",
-            }}
+            align="center" gap="xs" mb="md" px="sm" py="xs"
+            style={{ borderRadius: 8, backgroundColor: "var(--status-success-bg)", border: "1px solid var(--status-success-border)" }}
           >
             <CheckCircle2 size={16} style={{ color: "var(--status-success)", flexShrink: 0 }} />
             <Text size="sm" style={{ color: "var(--status-success)" }}>{t("progress.completed")}</Text>
@@ -124,32 +131,24 @@ export function ProgressPanel() {
         )}
       </Box>
 
+      {/* Log section with Virtuoso */}
       <Flex direction="column" flex={1} style={{ minHeight: 0, borderTop: "1px solid var(--border-default)" }}>
         <Box px="md" py="xs" style={{ backgroundColor: "var(--surface-panel)" }}>
           <Text size="sm" fw={500} style={{ fontFamily: "var(--font-body)" }}>{t("progress.log")}</Text>
         </Box>
-        <ScrollArea style={{ flex: 1 }} px="md" pb="md">
-          <Stack gap={2} style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
-            {logs.map((log, i) => (
-              <Text
-                key={i}
-                size="xs"
-                style={{
-                  color: log.level === "error"
-                    ? "var(--status-error)"
-                    : log.level === "warn"
-                      ? "var(--status-warning)"
-                      : "var(--text-muted)",
-                }}
-              >
-                {log.message}
-              </Text>
-            ))}
-            {logs.length === 0 && (
-              <Text size="xs" c="dimmed">{t("progress.waiting")}</Text>
-            )}
-          </Stack>
-        </ScrollArea>
+        {logs.length > 0 ? (
+          <Virtuoso
+            data={logs}
+            itemContent={logRow}
+            followOutput={() => true}
+            style={{ flex: 1 }}
+            increaseViewportBy={200}
+          />
+        ) : (
+          <Box px="md" py="xs" style={{ flex: 1 }}>
+            <Text size="xs" c="dimmed">{t("progress.waiting")}</Text>
+          </Box>
+        )}
       </Flex>
     </Flex>
   );

@@ -25,8 +25,16 @@ function readText(relativePath) {
 
 function readCargoVersion() {
   const cargoToml = readText('src-tauri/Cargo.toml');
-  const packageSectionMatch = cargoToml.match(/^\[package\]\s*([\s\S]*?)(?=^\[|\s*$)/m);
-  const packageSection = packageSectionMatch ? packageSectionMatch[1] : cargoToml;
+  // Extract from [package] to next [section] or end of file
+  const packageStart = cargoToml.indexOf('[package]');
+  if (packageStart === -1) {
+    throw new Error('Failed to find [package] in src-tauri/Cargo.toml');
+  }
+  const afterPackage = cargoToml.slice(packageStart);
+  const nextSection = afterPackage.slice('[package]'.length).search(/^\[/m);
+  const packageSection = nextSection === -1
+    ? afterPackage
+    : afterPackage.slice(0, '[package]'.length + nextSection);
   const versionMatch = packageSection.match(/^version\s*=\s*"([^"]+)"/m);
 
   if (!versionMatch) {

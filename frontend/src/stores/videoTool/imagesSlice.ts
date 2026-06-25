@@ -1,4 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import * as videoToolApi from "@/lib/videoToolApi";
+import { openDirectory } from "@/lib/tauri/dialog";
 import i18n from "@/i18n";
 import type { ImagesToVideoParams, ImagesToVideoResult } from "@/types";
 import type { VideoToolState } from "./types";
@@ -46,13 +47,11 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
   loadImagesFromFolder: async (folderPath?: string) => {
     const targetPath = folderPath || get().imagesFolderPath;
     if (!targetPath) {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({ directory: true });
-      if (!selected) return;
-      const selectedPath = selected as string;
+      const selectedPath = await openDirectory();
+      if (!selectedPath) return;
       set({ imagesFolderPath: selectedPath });
       try {
-        const paths = await invoke<string[]>("list_images_in_folder", { folderPath: selectedPath });
+        const paths = await videoToolApi.listImagesInFolder(selectedPath);
         set({ imagesInputPaths: paths, errorMessage: null });
       } catch (e) {
         set({ errorMessage: i18n.t("videoTool:errors.readFolderFailed", { error: String(e) }) });
@@ -60,7 +59,7 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
     } else {
       set({ imagesFolderPath: targetPath });
       try {
-        const paths = await invoke<string[]>("list_images_in_folder", { folderPath: targetPath });
+        const paths = await videoToolApi.listImagesInFolder(targetPath);
         set({ imagesInputPaths: paths, errorMessage: null });
       } catch (e) {
         set({ errorMessage: i18n.t("videoTool:errors.readFolderFailed", { error: String(e) }) });
@@ -107,7 +106,7 @@ export const createImagesSlice: StateCreator<VideoToolState, [], [], ImagesSlice
         videoBitrate: state.imagesVideoBitrate || undefined,
         qualityPreset: state.imagesQualityPreset || undefined,
       };
-      const result = await invoke<ImagesToVideoResult>("images_to_video", { params });
+      const result = await videoToolApi.imagesToVideo(params);
       set({ imagesResult: result });
     } catch (e) {
       set({ errorMessage: i18n.t("videoTool:errors.generateFailed", { error: String(e) }) });

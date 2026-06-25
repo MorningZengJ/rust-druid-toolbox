@@ -54,7 +54,7 @@ impl VideoToolEngine {
         }
 
         let (mut output, mut encoder, enc_tb) =
-            Self::setup_merge_output(params, codec_name, &probe)?;
+            Self::setup_merge_output(params, &codec_name, &probe)?;
         let cover_stream_indices = Self::setup_cover_streams(params, &mut output)?;
 
         output

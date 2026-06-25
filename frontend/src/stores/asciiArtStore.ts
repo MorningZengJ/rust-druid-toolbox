@@ -1,37 +1,39 @@
 import { create } from "zustand";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import * as asciiArtApi from "@/lib/asciiArtApi";
+import { openFile, saveFile } from "@/lib/tauri/dialog";
 import i18n from "@/i18n";
 import type { AsciiArtParams, AsciiArtOutput, AsciiArtProgress, CharsetPreset, ColorMode, Background, RenderMode } from "@/types";
+import { schedule, cancelDebounce, resetScheduler, isVersionValid } from "@/features/asciiArt/asciiArtScheduler";
+
+// ── Types ──
+
+type PreviewUrlKind = "file" | "blob" | null;
 
 interface AsciiArtState {
-  // Data
   params: AsciiArtParams;
   imagePath: string | null;
   imageBytes: Uint8Array | null;
   imagePreviewUrl: string | null;
+  previewUrlKind: PreviewUrlKind;
   output: AsciiArtOutput | null;
   isConverting: boolean;
   errorMessage: string | null;
-
-  // Progress state
   progress: number;
   progressStage: string;
   estimatedTimeRemaining: number | null;
-
-  // UI state
   zoom: number;
   panX: number;
   panY: number;
   activeTab: "original" | "ascii";
 
-  // Actions
   setParams: (updates: Partial<AsciiArtParams>) => void;
   loadImageFromFile: () => Promise<void>;
   loadImageFromDrop: (file: File) => Promise<void>;
   loadImageFromPath: (path: string) => Promise<void>;
   loadImageFromPaste: (imageData: ArrayBuffer) => Promise<void>;
-  convert: () => Promise<void>;
+  convert: () => void;
   copyToClipboard: () => Promise<void>;
   exportOutput: (format: "png" | "svg" | "txt" | "html") => Promise<void>;
   setZoom: (zoom: number) => void;
@@ -40,10 +42,8 @@ interface AsciiArtState {
   setActiveTab: (tab: "original" | "ascii") => void;
   clearError: () => void;
   setErrorMessage: (msg: string) => void;
-  cleanup: () => Promise<void>;
+  cleanup: () => void;
 }
-
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const defaultParams: AsciiArtParams = {
   width: 800,
@@ -59,11 +59,34 @@ const defaultParams: AsciiArtParams = {
   renderMode: "png" as RenderMode,
 };
 
+// ── Helpers ──
+
+function safeRevoke(url: string | null, kind: PreviewUrlKind): void {
+  if (url && kind === "blob") {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function setPreview(
+  set: (updates: Partial<AsciiArtState>) => void,
+  kind: PreviewUrlKind,
+  url: string,
+  imagePath: string | null,
+  imageBytes: Uint8Array | null,
+) {
+  const state = useAsciiArtStore.getState();
+  safeRevoke(state.imagePreviewUrl, state.previewUrlKind);
+  set({ imagePath, imageBytes, imagePreviewUrl: url, previewUrlKind: kind, output: null, activeTab: "original" });
+}
+
+// ── Store ──
+
 export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   params: { ...defaultParams },
   imagePath: null,
   imageBytes: null,
   imagePreviewUrl: null,
+  previewUrlKind: null,
   output: null,
   isConverting: false,
   errorMessage: null,
@@ -75,35 +98,27 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   panY: 0,
   activeTab: "original",
 
+  // ── Param change → debounced convert ──
+
   setParams: (updates) => {
     set((s) => ({ params: { ...s.params, ...updates } }));
     const { imagePath, imageBytes } = get();
     if (imagePath || imageBytes) {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        get().convert();
-      }, 500);
+      scheduleConversion(set, get);
     }
   },
 
+  // ── Image loading ──
+
   loadImageFromFile: async () => {
     try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({
-        filters: [
-          { name: i18n.t("common:fileTypes.image"), extensions: ["png", "jpg", "jpeg", "gif", "bmp", "webp"] },
-        ],
-      });
-      if (!selected) return;
+      const path = await openFile([
+        { name: i18n.t("common:fileTypes.image"), extensions: ["png", "jpg", "jpeg", "gif", "bmp", "webp"] },
+      ]);
+      if (!path) return;
 
-      const path = selected as string;
-      const url = convertFileSrc(path);
-
-      const oldUrl = get().imagePreviewUrl;
-      if (oldUrl) URL.revokeObjectURL(oldUrl);
-
-      set({ imagePath: path, imageBytes: null, imagePreviewUrl: url, output: null, activeTab: "original" });
-      get().convert();
+      setPreview(set, "file", convertFileSrc(path), path, null);
+      startFreshConversion(set, get);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
@@ -113,14 +128,10 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
     try {
       const arrayBuffer = await file.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
-      const blob = new Blob([uint8 as unknown as BlobPart]);
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(new Blob([uint8 as unknown as BlobPart]));
 
-      const oldUrl = get().imagePreviewUrl;
-      if (oldUrl) URL.revokeObjectURL(oldUrl);
-
-      set({ imageBytes: uint8, imagePath: null, imagePreviewUrl: url, output: null, activeTab: "original" });
-      get().convert();
+      setPreview(set, "blob", url, null, uint8);
+      startFreshConversion(set, get);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
@@ -128,13 +139,8 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
 
   loadImageFromPath: async (path: string) => {
     try {
-      const url = convertFileSrc(path);
-
-      const oldUrl = get().imagePreviewUrl;
-      if (oldUrl) URL.revokeObjectURL(oldUrl);
-
-      set({ imagePath: path, imageBytes: null, imagePreviewUrl: url, output: null, activeTab: "original" });
-      get().convert();
+      setPreview(set, "file", convertFileSrc(path), path, null);
+      startFreshConversion(set, get);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
@@ -143,63 +149,20 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   loadImageFromPaste: async (imageData: ArrayBuffer) => {
     try {
       const uint8 = new Uint8Array(imageData);
-      const blob = new Blob([uint8 as unknown as BlobPart]);
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(new Blob([uint8 as unknown as BlobPart]));
 
-      const oldUrl = get().imagePreviewUrl;
-      if (oldUrl) URL.revokeObjectURL(oldUrl);
-
-      set({ imageBytes: uint8, imagePath: null, imagePreviewUrl: url, output: null, activeTab: "original" });
-      get().convert();
+      setPreview(set, "blob", url, null, uint8);
+      startFreshConversion(set, get);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:loadImageFailed", { error: String(e) }) });
     }
   },
 
-  convert: async () => {
-    const { imagePath, imageBytes, params, isConverting } = get();
-    if ((!imagePath && !imageBytes) || isConverting) return;
-
-    set({ isConverting: true, errorMessage: null, progress: 0, progressStage: "" });
-
-    const unlistenProgress = await listen<AsciiArtProgress>(
-      "ascii-art://progress",
-      (event) => {
-        const info = event.payload;
-        set({
-          progress: info.progress * 100,
-          progressStage: info.stage,
-        });
-        if (info.progress > 0 && info.elapsedMs > 0) {
-          const totalEstimatedMs = info.elapsedMs / info.progress;
-          const remainingMs = totalEstimatedMs - info.elapsedMs;
-          set({ estimatedTimeRemaining: Math.ceil(remainingMs / 1000) });
-        }
-      }
-    );
-
-    try {
-      let output: AsciiArtOutput;
-      if (imagePath) {
-        output = await invoke<AsciiArtOutput>("convert_ascii_art_from_path", {
-          params,
-          imagePath,
-        });
-      } else {
-        const [tempPath, result] = await invoke<[string, AsciiArtOutput]>(
-          "save_temp_image_and_convert",
-          { params, imageBytes: Array.from(imageBytes!) }
-        );
-        output = result;
-        set({ imagePath: tempPath });
-      }
-      set({ output, isConverting: false, progress: 100, estimatedTimeRemaining: 0, activeTab: "ascii" });
-    } catch (e) {
-      set({ errorMessage: i18n.t("errors:convertFailed", { error: String(e) }), isConverting: false });
-    } finally {
-      unlistenProgress();
-    }
+  convert: () => {
+    scheduleConversion(set, get);
   },
+
+  // ── Clipboard ──
 
   copyToClipboard: async () => {
     const { output } = get();
@@ -213,29 +176,27 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
     }
   },
 
+  // ── Export ──
+
   exportOutput: async (format) => {
     const { imagePath, params } = get();
     if (!imagePath) return;
 
     try {
-      const { save } = await import("@tauri-apps/plugin-dialog");
       const ext = format === "png" ? "png" : format === "svg" ? "svg" : format === "html" ? "html" : "txt";
-      const filePath = await save({
-        filters: [{ name: i18n.t("common:labels.file"), extensions: [ext] }],
-        defaultPath: `ascii_art.${ext}`,
-      });
+      const filePath = await saveFile(
+        [{ name: i18n.t("common:labels.file"), extensions: [ext] }],
+        `ascii_art.${ext}`,
+      );
       if (!filePath) return;
 
-      await invoke("export_ascii_art", {
-        params,
-        imagePath,
-        format,
-        path: filePath,
-      });
+      await asciiArtApi.exportAsciiArt(params, imagePath, format, filePath);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:exportFailed", { error: String(e) }) });
     }
   },
+
+  // ── UI controls ──
 
   setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(10, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
@@ -244,18 +205,92 @@ export const useAsciiArtStore = create<AsciiArtState>((set, get) => ({
   clearError: () => set({ errorMessage: null }),
   setErrorMessage: (msg) => set({ errorMessage: msg }),
 
-  cleanup: async () => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-      debounceTimer = null;
-    }
-    const { output } = get();
-    if (output?.outputPath) {
-      try {
-        await invoke("cleanup_ascii_art_file", { path: output.outputPath });
-      } catch {
-        // ignore cleanup errors
-      }
+  // ── Cleanup ──
+
+  cleanup: () => {
+    cancelDebounce();
+    resetScheduler();
+    const state = get();
+    safeRevoke(state.imagePreviewUrl, state.previewUrlKind);
+    if (state.output?.outputPath) {
+      asciiArtApi.cleanupAsciiArt().catch(() => {});
     }
   },
 }));
+
+// ── Conversion orchestration ──
+
+function scheduleConversion(
+  set: (u: Partial<AsciiArtState>) => void,
+  get: () => AsciiArtState,
+): void {
+  schedule({
+    onStart: () => {
+      set({ isConverting: true, errorMessage: null, progress: 0, progressStage: "" });
+    },
+    execute: (version) => executeConvert(set, get, version),
+    onComplete: () => {
+      set({ isConverting: false, progress: 100, estimatedTimeRemaining: 0, activeTab: "ascii" });
+    },
+    onError: (_version, message) => {
+      set({ errorMessage: i18n.t("errors:convertFailed", { error: message }), isConverting: false });
+    },
+  });
+}
+
+function startFreshConversion(
+  set: (u: Partial<AsciiArtState>) => void,
+  get: () => AsciiArtState,
+): void {
+  resetScheduler();
+  scheduleConversion(set, get);
+}
+
+async function executeConvert(
+  set: (u: Partial<AsciiArtState>) => void,
+  get: () => AsciiArtState,
+  version: number,
+): Promise<void> {
+  const { imagePath, imageBytes, params } = get();
+
+  let unlistenProgress: UnlistenFn | null = null;
+
+  try {
+    // Subscribe to progress events
+    unlistenProgress = await listen<AsciiArtProgress>(
+      "ascii-art://progress",
+      (event) => {
+        if (!isVersionValid(version)) return;
+        const info = event.payload;
+        set({
+          progress: info.progress * 100,
+          progressStage: info.stage,
+        });
+        if (info.progress > 0 && info.elapsedMs > 0) {
+          const totalEstimatedMs = info.elapsedMs / info.progress;
+          const remainingMs = totalEstimatedMs - info.elapsedMs;
+          set({ estimatedTimeRemaining: Math.ceil(remainingMs / 1000) });
+        }
+      },
+    );
+
+    let output: AsciiArtOutput;
+
+    if (imagePath) {
+      output = await asciiArtApi.convertAsciiArtFromPath(params, imagePath);
+    } else {
+      const [tempPath, result] = await asciiArtApi.saveTempImageAndConvert(
+        params,
+        Array.from(imageBytes!),
+      );
+      output = result;
+      set({ imagePath: tempPath });
+    }
+
+    if (!isVersionValid(version)) return;
+
+    set({ output });
+  } finally {
+    if (unlistenProgress) unlistenProgress();
+  }
+}

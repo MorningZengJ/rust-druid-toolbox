@@ -206,6 +206,18 @@ body,
   pointer-events: none;
 }
 
+/* Virtuoso grid for thumbnail viewers */
+.thumb-grid-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+}
+.thumb-grid-item {
+  display: flex;
+  justify-content: center;
+}
+
 .palette-label {
   letter-spacing: 0.12em;
   color: var(--text-muted);

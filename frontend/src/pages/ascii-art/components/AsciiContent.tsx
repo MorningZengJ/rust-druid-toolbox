@@ -1,11 +1,22 @@
-import type { RefObject } from "react";
+import { useMemo, type RefObject } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
-import type { AsciiArtOutput } from "@/types";
+import type { AsciiArtOutput, RenderMode } from "@/types";
+
+// ── Helper: UTF-8 string → base64 (replaces deprecated unescape) ──
+
+function svgToDataUrl(svg: string): string {
+  // Convert JS string (UTF-16) to UTF-8 bytes, then to binary string for btoa
+  const utf8Bytes = new TextEncoder().encode(svg);
+  const binary = String.fromCharCode(...utf8Bytes);
+  return `data:image/svg+xml;base64,${btoa(binary)}`;
+}
+
+// ── Component ──
 
 interface AsciiContentProps {
   output: AsciiArtOutput;
-  renderMode: string;
+  renderMode: RenderMode;
   panX: number;
   panY: number;
   zoom: number;
@@ -23,14 +34,20 @@ export function AsciiContent({
   canvasRef,
 }: AsciiContentProps) {
   const { t } = useTranslation("asciiArt");
+
+  // Memoize SVG data URL — avoid base64-encoding large strings on every render
+  const svgDataUrl = useMemo(() => {
+    if (renderMode !== "svg" || !output.svgData) return null;
+    return svgToDataUrl(output.svgData);
+  }, [renderMode, output.svgData]);
+
   const child = (() => {
     switch (renderMode) {
       case "svg":
-        if (!output.svgData) return null;
-        const svgBase64 = btoa(unescape(encodeURIComponent(output.svgData)));
+        if (!svgDataUrl) return null;
         return (
           <img
-            src={`data:image/svg+xml;base64,${svgBase64}`}
+            src={svgDataUrl}
             alt={t("preview.asciiArtAlt")}
             style={{ display: "block" }}
           />

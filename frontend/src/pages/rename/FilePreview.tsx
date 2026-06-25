@@ -26,7 +26,6 @@ import type { FileInfo, SortField } from "@/types";
 interface FileRow extends FileInfo {
   newName: string;
   hasConflict: boolean;
-  originalIndex: number;
 }
 
 export default function FilePreview() {
@@ -57,21 +56,29 @@ export default function FilePreview() {
     [replaceInfos]
   );
 
-  // Build conflict index set for quick lookup
-  const conflictIndices = useMemo(() => {
-    const indices = new Set<number>();
+  // Build conflict path set for stable lookup (path-based, not index-based)
+  const conflictPaths = useMemo(() => {
+    const paths = new Set<string>();
     for (const conflict of conflicts) {
       for (const idx of conflict.sourceIndices) {
-        indices.add(idx);
+        if (idx < filterFileList.length) {
+          paths.add(filterFileList[idx].path);
+        }
       }
     }
-    return indices;
-  }, [conflicts]);
+    return paths;
+  }, [conflicts, filterFileList]);
 
-  // Prepare display data with computed fields
+  // Compute rule hash for caching — only re-compute newName when rules change
+  const ruleHash = useMemo(() => {
+    if (activeRules.length === 0) return "";
+    return activeRules.map((r) => `${r.content}|${r.isRegex}`).join("::");
+  }, [activeRules]);
+
+  // Prepare display data with computed newName and conflict lookup
   const displayedFiles = useMemo(() => {
     const files = filterFileList.slice(0, displayLimit);
-    return files.map((file, index) => {
+    return files.map((file) => {
       const newName =
         activeRules.length === 0
           ? file.name
@@ -79,11 +86,10 @@ export default function FilePreview() {
       return {
         ...file,
         newName,
-        hasConflict: conflictIndices.has(index),
-        originalIndex: index,
+        hasConflict: conflictPaths.has(file.path),
       };
     });
-  }, [filterFileList, displayLimit, activeRules, conflictIndices]);
+  }, [filterFileList, displayLimit, activeRules, conflictPaths, ruleHash]);
 
   // TanStack Table sorting state
   const sorting: SortingState = useMemo(
@@ -242,6 +248,7 @@ export default function FilePreview() {
     onColumnSizingChange: setColumnSizing,
     columnResizeMode: "onChange",
     enableMultiSort: true,
+    getRowId: (row) => row.path,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });

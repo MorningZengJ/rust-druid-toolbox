@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import * as renameApi from "@/lib/renameApi";
 import i18n from "@/i18n";
+import { openDirectory } from "@/lib/tauri/dialog";
 import type {
   FileInfo,
   ReplaceInfo,
@@ -12,6 +13,26 @@ import type {
   RuleTemplate,
   SortColumn,
 } from "@/types";
+
+import { applyFilters, toggleQuickFilter as toggleQuickFilterUtil } from "@/features/rename/renameSelectors";
+import {
+  addRule as addRulePure,
+  removeRule as removeRulePure,
+  updateRule as updateRulePure,
+  applyTemplate as applyTemplatePure,
+  clearRules as clearRulesPure,
+  undoRules as undoRulesPure,
+} from "@/features/rename/renameRules";
+import { scheduleConflictDetection, cancelPendingDetection } from "@/features/rename/renameConflicts";
+
+// ── Debounce constants ──
+
+/** Text input debounce: avoid firing per-keystroke */
+const INPUT_DEBOUNCE_MS = 300;
+/** Structural change: fire immediately */
+const STRUCTURAL_DELAY_MS = 0;
+
+// ── Types ──
 
 interface RenameState {
   // Data
@@ -48,7 +69,7 @@ interface RenameState {
   applyRuleTemplate: (template: RuleTemplate) => Promise<void>;
   clearAllRules: () => void;
   undoRuleChange: () => void;
-  detectConflicts: () => Promise<void>;
+  detectConflicts: () => void;
   executeRenames: () => Promise<void>;
   setDisplayLimit: (limit: number) => void;
   loadMore: () => void;
@@ -61,6 +82,27 @@ interface RenameState {
   chooseDirectory: () => Promise<void>;
   parentDirectory: () => Promise<void>;
 }
+
+// ── Helper: trigger conflict detection ──
+
+function triggerConflicts(delayMs: number, get: () => RenameState, set: (update: Partial<RenameState>) => void) {
+  const { filterFileList, replaceInfos } = get();
+  scheduleConflictDetection(filterFileList, replaceInfos, delayMs, (result) => {
+    set({
+      conflicts: result.conflicts,
+      ...(result.error ? { errorMessage: i18n.t("errors:detectConflictsFailed", { error: result.error }) } : {}),
+    });
+  });
+}
+
+// ── Helper: sync filtered file list after filter/sort change ──
+
+function syncFilteredList(get: () => RenameState, set: (update: Partial<RenameState>) => void) {
+  const { fileList, filterItems, quickFilters, sortColumns } = get();
+  set({ filterFileList: applyFilters(fileList, filterItems, quickFilters, sortColumns), displayLimit: 500 });
+}
+
+// ── Store ──
 
 export const useRenameStore = create<RenameState>((set, get) => ({
   // Initial state
@@ -83,36 +125,27 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   loading: false,
   loadingProgress: null,
 
-  // Actions
+  // ── Actions ──
+
   setDirPath: (path) => set({ dirPath: path }),
 
   loadFiles: async (path) => {
-    // Cancel any previous loading and remove old listeners
     get().cleanupLoading();
+    cancelPendingDetection();
 
     set({ loading: true, loadingProgress: null, dirPath: path });
 
-    // Listen for progress events
     const unlistenProgress = await listen<{ processed: number; total: number; phase: string; path: string }>(
       "load-files-progress",
       (event) => {
         if (event.payload.path === get().dirPath) {
-          set({
-            loadingProgress: {
-              processed: event.payload.processed,
-              total: event.payload.total,
-              phase: event.payload.phase,
-            },
-          });
+          set({ loadingProgress: { processed: event.payload.processed, total: event.payload.total, phase: event.payload.phase } });
         }
-      }
+      },
     );
 
     try {
-      // Phase 1: fast load without directory sizes
-      const files = await invoke<FileInfo[]>("list_files_quick", { path });
-
-      // Check if path changed during the async call
+      const files = await renameApi.listFilesQuick(path);
       if (get().dirPath !== path) return;
 
       set({
@@ -124,23 +157,11 @@ export const useRenameStore = create<RenameState>((set, get) => ({
         loadingProgress: { processed: 0, total: 0, phase: "scanning" },
       });
 
-      // Phase 2: calculate directory sizes with progress
-      const filesWithSize = await invoke<FileInfo[]>("list_files_with_size", {
-        files,
-        dirPath: path,
-      });
-
-      // Check if path changed during the async call
+      const filesWithSize = await renameApi.listFilesWithSize(files, path);
       if (get().dirPath !== path) return;
 
-      set({
-        fileList: filesWithSize,
-        filterFileList: filesWithSize,
-        loading: false,
-        loadingProgress: null,
-      });
-
-      get().detectConflicts();
+      set({ fileList: filesWithSize, filterFileList: filesWithSize, loading: false, loadingProgress: null });
+      triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
     } catch (e) {
       if (get().dirPath === path) {
         set({ errorMessage: i18n.t("errors:loadFilesFailed", { error: String(e) }), loading: false, loadingProgress: null });
@@ -152,99 +173,65 @@ export const useRenameStore = create<RenameState>((set, get) => ({
 
   setFilterItems: (items) => {
     set({ filterItems: items });
-    // Re-filter files
-    const { fileList, quickFilters, sortColumns } = get();
-    const filtered = applyFilters(fileList, items, quickFilters, sortColumns);
-    set({ filterFileList: filtered, displayLimit: 500 });
-    get().detectConflicts();
+    syncFilteredList(get, set);
+    triggerConflicts(INPUT_DEBOUNCE_MS, get, set);
   },
 
   toggleQuickFilter: (filter) => {
-    const { quickFilters } = get();
-    let newFilters: QuickFilter[];
-
-    if (filter === "all") {
-      newFilters = ["all"];
-    } else {
-      const withoutAll = quickFilters.filter((f) => f !== "all");
-      const exists = withoutAll.some((f) => JSON.stringify(f) === JSON.stringify(filter));
-      if (exists) {
-        newFilters = withoutAll.filter((f) => JSON.stringify(f) !== JSON.stringify(filter));
-        if (newFilters.length === 0) newFilters = ["all"];
-      } else {
-        newFilters = [...withoutAll, filter];
-      }
-    }
-
-    set({ quickFilters: newFilters });
-    const { fileList, filterItems, sortColumns } = get();
-    const filtered = applyFilters(fileList, filterItems, newFilters, sortColumns);
-    set({ filterFileList: filtered, displayLimit: 500 });
-    get().detectConflicts();
+    const next = toggleQuickFilterUtil(get().quickFilters, filter);
+    set({ quickFilters: next });
+    syncFilteredList(get, set);
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
   setReplaceInfos: (infos) => {
     set({ replaceInfos: infos });
-    get().detectConflicts();
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
   setSortColumns: (columns) => {
     set({ sortColumns: columns });
-    const { fileList, filterItems, quickFilters } = get();
-    const filtered = applyFilters(fileList, filterItems, quickFilters, columns);
-    set({ filterFileList: filtered, displayLimit: 500 });
-    get().detectConflicts();
+    syncFilteredList(get, set);
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
   addReplaceInfo: () => {
     const { replaceInfos, ruleHistory } = get();
-    const newInfo: ReplaceInfo = {
-      id: crypto.randomUUID(),
-      content: "",
-      target: "",
-      enable: true,
-      isRegex: false,
-      isError: false,
-    };
-    set({
-      ruleHistory: [...ruleHistory, [...replaceInfos]],
-      replaceInfos: [...replaceInfos, newInfo],
-      rulesCollapsed: [...get().rulesCollapsed, false],
-    });
+    const [newRules, newHistory] = addRulePure(replaceInfos, ruleHistory);
+    set({ replaceInfos: newRules, ruleHistory: newHistory, rulesCollapsed: [...get().rulesCollapsed, false] });
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
   removeReplaceInfo: (index) => {
     const { replaceInfos, ruleHistory, rulesCollapsed } = get();
+    const [newRules, newHistory] = removeRulePure(replaceInfos, ruleHistory, index);
     set({
-      ruleHistory: [...ruleHistory, [...replaceInfos]],
-      replaceInfos: replaceInfos.filter((_, i) => i !== index),
+      replaceInfos: newRules,
+      ruleHistory: newHistory,
       rulesCollapsed: rulesCollapsed.filter((_, i) => i !== index),
     });
-    get().detectConflicts();
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
   updateReplaceInfo: (index, updates) => {
     const { replaceInfos, ruleHistory } = get();
-    const newInfos = replaceInfos.map((info, i) =>
-      i === index ? { ...info, ...updates } : info
-    );
-    set({
-      ruleHistory: [...ruleHistory, [...replaceInfos]],
-      replaceInfos: newInfos,
-    });
-    get().detectConflicts();
+    const isTextEdit = "content" in updates || "target" in updates;
+    const [newRules, newHistory] = updateRulePure(replaceInfos, ruleHistory, index, updates);
+    set({ replaceInfos: newRules, ruleHistory: newHistory });
+    triggerConflicts(isTextEdit ? INPUT_DEBOUNCE_MS : STRUCTURAL_DELAY_MS, get, set);
   },
 
   applyRuleTemplate: async (template) => {
     try {
-      const info = await invoke<ReplaceInfo>("apply_rule_template", { template });
+      const info = await renameApi.applyRuleTemplate(template);
       const { replaceInfos, ruleHistory } = get();
+      const [newRules, newHistory] = applyTemplatePure(replaceInfos, ruleHistory, template);
       set({
-        ruleHistory: [...ruleHistory, [...replaceInfos]],
-        replaceInfos: [...replaceInfos, info],
+        ruleHistory: newHistory,
+        replaceInfos: [...newRules, info],
         rulesCollapsed: [...get().rulesCollapsed, false],
       });
-      get().detectConflicts();
+      triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:applyTemplateFailed", { error: String(e) }) });
     }
@@ -252,58 +239,31 @@ export const useRenameStore = create<RenameState>((set, get) => ({
 
   clearAllRules: () => {
     const { replaceInfos, ruleHistory } = get();
-    set({
-      ruleHistory: [...ruleHistory, [...replaceInfos]],
-      replaceInfos: [],
-      rulesCollapsed: [],
-    });
-    get().detectConflicts();
+    const [, newHistory] = clearRulesPure(replaceInfos, ruleHistory);
+    set({ replaceInfos: [], ruleHistory: newHistory, rulesCollapsed: [], conflicts: [] });
   },
 
   undoRuleChange: () => {
     const { ruleHistory } = get();
     if (ruleHistory.length === 0) return;
-    const previous = ruleHistory[ruleHistory.length - 1];
+    const [previousRules, newHistory] = undoRulesPure(ruleHistory, get().replaceInfos);
     set({
-      replaceInfos: previous,
-      ruleHistory: ruleHistory.slice(0, -1),
-      rulesCollapsed: previous.map(() => false),
+      replaceInfos: previousRules,
+      ruleHistory: newHistory,
+      rulesCollapsed: previousRules.map(() => false),
     });
-    get().detectConflicts();
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
-  detectConflicts: async () => {
-    const { filterFileList, replaceInfos } = get();
-    if (replaceInfos.length === 0) {
-      set({ conflicts: [] });
-      return;
-    }
-    try {
-      const conflicts = await invoke<[string, number[]][]>("detect_conflicts", {
-        files: filterFileList,
-        rules: replaceInfos,
-      });
-      set({
-        conflicts: conflicts.map(([targetName, sourceIndices]) => ({
-          targetName,
-          sourceIndices,
-        })),
-      });
-    } catch (e) {
-      set({ errorMessage: i18n.t("errors:detectConflictsFailed", { error: String(e) }) });
-    }
+  detectConflicts: () => {
+    triggerConflicts(STRUCTURAL_DELAY_MS, get, set);
   },
 
   executeRenames: async () => {
     const { dirPath, filterFileList, replaceInfos } = get();
     try {
-      const result = await invoke<RenameResult>("execute_renames", {
-        dirPath,
-        files: filterFileList,
-        rules: replaceInfos,
-      });
+      const result = await renameApi.executeRenames(dirPath, filterFileList, replaceInfos);
       set({ status: result });
-      // Reload files after rename
       get().loadFiles(dirPath);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:executeRenameFailed", { error: String(e) }) });
@@ -321,21 +281,17 @@ export const useRenameStore = create<RenameState>((set, get) => ({
   setFilterCollapsed: (collapsed) => set({ filterCollapsed: collapsed }),
 
   toggleRuleCollapse: (index) => {
-    const { rulesCollapsed } = get();
-    const newCollapsed = [...rulesCollapsed];
-    newCollapsed[index] = !newCollapsed[index];
-    set({ rulesCollapsed: newCollapsed });
+    const rulesCollapsed = [...get().rulesCollapsed];
+    rulesCollapsed[index] = !rulesCollapsed[index];
+    set({ rulesCollapsed });
   },
 
   clearStatus: () => set({ status: null }),
 
   chooseDirectory: async () => {
     try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({ directory: true });
-      if (selected) {
-        get().loadFiles(selected as string);
-      }
+      const selected = await openDirectory();
+      if (selected) get().loadFiles(selected);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:selectDirectoryFailed", { error: String(e) }) });
     }
@@ -345,10 +301,8 @@ export const useRenameStore = create<RenameState>((set, get) => ({
     const { dirPath } = get();
     if (!dirPath) return;
     try {
-      const parent = await invoke<string>("parent_path", { path: dirPath });
-      if (parent && parent !== dirPath) {
-        get().loadFiles(parent);
-      }
+      const parent = await renameApi.parentPath(dirPath);
+      if (parent && parent !== dirPath) get().loadFiles(parent);
     } catch (e) {
       set({ errorMessage: i18n.t("errors:getParentFailed", { error: String(e) }) });
     }
@@ -360,73 +314,3 @@ export const useRenameStore = create<RenameState>((set, get) => ({
     set({ loading: false, loadingProgress: null });
   },
 }));
-
-// Helper function to apply filters
-function applyFilters(
-  files: FileInfo[],
-  filterItems: FilterItem[],
-  quickFilters: QuickFilter[],
-  sortColumns: SortColumn[]
-): FileInfo[] {
-  let result = [...files];
-
-  // Apply quick filters
-  if (!quickFilters.includes("all")) {
-    result = result.filter((file) => {
-      return quickFilters.some((filter) => {
-        if (filter === "folder") return file.isDir;
-        if (filter === "file") return !file.isDir;
-        if (typeof filter === "object" && "extension" in filter) {
-          return file.extension === filter.extension;
-        }
-        return true;
-      });
-    });
-  }
-
-  // Apply keyword filters
-  for (const filter of filterItems) {
-    if (!filter.keyword) continue;
-    result = result.filter((file) => {
-      if (filter.isRegex) {
-        try {
-          return new RegExp(filter.keyword).test(file.name);
-        } catch {
-          return true;
-        }
-      }
-      return file.name.toLowerCase().includes(filter.keyword.toLowerCase());
-    });
-  }
-
-  // Sort: default = directories first then name; with sortColumns = only by columns
-  result.sort((a, b) => {
-    if (sortColumns.length === 0) {
-      if (b.isDir !== a.isDir) return b.isDir ? 1 : -1;
-      return a.name.localeCompare(b.name);
-    }
-
-    for (const col of sortColumns) {
-      const dir = col.direction === "asc" ? 1 : -1;
-      let cmp = 0;
-
-      switch (col.field) {
-        case "name":
-          cmp = a.name.localeCompare(b.name);
-          break;
-        case "size":
-          cmp = a.sizeBytes - b.sizeBytes;
-          break;
-        case "extension":
-          cmp = a.extension.localeCompare(b.extension);
-          break;
-      }
-
-      if (cmp !== 0) return cmp * dir;
-    }
-
-    return 0;
-  });
-
-  return result;
-}

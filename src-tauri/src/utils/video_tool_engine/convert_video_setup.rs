@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 /// 视频重编码的探测和配置结果
 pub(super) struct ConvertVideoConfig {
     pub format_str: String,
-    pub codec_name: &'static str,
+    pub codec_name: String,
     pub width: u32,
     pub height: u32,
     pub fps: f64,
@@ -114,7 +114,7 @@ impl VideoToolEngine {
         )
         .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
-        let codec = ffmpeg_next::codec::encoder::find_by_name(config.codec_name)
+        let codec = ffmpeg_next::codec::encoder::find_by_name(&config.codec_name)
             .ok_or_else(|| anyhow!("未找到编码器: {}", config.codec_name))?;
         let mut out_video = output
             .add_stream(codec)
@@ -136,7 +136,7 @@ impl VideoToolEngine {
         let quality = get_quality_config(config.quality_preset.as_deref());
         apply_quality_config(
             &mut enc_ctx,
-            config.codec_name,
+            &config.codec_name,
             &quality,
             config.bit_rate,
             config.fps,

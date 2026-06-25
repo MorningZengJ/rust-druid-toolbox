@@ -51,7 +51,7 @@ impl VideoToolEngine {
         });
 
         let codec_name = if params.output_format == "gif" {
-            "gif"
+            "gif".to_string()
         } else {
             find_video_encoder_for_format(&params.output_format, params.video_codec.as_deref())?
         };
@@ -62,7 +62,7 @@ impl VideoToolEngine {
         )
         .map_err(|e| anyhow!("创建输出失败: {}", e))?;
 
-        let codec = ffmpeg_next::codec::encoder::find_by_name(codec_name)
+        let codec = ffmpeg_next::codec::encoder::find_by_name(&codec_name)
             .ok_or_else(|| anyhow!("未找到编码器: {}", codec_name))?;
         let mut out_video = output
             .add_stream(codec)
@@ -87,7 +87,7 @@ impl VideoToolEngine {
                 .and_then(Self::parse_bitrate);
             apply_quality_config(
                 &mut encoder_ctx,
-                codec_name,
+                &codec_name,
                 &quality,
                 4_000_000,
                 params.fps,

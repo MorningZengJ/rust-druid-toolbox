@@ -4,7 +4,6 @@
 # Rust build
 /target
 /src-tauri/target
-Cargo.lock
 
 # Frontend
 **/node_modules

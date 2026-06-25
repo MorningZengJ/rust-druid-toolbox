@@ -1,5 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import * as videoToolApi from "@/lib/videoToolApi";
+import { openFile } from "@/lib/tauri/dialog";
 import i18n from "@/i18n";
 import type {
   VideoInfo,
@@ -63,19 +64,16 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
   loadVideo: async (path?: string) => {
     get().stopExtractWatcher();
     try {
-      let videoPath = path;
+      let videoPath: string | undefined = path;
       if (!videoPath) {
-        const { open } = await import("@tauri-apps/plugin-dialog");
-        const selected = await open({
-          filters: [
-            { name: i18n.t("common:fileTypes.video"), extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
-          ],
-        });
+        const selected = await openFile([
+          { name: i18n.t("common:fileTypes.video"), extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
+        ]);
         if (!selected) return;
-        videoPath = selected as string;
+        videoPath = selected;
       }
 
-      const info = await invoke<VideoInfo>("probe_video", { path: videoPath });
+      const info = await videoToolApi.probeVideo(videoPath);
       const separator = videoPath.includes("\\") ? "\\" : "/";
       const dir = videoPath.substring(0, videoPath.lastIndexOf(separator));
       const defaultOutputDir = dir + separator + "frames";
@@ -144,10 +142,7 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
       );
       unlisteners.push(unlistenFrame);
 
-      const frames = await invoke<ExtractedFrame[]>("extract_frames", {
-        params: extractParams,
-        outputDir: extractOutputDir,
-      });
+      const frames = await videoToolApi.extractFrames(extractParams, extractOutputDir);
       set({ extractFrames: frames, isExtracting: false, extractProgress: 100, extractEstimatedTimeRemaining: 0 });
       get().startExtractWatcher();
     } catch (e) {
@@ -168,7 +163,7 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
     stopExtractWatcher();
 
     try {
-      await invoke("start_frame_watcher", { outputDir: extractOutputDir });
+      await videoToolApi.startFrameWatcher(extractOutputDir);
       const unlisten = await listen("video-frame://frames-deleted", () => {
         set({ extractFrames: [], extractSelectedFrame: null });
       });
@@ -184,6 +179,6 @@ export const createExtractSlice: StateCreator<VideoToolState, [], [], ExtractSli
       _extractWatcherUnlisten();
       set({ _extractWatcherUnlisten: null });
     }
-    invoke("stop_frame_watcher").catch(() => {});
+    videoToolApi.stopFrameWatcher().catch(() => {});
   },
 });

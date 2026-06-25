@@ -1,29 +1,29 @@
-import { useState, useEffect } from "react";
-import { Flex, Box, Text, Tooltip } from "@mantine/core";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Flex } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
-import {
-  PenLine,
-  ImageIcon,
-  Settings,
-  Sun,
-  Moon,
-  Wrench,
-} from "lucide-react";
+import { useComputedColorScheme } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 import { useWindowState } from "@/hooks/useWindowState";
 import { useTheme } from "@/hooks/useTheme";
-import { useComputedColorScheme } from "@mantine/core";
 import { useUpdateStore } from "@/stores/updateStore";
-import RenamePage from "@/pages/rename/RenamePage";
-import AsciiArtPage from "@/pages/ascii-art/AsciiArtPage";
-import VideoToolPage from "@/pages/video-tool/VideoToolPage";
-import SettingsPage from "@/pages/settings/SettingsPage";
+import Sidebar, { type SidebarPage } from "./app/Sidebar";
+import StatusBar from "./app/StatusBar";
+import PageContainer from "./app/PageContainer";
 
-type Page = "rename" | "ascii-art" | "video-tool" | "settings";
+// ── constants ──
+
+const NAV_DESCRIPTIONS: Record<SidebarPage, string> = {
+  rename: "navigation.renameDesc",
+  "ascii-art": "navigation.asciiArtDesc",
+  "video-tool": "navigation.videoToolDesc",
+  settings: "navigation.settings",
+};
+
+// ── App ──
 
 function App() {
   const { t } = useTranslation("common");
-  const [activePage, setActivePage] = useState<Page>("rename");
+  const [activePage, setActivePage] = useState<SidebarPage>("rename");
   const [pageVisible, setPageVisible] = useState(true);
   const colorScheme = useComputedColorScheme();
   const { colorMode, setColorMode } = useTheme();
@@ -31,341 +31,70 @@ function App() {
 
   const isDark = colorScheme === "dark";
 
-  const handlePageChange = (page: Page) => {
-    if (page === activePage) return;
-    setPageVisible(false);
-    setTimeout(() => {
-      setActivePage(page);
-      setPageVisible(true);
-    }, 150);
-  };
+  // ── page transition with timer cleanup ──
 
-  const navItems: { id: Page; label: string; icon: React.ReactNode; description: string }[] = [
-    { id: "rename", label: t("navigation.rename"), icon: <PenLine size={20} />, description: t("navigation.renameDesc") },
-    { id: "ascii-art", label: t("navigation.asciiArt"), icon: <ImageIcon size={20} />, description: t("navigation.asciiArtDesc") },
-    { id: "video-tool", label: t("navigation.videoTool"), icon: <Wrench size={20} />, description: t("navigation.videoToolDesc") },
-  ];
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const updateInit = useUpdateStore((s) => s.init);
+  const handleNavigate = useCallback(
+    (page: SidebarPage) => {
+      if (page === activePage) return;
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+      setPageVisible(false);
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        setActivePage(page);
+        setPageVisible(true);
+      }, 150);
+    },
+    [activePage],
+  );
+
+  // cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  // ── theme toggle ──
+
+  const handleToggleTheme = useCallback(() => {
+    setColorMode(colorMode === "light" ? "dark" : "light");
+  }, [colorMode, setColorMode]);
+
+  // ── update bootstrap ──
+
   const currentVersion = useUpdateStore((s) => s.currentVersion);
 
   useEffect(() => {
-    updateInit().then(() => {
+    const store = useUpdateStore.getState();
+    store.init().then(() => {
       const state = useUpdateStore.getState();
       if (state.autoCheck) {
         state.checkForUpdate();
       }
     });
-  }, []);
+  }, []); // run once on mount — uses getState(), intentionally empty deps
 
-  const handleToggleColorScheme = () => {
-    setColorMode(colorMode === "light" ? "dark" : "light");
-  };
+  // ── derived ──
+
+  const pageDescription = t(NAV_DESCRIPTIONS[activePage]);
+
+  // ── render ──
 
   return (
     <ModalsProvider>
       <Flex h="100vh" w="100vw" style={{ overflow: "hidden" }}>
-        {/* === Navigation sidebar === */}
-        <Flex
-          direction="column"
-          w={72}
-          py="md"
-          style={{
-            borderRight: "1px solid var(--border-default)",
-            backgroundColor: "var(--surface-base)",
-            position: "relative",
-            zIndex: 10,
-          }}
-        >
-          {/* Logo */}
-          <Flex direction="column" align="center" mb="xl" px="xs">
-            <Box
-              w={36}
-              h={36}
-              style={{
-                borderRadius: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <img
-                src="/icon.png"
-                width={36}
-                height={36}
-                style={{ borderRadius: 10, objectFit: "contain" }}
-                alt={t("brand.logoAlt")}
-              />
-            </Box>
-          </Flex>
+        <Sidebar
+          activePage={activePage}
+          isDark={isDark}
+          onNavigate={handleNavigate}
+          onToggleTheme={handleToggleTheme}
+        />
 
-          {/* Main nav items */}
-          <Flex direction="column" gap={2} px="xs" style={{ flex: 1 }}>
-            {navItems.map((item) => {
-              const isActive = activePage === item.id;
-              return (
-                <Tooltip
-                  key={item.id}
-                  label={item.description}
-                  position="right"
-                  withArrow
-                  offset={12}
-                >
-                  <Box
-                    onClick={() => handlePageChange(item.id)}
-                    style={{
-                      position: "relative",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "10px 8px",
-                      borderRadius: 10,
-                      cursor: "pointer",
-                      backgroundColor: isActive ? "var(--accent-glow)" : "transparent",
-                      transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = "var(--border-subtle)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }
-                    }}
-                  >
-                    {isActive && (
-                      <Box
-                        style={{
-                          position: "absolute",
-                          left: -12,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          width: 3,
-                          height: 20,
-                          borderRadius: "0 3px 3px 0",
-                          backgroundColor: "var(--accent-primary)",
-                          boxShadow: "0 0 8px var(--accent-glow)",
-                        }}
-                      />
-                    )}
-                    <Box
-                      style={{
-                        color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
-                        transition: "all 200ms ease",
-                        transform: isActive ? "scale(1.05)" : "scale(1)",
-                      }}
-                    >
-                      {item.icon}
-                    </Box>
-                    <Text
-                      size="xs"
-                      fw={isActive ? 600 : 400}
-                      style={{
-                        color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-                        transition: "color 200ms ease",
-                        lineHeight: 1,
-                        whiteSpace: "nowrap",
-                        fontFamily: "var(--font-body)",
-                      }}
-                    >
-                      {item.label}
-                    </Text>
-                  </Box>
-                </Tooltip>
-              );
-            })}
-          </Flex>
-
-          {/* Bottom section */}
-          <Flex direction="column" gap={2} px="xs">
-            <Box
-              style={{
-                width: 24,
-                height: 1,
-                backgroundColor: "var(--border-default)",
-                margin: "4px auto 8px",
-              }}
-            />
-            <Tooltip label={isDark ? t("theme.switchToLight") : t("theme.switchToDark")} position="right" withArrow offset={12}>
-              <Box
-                onClick={handleToggleColorScheme}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "10px 8px",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  backgroundColor: "transparent",
-                  transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--border-subtle)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
-              >
-                <Box
-                  style={{
-                    color: "var(--text-muted)",
-                    transition: "color 200ms ease",
-                  }}
-                >
-                  {isDark ? <Sun size={20} /> : <Moon size={20} />}
-                </Box>
-                <Text
-                  size="xs"
-                  fw={400}
-                  style={{
-                    color: "var(--text-muted)",
-                    transition: "color 200ms ease",
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  {isDark ? t("theme.light") : t("theme.dark")}
-                </Text>
-              </Box>
-            </Tooltip>
-            <Tooltip label={t("navigation.settings")} position="right" withArrow offset={12}>
-              <Box
-                onClick={() => handlePageChange("settings")}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "10px 8px",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  backgroundColor: activePage === "settings" ? "var(--accent-glow)" : "transparent",
-                  transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-                onMouseEnter={(e) => {
-                  if (activePage !== "settings") {
-                    e.currentTarget.style.backgroundColor = "var(--border-subtle)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activePage !== "settings") {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }
-                }}
-              >
-                {activePage === "settings" && (
-                  <Box
-                    style={{
-                      position: "absolute",
-                      left: -12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: 3,
-                      height: 20,
-                      borderRadius: "0 3px 3px 0",
-                      backgroundColor: "var(--accent-primary)",
-                      boxShadow: "0 0 8px var(--accent-glow)",
-                    }}
-                  />
-                )}
-                <Box
-                  style={{
-                    color: activePage === "settings" ? "var(--accent-primary)" : "var(--text-muted)",
-                    transition: "all 200ms ease",
-                    transform: activePage === "settings" ? "scale(1.05)" : "scale(1)",
-                  }}
-                >
-                  <Settings size={20} />
-                </Box>
-                <Text
-                  size="xs"
-                  fw={activePage === "settings" ? 600 : 400}
-                  style={{
-                    color: activePage === "settings" ? "var(--text-primary)" : "var(--text-muted)",
-                    transition: "color 200ms ease",
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  {t("navigation.settings")}
-                </Text>
-              </Box>
-            </Tooltip>
-          </Flex>
-        </Flex>
-
-        {/* === Main content area === */}
         <Flex direction="column" style={{ flex: 1, overflow: "hidden" }}>
-          <Box
-            style={{
-              flex: 1,
-              overflow: "hidden",
-              padding: 12,
-              opacity: pageVisible ? 1 : 0,
-              transform: pageVisible ? "translateY(0)" : "translateY(6px)",
-              transition: "opacity 150ms ease, transform 150ms ease",
-            }}
-          >
-            <Box h="100%" style={{ display: activePage === "rename" ? "block" : "none" }}>
-              <RenamePage />
-            </Box>
-            <Box h="100%" style={{ display: activePage === "ascii-art" ? "block" : "none" }}>
-              <AsciiArtPage />
-            </Box>
-            <Box h="100%" style={{ display: activePage === "video-tool" ? "block" : "none" }}>
-              <VideoToolPage />
-            </Box>
-            <Box h="100%" style={{ display: activePage === "settings" ? "block" : "none" }}>
-              <SettingsPage />
-            </Box>
-          </Box>
-
-          {/* === Status bar === */}
-          <Flex
-            h={28}
-            px="md"
-            align="center"
-            justify="space-between"
-            style={{
-              borderTop: "1px solid var(--border-subtle)",
-              backgroundColor: "var(--surface-base)",
-              flexShrink: 0,
-            }}
-          >
-            <Flex align="center" gap="md">
-              <Text
-                size="xs"
-                style={{
-                  color: "var(--text-muted)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                }}
-              >
-                {navItems.find((item) => item.id === activePage)?.description || ""}
-              </Text>
-            </Flex>
-            <Flex align="center" gap="md">
-              <Text
-                size="xs"
-                style={{
-                  color: "var(--text-muted)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {t("brand.name")}{currentVersion ? ` v${currentVersion}` : ""}
-              </Text>
-            </Flex>
-          </Flex>
+          <PageContainer activePage={activePage} visible={pageVisible} />
+          <StatusBar pageDescription={pageDescription} currentVersion={currentVersion} />
         </Flex>
       </Flex>
     </ModalsProvider>

@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import * as videoToolApi from "@/lib/videoToolApi";
 import i18n from "@/i18n";
 import type {
   ConvertFormatParams,
@@ -172,7 +172,7 @@ export const createConvertSlice: StateCreator<VideoToolState, [], [], ConvertSli
       }));
 
       const params: BatchConvertParams = { items };
-      const result = await invoke<BatchConvertResult>("batch_convert_format", { params });
+      const result = await videoToolApi.batchConvertFormat(params);
       set({ convertBatchResult: result });
     } catch (e) {
       set({ errorMessage: i18n.t("videoTool:errors.batchConvertFailed", { error: String(e) }) });

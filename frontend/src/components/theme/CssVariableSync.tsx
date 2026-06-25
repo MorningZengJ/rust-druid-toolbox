@@ -21,10 +21,12 @@ export function CssVariableSync() {
 
   // 直接计算主题，与 ThemeProvider 使用相同逻辑，避免 Mantine 上下文传播延迟
   const theme = getThemeWithPrimary(colorTheme, customPrimary, selectedShadeIndex);
-  const primary = theme.colors[theme.primaryColor];
-  const primaryHex = primary[5];
+  const primary = theme.colors?.[theme.primaryColor];
+  const primaryHex = primary?.[5];
 
   useLayoutEffect(() => {
+    if (!primary || !primaryHex) return;
+
     const root = document.documentElement;
     const accentRgb = hexToRgb(primary[5]);
 

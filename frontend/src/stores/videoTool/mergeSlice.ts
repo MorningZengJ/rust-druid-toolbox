@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import * as videoToolApi from "@/lib/videoToolApi";
 import i18n from "@/i18n";
 import type { MergeVideosParams, MergeVideosResult } from "@/types";
 import type { VideoToolState } from "./types";
@@ -75,7 +75,7 @@ export const createMergeSlice: StateCreator<VideoToolState, [], [], MergeSlice> 
         videoBitrate: state.mergeVideoBitrate || undefined,
         qualityPreset: state.mergeQualityPreset || undefined,
       };
-      const result = await invoke<MergeVideosResult>("merge_videos", { params });
+      const result = await videoToolApi.mergeVideos(params);
       set({ mergeResult: result });
     } catch (e) {
       set({ errorMessage: i18n.t("videoTool:errors.mergeFailed", { error: String(e) }) });
