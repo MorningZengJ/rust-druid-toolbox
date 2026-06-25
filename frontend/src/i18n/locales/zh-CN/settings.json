@@ -63,5 +63,41 @@
       "parse": "更新信息解析失败，服务器返回了异常数据，请稍后重试",
       "unknown": "检查更新失败：{{detail}}"
     }
+  },
+  "proxy": {
+    "title": "网络代理",
+    "description": "配置 MToolbox 的网络连接方式",
+    "modes": {
+      "direct": "直连",
+      "directDesc": "不使用任何代理，直接连接",
+      "system": "系统代理",
+      "systemDesc": "使用系统代理设置",
+      "manual": "手动配置",
+      "manualDesc": "配置自定义代理服务器"
+    },
+    "fields": {
+      "protocol": "协议",
+      "host": "主机",
+      "hostPlaceholder": "127.0.0.1",
+      "port": "端口",
+      "portPlaceholder": "1080"
+    },
+    "auth": {
+      "toggle": "身份验证",
+      "username": "用户名",
+      "password": "密码"
+    },
+    "status": {
+      "label": "状态",
+      "direct": "直连模式 · 已生效",
+      "system": "系统代理 · 已生效",
+      "manual": "{{url}} · 已生效",
+      "pending": "检测中..."
+    },
+    "restartHint": "代理设置已应用。建议重启应用以确保所有网络连接使用新的配置。",
+    "validation": {
+      "hostRequired": "主机地址不能为空",
+      "portInvalid": "端口必须在 1–65535 之间"
+    }
   }
 }

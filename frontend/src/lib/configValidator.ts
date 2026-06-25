@@ -92,3 +92,75 @@ export function validateSelectedShadeIndex(raw: unknown): number | undefined {
 export function validateAutoCheck(raw: unknown): boolean {
   return typeof raw === "boolean" ? raw : false;
 }
+
+// ---- 代理设置 ----
+
+export interface ManualProxyConfig {
+  protocol: "http" | "socks5";
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+}
+
+export interface ProxyConfig {
+  mode: "direct" | "system" | "manual";
+  manual: ManualProxyConfig | null;
+}
+
+const VALID_PROXY_MODES = new Set(["direct", "system", "manual"]);
+const VALID_PROXY_PROTOCOLS = new Set(["http", "socks5"]);
+
+function validateManualProxy(raw: unknown): ManualProxyConfig | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+
+  const protocol = obj.protocol;
+  const host = obj.host;
+  const port = obj.port;
+
+  if (typeof protocol !== "string" || !VALID_PROXY_PROTOCOLS.has(protocol)) return null;
+  if (typeof host !== "string" || host.trim().length === 0) return null;
+  if (typeof port !== "number" || !Number.isInteger(port) || port < 1 || port > 65535) return null;
+
+  const username = typeof obj.username === "string" && obj.username.length > 0
+    ? obj.username
+    : undefined;
+  const password = typeof obj.password === "string" && obj.password.length > 0
+    ? obj.password
+    : undefined;
+
+  return {
+    protocol: protocol as "http" | "socks5",
+    host: host.trim(),
+    port,
+    username,
+    password,
+  };
+}
+
+export function validateProxyConfig(raw: unknown): ProxyConfig {
+  if (!raw || typeof raw !== "object") {
+    return { mode: "system", manual: null };
+  }
+
+  const obj = raw as Record<string, unknown>;
+  const mode = obj.mode;
+
+  if (typeof mode !== "string" || !VALID_PROXY_MODES.has(mode)) {
+    return { mode: "system", manual: null };
+  }
+
+  const validMode = mode as "direct" | "system" | "manual";
+
+  if (validMode === "manual") {
+    const manual = validateManualProxy(obj.manual);
+    if (!manual) {
+      // Manual 模式但配置不合法，回退到 system
+      return { mode: "system", manual: null };
+    }
+    return { mode: "manual", manual };
+  }
+
+  return { mode: validMode, manual: null };
+}

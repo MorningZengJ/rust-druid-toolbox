@@ -20,6 +20,7 @@ import { useI18nStore } from "@/stores/i18nStore";
 import { languageNames } from "@/i18n/types";
 import type { Language as LanguageType } from "@/i18n/types";
 import UpdateSection from "./UpdateSection";
+import ProxySection from "./ProxySection";
 import ThemeCard from "@/components/theme/ThemeCard";
 import ColorThemeSection from "@/components/theme/ColorThemeSection";
 
@@ -113,6 +114,9 @@ export default function SettingsPage() {
             styles={selectStyles}
           />
         </ThemeCard>
+
+        {/* Network Proxy */}
+        <ProxySection />
 
         {/* About & Update */}
         <ThemeCard

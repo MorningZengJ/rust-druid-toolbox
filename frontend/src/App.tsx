@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useWindowState } from "@/hooks/useWindowState";
 import { useTheme } from "@/hooks/useTheme";
 import { useUpdateStore } from "@/stores/updateStore";
+import { useProxyStore } from "@/stores/proxyStore";
 import Sidebar, { type SidebarPage } from "./app/Sidebar";
 import StatusBar from "./app/StatusBar";
 import PageContainer from "./app/PageContainer";
@@ -67,8 +68,12 @@ function App() {
   const currentVersion = useUpdateStore((s) => s.currentVersion);
 
   useEffect(() => {
-    const store = useUpdateStore.getState();
-    store.init().then(() => {
+    const updateStore = useUpdateStore.getState();
+    const proxyStore = useProxyStore.getState();
+    Promise.all([
+      updateStore.init(),
+      proxyStore.loadFromStore(),
+    ]).then(() => {
       const state = useUpdateStore.getState();
       if (state.autoCheck) {
         state.checkForUpdate();

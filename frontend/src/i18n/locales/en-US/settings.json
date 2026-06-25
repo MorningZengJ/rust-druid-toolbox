@@ -63,5 +63,41 @@
       "parse": "Failed to parse update information. The server returned unexpected data. Please try again later.",
       "unknown": "Update check failed: {{detail}}"
     }
+  },
+  "proxy": {
+    "title": "Network Proxy",
+    "description": "Control how MToolbox connects to the internet",
+    "modes": {
+      "direct": "Direct",
+      "directDesc": "Bypass all proxies, connect directly",
+      "system": "System",
+      "systemDesc": "Use your system proxy settings",
+      "manual": "Manual",
+      "manualDesc": "Configure a custom proxy server"
+    },
+    "fields": {
+      "protocol": "Protocol",
+      "host": "Host",
+      "hostPlaceholder": "127.0.0.1",
+      "port": "Port",
+      "portPlaceholder": "1080"
+    },
+    "auth": {
+      "toggle": "Authentication",
+      "username": "Username",
+      "password": "Password"
+    },
+    "status": {
+      "label": "Status",
+      "direct": "Direct connection · Active",
+      "system": "System proxy · Active",
+      "manual": "{{url}} · Active",
+      "pending": "Detecting..."
+    },
+    "restartHint": "Proxy settings applied. Restart recommended for all connections to use the new configuration.",
+    "validation": {
+      "hostRequired": "Host address is required",
+      "portInvalid": "Port must be between 1–65535"
+    }
   }
 }

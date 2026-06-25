@@ -1,5 +1,6 @@
 mod commands;
 mod model;
+mod proxy_config;
 mod state;
 mod utils;
 
@@ -20,6 +21,8 @@ pub fn run() {
                     eprintln!("清理临时目录失败: {}", e);
                 }
             }
+            // Load and apply proxy settings from persistent store
+            proxy_config::load_and_apply_proxy(_app.handle());
             Ok(())
         });
 
@@ -53,6 +56,10 @@ pub fn run() {
         // Media file listing (no FFmpeg dependency)
         commands::video_utils::list_images_in_folder,
         commands::video_utils::list_media_files_in_folder,
+        // Proxy
+        commands::proxy::get_proxy_config,
+        commands::proxy::set_proxy_config,
+        commands::proxy::get_current_proxy_state,
     ]);
 
     // Video commands (feature-gated)
