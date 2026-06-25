@@ -18,12 +18,8 @@ impl RuleTemplate {
         match self {
             Self::AddPrefixNumber => ReplaceInfo::new("".to_string(), "{n}_".to_string(), false),
             Self::AddSuffixNumber => ReplaceInfo::new("".to_string(), "_{n}".to_string(), false),
-            Self::SpaceToUnderscore => {
-                ReplaceInfo::new(" ".to_string(), "_".to_string(), false)
-            }
-            Self::ToLowercase => {
-                ReplaceInfo::new("".to_string(), "".to_string(), false)
-            }
+            Self::SpaceToUnderscore => ReplaceInfo::new(" ".to_string(), "_".to_string(), false),
+            Self::ToLowercase => ReplaceInfo::new("".to_string(), "".to_string(), false),
             Self::RemoveDigitsBeforeExt => {
                 ReplaceInfo::new(r"\d+(?=\.\w+$)".to_string(), "".to_string(), true)
             }

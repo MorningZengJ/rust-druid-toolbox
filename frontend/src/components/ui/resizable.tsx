@@ -99,4 +99,5 @@ function ResizableHandle({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { ResizableHandle, ResizablePanel, ResizablePanelGroup, useDefaultLayout }

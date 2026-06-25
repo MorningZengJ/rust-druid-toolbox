@@ -25,7 +25,6 @@ pub(super) use format::reset_codec_tag;
 pub(super) use progress::now_ms;
 pub(super) use quality::apply_quality_config;
 pub(super) use quality::get_quality_config;
-pub(super) use quality::QualityConfig;
 
 // ── VideoToolEngine impl blocks (pub(super) from the parent module) ──
 
@@ -53,7 +52,9 @@ impl VideoToolEngine {
     }
 
     pub(super) fn is_ts_format(path: &std::path::Path) -> bool {
-        let Ok(input) = ffi::format::input(path) else { return false };
+        let Ok(input) = ffi::format::input(path) else {
+            return false;
+        };
         let format_name = input.format().name().to_lowercase();
         let ts_names = ["mpegts", "mpeg_ts", "m2ts", "trp", "ts"];
         ts_names.iter().any(|&name| format_name.contains(name))
@@ -61,14 +62,17 @@ impl VideoToolEngine {
 
     pub(super) fn parse_bitrate(s: &str) -> Option<usize> {
         let s = s.trim();
-        if s.is_empty() { return None; }
-        let (num_str, multiplier) = if let Some(n) = s.strip_suffix('M').or_else(|| s.strip_suffix('m')) {
-            (n, 1_000_000)
-        } else if let Some(n) = s.strip_suffix('K').or_else(|| s.strip_suffix('k')) {
-            (n, 1_000)
-        } else {
-            (s, 1)
-        };
+        if s.is_empty() {
+            return None;
+        }
+        let (num_str, multiplier) =
+            if let Some(n) = s.strip_suffix('M').or_else(|| s.strip_suffix('m')) {
+                (n, 1_000_000)
+            } else if let Some(n) = s.strip_suffix('K').or_else(|| s.strip_suffix('k')) {
+                (n, 1_000)
+            } else {
+                (s, 1)
+            };
         let value: f64 = num_str.parse().ok()?;
         Some((value * multiplier as f64) as usize)
     }
@@ -79,7 +83,13 @@ impl VideoToolEngine {
 
     pub(super) fn is_audio_compatible(codec_id: ffi::codec::Id, output_format: &str) -> bool {
         match output_format {
-            "flv" => matches!(codec_id, ffi::codec::Id::MP3 | ffi::codec::Id::AAC | ffi::codec::Id::ADPCM_SWF | ffi::codec::Id::PCM_S16LE),
+            "flv" => matches!(
+                codec_id,
+                ffi::codec::Id::MP3
+                    | ffi::codec::Id::AAC
+                    | ffi::codec::Id::ADPCM_SWF
+                    | ffi::codec::Id::PCM_S16LE
+            ),
             "webm" => matches!(codec_id, ffi::codec::Id::OPUS | ffi::codec::Id::VORBIS),
             _ => true,
         }
@@ -88,7 +98,10 @@ impl VideoToolEngine {
     // ── frame_scaling ──
 
     pub(super) fn calculate_aspect_ratio_resize(
-        src_width: u32, src_height: u32, target_width: u32, target_height: u32,
+        src_width: u32,
+        src_height: u32,
+        target_width: u32,
+        target_height: u32,
     ) -> (u32, u32) {
         frame_scaling::calc_aspect_ratio_resize(src_width, src_height, target_width, target_height)
     }
@@ -106,17 +119,28 @@ impl VideoToolEngine {
         frame_scaling::constrain_timebase(tb)
     }
 
-    pub(super) fn gcd(a: u32, b: u32) -> u32 {
-        frame_scaling::gcd(a, b)
-    }
-
     pub(super) fn scale_and_pad_frame(
         decoded: &ffi::frame::Video,
         sws_ctx: &mut ffi::software::scaling::Context,
-        width: u32, height: u32, scaled_width: u32, scaled_height: u32,
-        x_offset: u32, y_offset: u32, needs_padding: bool,
+        width: u32,
+        height: u32,
+        scaled_width: u32,
+        scaled_height: u32,
+        x_offset: u32,
+        y_offset: u32,
+        needs_padding: bool,
     ) -> Result<ffi::util::frame::video::Video> {
-        frame_scaling::scale_and_pad_frame(decoded, sws_ctx, width, height, scaled_width, scaled_height, x_offset, y_offset, needs_padding)
+        frame_scaling::scale_and_pad_frame(
+            decoded,
+            sws_ctx,
+            width,
+            height,
+            scaled_width,
+            scaled_height,
+            x_offset,
+            y_offset,
+            needs_padding,
+        )
     }
 
     // ── ffmpeg_io ──
@@ -140,7 +164,16 @@ impl VideoToolEngine {
         log_cb: &mut impl FnMut(VideoToolLog),
         task_id: &str,
     ) {
-        ffmpeg_io::try_write_cover(packet, stream, mt, cover_indices, cover_idx, output, log_cb, task_id)
+        ffmpeg_io::try_write_cover(
+            packet,
+            stream,
+            mt,
+            cover_indices,
+            cover_idx,
+            output,
+            log_cb,
+            task_id,
+        )
     }
 
     // ── progress ──
@@ -197,10 +230,5 @@ mod tests {
     #[test]
     fn parse_bitrate_empty() {
         assert_eq!(VideoToolEngine::parse_bitrate(""), None);
-    }
-
-    #[test]
-    fn gcd_works() {
-        assert_eq!(VideoToolEngine::gcd(48, 18), 6);
     }
 }

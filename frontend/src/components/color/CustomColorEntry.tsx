@@ -39,7 +39,7 @@ function CustomColorEntry({
       setOpened(false);
     }
     prevCustomRef.current = customPrimary;
-  }, [customPrimary]);
+  }, [customPrimary, opened]);
 
   useEffect(() => {
     const btn = buttonRef.current;

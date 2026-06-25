@@ -69,12 +69,6 @@ export default function FilePreview() {
     return paths;
   }, [conflicts, filterFileList]);
 
-  // Compute rule hash for caching — only re-compute newName when rules change
-  const ruleHash = useMemo(() => {
-    if (activeRules.length === 0) return "";
-    return activeRules.map((r) => `${r.content}|${r.isRegex}`).join("::");
-  }, [activeRules]);
-
   // Prepare display data with computed newName and conflict lookup
   const displayedFiles = useMemo(() => {
     const files = filterFileList.slice(0, displayLimit);
@@ -89,7 +83,7 @@ export default function FilePreview() {
         hasConflict: conflictPaths.has(file.path),
       };
     });
-  }, [filterFileList, displayLimit, activeRules, conflictPaths, ruleHash]);
+  }, [filterFileList, displayLimit, activeRules, conflictPaths]);
 
   // TanStack Table sorting state
   const sorting: SortingState = useMemo(
@@ -240,6 +234,7 @@ export default function FilePreview() {
     [getNewTextColor, t]
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table memorization is safe via getRowId
   const table = useReactTable({
     data: displayedFiles,
     columns,
@@ -255,10 +250,11 @@ export default function FilePreview() {
 
   const rows = table.getRowModel().rows;
   const headerGroup = table.getHeaderGroups()[0];
+  type Header = (typeof headerGroup.headers)[0];
 
   // Handle sorting - always multi-sort (click to add/toggle/remove)
   const handleHeaderClick = useCallback(
-    (header: (typeof headerGroup.headers)[0]) => {
+    (header: Header) => {
       if (!header.column.getCanSort()) return;
 
       const currentSort = header.column.getIsSorted();

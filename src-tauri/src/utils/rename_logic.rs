@@ -61,11 +61,7 @@ pub fn detect_conflicts(files: &[FileInfo], rules: &[ReplaceInfo]) -> Vec<(Strin
 }
 
 /// Execute rename operations
-pub fn execute_renames(
-    dir_path: &str,
-    files: &[FileInfo],
-    rules: &[ReplaceInfo],
-) -> RenameResult {
+pub fn execute_renames(dir_path: &str, files: &[FileInfo], rules: &[ReplaceInfo]) -> RenameResult {
     let mut result = RenameResult {
         total: files.len(),
         success: 0,
@@ -134,10 +130,7 @@ mod tests {
             make_rule(" ", "_", false, true),
             make_rule(".txt", ".md", false, true),
         ];
-        assert_eq!(
-            apply_replace_rules("my file.txt", &rules),
-            "my_file.md"
-        );
+        assert_eq!(apply_replace_rules("my file.txt", &rules), "my_file.md");
     }
 
     #[test]

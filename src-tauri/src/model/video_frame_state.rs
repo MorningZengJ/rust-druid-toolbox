@@ -10,7 +10,6 @@ pub enum ExtractMode {
     ByTimePoints,
 }
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum OutputFormat {

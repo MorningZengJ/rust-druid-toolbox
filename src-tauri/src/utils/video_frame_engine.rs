@@ -1,4 +1,6 @@
-use crate::model::video_frame_state::{ExtractMode, ExtractParams, ExtractedFrame, LogEntry, OutputFormat, ProgressInfo, VideoInfo};
+use crate::model::video_frame_state::{
+    ExtractMode, ExtractParams, ExtractedFrame, LogEntry, OutputFormat, ProgressInfo, VideoInfo,
+};
 use anyhow::{anyhow, Result};
 use std::path::Path;
 use std::time::Instant;
@@ -13,8 +15,8 @@ impl VideoFrameEngine {
     pub fn probe_video(path: &Path) -> Result<VideoInfo> {
         ffmpeg_next::init().map_err(|e| anyhow!("FFmpeg 初始化失败: {}", e))?;
 
-        let input = ffmpeg_next::format::input(path)
-            .map_err(|e| anyhow!("无法打开视频文件: {}", e))?;
+        let input =
+            ffmpeg_next::format::input(path).map_err(|e| anyhow!("无法打开视频文件: {}", e))?;
 
         let stream = input
             .streams()
@@ -24,14 +26,20 @@ impl VideoFrameEngine {
         let params = stream.parameters();
         let context = ffmpeg_next::codec::context::Context::from_parameters(params)
             .map_err(|e| anyhow!("创建编解码上下文失败: {}", e))?;
-        let decoder = context.decoder().video()
+        let decoder = context
+            .decoder()
+            .video()
             .map_err(|e| anyhow!("创建解码器失败: {}", e))?;
 
         let width = decoder.width();
         let height = decoder.height();
 
         let fps = stream.avg_frame_rate();
-        let fps_value = if fps.1 > 0 { fps.0 as f64 / fps.1 as f64 } else { 30.0 };
+        let fps_value = if fps.1 > 0 {
+            fps.0 as f64 / fps.1 as f64
+        } else {
+            30.0
+        };
 
         let duration_ts = stream.duration();
         let time_base = stream.time_base();
@@ -52,7 +60,13 @@ impl VideoFrameEngine {
         })
     }
 
-    pub fn extract_frames<P, L, F>(params: &ExtractParams, output_dir: &Path, mut progress_cb: P, mut log_cb: L, mut frame_cb: F) -> Result<Vec<ExtractedFrame>>
+    pub fn extract_frames<P, L, F>(
+        params: &ExtractParams,
+        output_dir: &Path,
+        mut progress_cb: P,
+        mut log_cb: L,
+        mut frame_cb: F,
+    ) -> Result<Vec<ExtractedFrame>>
     where
         P: FnMut(ProgressInfo),
         L: FnMut(LogEntry),
@@ -84,11 +98,17 @@ impl VideoFrameEngine {
         let params_ref = stream.parameters();
         let context = ffmpeg_next::codec::context::Context::from_parameters(params_ref)
             .map_err(|e| anyhow!("创建编解码上下文失败: {}", e))?;
-        let mut decoder = context.decoder().video()
+        let mut decoder = context
+            .decoder()
+            .video()
             .map_err(|e| anyhow!("创建解码器失败: {}", e))?;
 
         let fps = stream.avg_frame_rate();
-        let fps_value = if fps.1 > 0 { fps.0 as f64 / fps.1 as f64 } else { 30.0 };
+        let fps_value = if fps.1 > 0 {
+            fps.0 as f64 / fps.1 as f64
+        } else {
+            30.0
+        };
 
         let duration_ts = stream.duration();
         let time_base = stream.time_base();
@@ -134,7 +154,8 @@ impl VideoFrameEngine {
             out_w,
             out_h,
             ffmpeg_next::software::scaling::Flags::BILINEAR,
-        ).map_err(|e| anyhow!("创建缩放器失败: {}", e))?;
+        )
+        .map_err(|e| anyhow!("创建缩放器失败: {}", e))?;
 
         let mut frames = Vec::new();
         let mut frame_count: usize = 0;
@@ -151,8 +172,7 @@ impl VideoFrameEngine {
             }
 
             while decoder.receive_frame(&mut decoded_frame).is_ok() {
-                let timestamp = decoded_frame.pts().unwrap_or(0) as f64
-                    * time_base.0 as f64
+                let timestamp = decoded_frame.pts().unwrap_or(0) as f64 * time_base.0 as f64
                     / time_base.1 as f64;
 
                 while target_idx < target_timestamps.len() {
@@ -215,8 +235,7 @@ impl VideoFrameEngine {
         let _ = decoder.send_eof();
         while decoder.receive_frame(&mut decoded_frame).is_ok() {
             if target_idx < target_timestamps.len() {
-                let timestamp = decoded_frame.pts().unwrap_or(0) as f64
-                    * time_base.0 as f64
+                let timestamp = decoded_frame.pts().unwrap_or(0) as f64 * time_base.0 as f64
                     / time_base.1 as f64;
 
                 let encoded = Self::encode_frame(
@@ -251,24 +270,37 @@ impl VideoFrameEngine {
             .as_millis() as u64;
         log_cb(LogEntry {
             level: "info".to_string(),
-            message: format!("提取完成，共 {} 帧，耗时 {:.1} 秒", frames.len(), elapsed as f64 / 1000.0),
+            message: format!(
+                "提取完成，共 {} 帧，耗时 {:.1} 秒",
+                frames.len(),
+                elapsed as f64 / 1000.0
+            ),
             timestamp,
         });
 
         Ok(frames)
     }
 
-    fn calculate_timestamps(mode: &ExtractMode, duration: f64, fps: f64, interval_secs: f64, frame_count: usize, time_points: &[f64]) -> Vec<f64> {
+    fn calculate_timestamps(
+        mode: &ExtractMode,
+        duration: f64,
+        fps: f64,
+        interval_secs: f64,
+        frame_count: usize,
+        time_points: &[f64],
+    ) -> Vec<f64> {
         match mode {
             ExtractMode::AllFrames => {
                 let frame_interval = 1.0 / fps;
                 let count = (duration * fps).ceil() as usize;
-                (0..count)
-                    .map(|i| i as f64 * frame_interval)
-                    .collect()
+                (0..count).map(|i| i as f64 * frame_interval).collect()
             }
             ExtractMode::ByInterval => {
-                let interval = if interval_secs > 0.0 { interval_secs } else { 1.0 };
+                let interval = if interval_secs > 0.0 {
+                    interval_secs
+                } else {
+                    1.0
+                };
                 let mut timestamps = Vec::new();
                 let mut t = 0.0;
                 while t < duration {
@@ -302,13 +334,14 @@ impl VideoFrameEngine {
         width: u32,
         height: u32,
         format: &OutputFormat,
-        _quality: u8,
+        quality: u8,
         index: usize,
         timestamp: f64,
         output_dir: &Path,
     ) -> Result<ExtractedFrame> {
         let mut rgb_frame = ffmpeg_next::util::frame::video::Video::empty();
-        scaler.run(frame, &mut rgb_frame)
+        scaler
+            .run(frame, &mut rgb_frame)
             .map_err(|e| anyhow!("帧缩放失败: {}", e))?;
 
         let data = rgb_frame.data(0);
@@ -334,16 +367,29 @@ impl VideoFrameEngine {
             OutputFormat::Png => {
                 let fname = format!("frame_{:06}_{}ms.png", index, ts_ms);
                 let mut buf = std::io::Cursor::new(Vec::new());
-                dynamic_img.write_to(&mut buf, image::ImageFormat::Png)
+                dynamic_img
+                    .write_to(&mut buf, image::ImageFormat::Png)
                     .map_err(|e| anyhow!("PNG 编码失败: {}", e))?;
                 (fname, buf.into_inner())
             }
             OutputFormat::Jpeg => {
-                let fname = format!("frame_{:06}_{}ms.jpg", index, ts_ms);
-                let mut buf = std::io::Cursor::new(Vec::new());
-                dynamic_img.write_to(&mut buf, image::ImageFormat::Jpeg)
-                    .map_err(|e| anyhow!("JPEG 编码失败: {}", e))?;
-                (fname, buf.into_inner())
+                let fname = format!("frame_{:06}_{}ms_{}.jpg", index, ts_ms, quality);
+                let mut buf: Vec<u8> = Vec::new();
+                {
+                    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(
+                        &mut buf,
+                        quality.clamp(1, 100),
+                    );
+                    encoder
+                        .encode(
+                            dynamic_img.as_bytes(),
+                            dynamic_img.width(),
+                            dynamic_img.height(),
+                            dynamic_img.color().into(),
+                        )
+                        .map_err(|e| anyhow!("JPEG 编码失败: {}", e))?;
+                }
+                (fname, buf)
             }
         };
 

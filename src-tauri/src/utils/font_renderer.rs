@@ -1,15 +1,9 @@
-use ab_glyph::{Font, FontRef, PxScale, Point};
+use ab_glyph::{Font, FontRef, Point, PxScale};
 use image::RgbaImage;
 
 static FONT_BYTES: &[u8] = include_bytes!("../../fonts/Consolas.ttf");
 
-fn draw_glyph_pixel(
-    image: &mut RgbaImage,
-    px: i32,
-    py: i32,
-    coverage: f32,
-    color: (u8, u8, u8),
-) {
+fn draw_glyph_pixel(image: &mut RgbaImage, px: i32, py: i32, coverage: f32, color: (u8, u8, u8)) {
     if px < 0 || py < 0 {
         return;
     }
@@ -87,7 +81,13 @@ pub fn render_char_to_image(
         let offset_x = bounds.min.x as i32;
         let offset_y = bounds.min.y as i32;
         outlined.draw(|x, y, coverage| {
-            draw_glyph_pixel(image, offset_x + x as i32, offset_y + y as i32, coverage, color);
+            draw_glyph_pixel(
+                image,
+                offset_x + x as i32,
+                offset_y + y as i32,
+                coverage,
+                color,
+            );
         });
     }
 }

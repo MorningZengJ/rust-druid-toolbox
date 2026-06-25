@@ -40,7 +40,10 @@ pub fn preview_renames(files: Vec<FileInfo>, rules: Vec<ReplaceInfo>) -> Vec<(St
 
 /// Detect conflicts in rename results
 #[tauri::command]
-pub fn detect_conflicts(files: Vec<FileInfo>, rules: Vec<ReplaceInfo>) -> Vec<(String, Vec<usize>)> {
+pub fn detect_conflicts(
+    files: Vec<FileInfo>,
+    rules: Vec<ReplaceInfo>,
+) -> Vec<(String, Vec<usize>)> {
     rename_logic::detect_conflicts(&files, &rules)
 }
 

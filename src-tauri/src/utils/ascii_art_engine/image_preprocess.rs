@@ -28,7 +28,8 @@ impl AsciiArtEngine {
                 let g = (g + brightness * 255.0).clamp(0.0, 255.0);
                 let b = (b + brightness * 255.0).clamp(0.0, 255.0);
 
-                let factor = (259.0 * (contrast * 255.0 + 255.0)) / (255.0 * (259.0 - contrast * 255.0));
+                let factor =
+                    (259.0 * (contrast * 255.0 + 255.0)) / (255.0 * (259.0 - contrast * 255.0));
                 let r = (factor * (r - 128.0) + 128.0).clamp(0.0, 255.0);
                 let g = (factor * (g - 128.0) + 128.0).clamp(0.0, 255.0);
                 let b = (factor * (b - 128.0) + 128.0).clamp(0.0, 255.0);

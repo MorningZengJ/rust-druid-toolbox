@@ -17,62 +17,98 @@ interface ThemeState {
   customPrimary: string | undefined;
   selectedShadeIndex: number | undefined;
   loaded: boolean;
-  setColorMode: (mode: ColorMode) => void;
-  setColorTheme: (theme: ColorTheme) => void;
-  setCustomPrimary: (hex: string | undefined) => void;
-  setSelectedShadeIndex: (index: number | undefined) => void;
+  setColorMode: (mode: ColorMode) => Promise<void>;
+  setColorTheme: (theme: ColorTheme) => Promise<void>;
+  setCustomPrimary: (hex: string | undefined) => Promise<void>;
+  setSelectedShadeIndex: (index: number | undefined) => Promise<void>;
   loadFromStore: () => Promise<void>;
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
+export const useThemeStore = create<ThemeState>((set, get) => ({
   colorMode: "system",
   colorTheme: "default",
   customPrimary: undefined,
   selectedShadeIndex: undefined,
   loaded: false,
 
-  setColorMode: (mode) => {
+  setColorMode: async (mode) => {
+    // 1) 同步更新 zustand 状态，保证 UI 即时响应
     set({ colorMode: mode });
-    settingsStore.set("colorMode", mode);
-  },
-
-  setColorTheme: (theme) => {
-    set({ colorTheme: theme, selectedShadeIndex: undefined });
-    settingsStore.set("colorTheme", theme);
-    settingsStore.set("selectedShadeIndex", undefined);
-    if (theme !== "default") {
-      set({ customPrimary: undefined });
-      settingsStore.set("customPrimary", undefined);
+    // 2) 异步持久化（best-effort，不影响 UI）
+    try {
+      await settingsStore.set("colorMode", mode);
+      await settingsStore.save();
+    } catch (e) {
+      console.error("Failed to persist colorMode:", e);
     }
   },
 
-  setCustomPrimary: (hex) => {
-    set({ customPrimary: hex, selectedShadeIndex: undefined });
-    settingsStore.set("customPrimary", hex);
-    settingsStore.set("selectedShadeIndex", undefined);
-    if (hex) {
-      set({ colorTheme: "default" });
-      settingsStore.set("colorTheme", "default");
+  setColorTheme: async (theme) => {
+    // 1) 同步完成所有 zustand set()，确保原子性
+    //    ⚠️ 必须在第一次 await 前完成全部 set()，防止中途抛异常导致状态不一致
+    set({
+      colorTheme: theme,
+      selectedShadeIndex: undefined,
+      customPrimary: theme !== "default" ? undefined : get().customPrimary,
+    });
+    // 2) 异步持久化
+    try {
+      await settingsStore.set("colorTheme", theme);
+      await settingsStore.set("selectedShadeIndex", undefined);
+      await settingsStore.save();
+      if (theme !== "default") {
+        await settingsStore.set("customPrimary", undefined);
+        await settingsStore.save();
+      }
+    } catch (e) {
+      console.error("Failed to persist colorTheme:", e);
     }
   },
 
-  setSelectedShadeIndex: (index) => {
+  setCustomPrimary: async (hex) => {
+    // 1) 同步完成所有 zustand set()
+    set({
+      customPrimary: hex,
+      selectedShadeIndex: undefined,
+      colorTheme: hex ? "default" : get().colorTheme,
+    });
+    // 2) 异步持久化
+    try {
+      await settingsStore.set("customPrimary", hex);
+      await settingsStore.set("selectedShadeIndex", undefined);
+      await settingsStore.save();
+      if (hex) {
+        await settingsStore.set("colorTheme", "default");
+        await settingsStore.save();
+      }
+    } catch (e) {
+      console.error("Failed to persist customPrimary:", e);
+    }
+  },
+
+  setSelectedShadeIndex: async (index) => {
+    // 1) 同步更新 zustand 状态
     set({ selectedShadeIndex: index });
-    settingsStore.set("selectedShadeIndex", index);
+    // 2) 异步持久化
+    try {
+      await settingsStore.set("selectedShadeIndex", index);
+      await settingsStore.save();
+    } catch (e) {
+      console.error("Failed to persist selectedShadeIndex:", e);
+    }
   },
 
   loadFromStore: async () => {
-    const [rawMode, rawTheme, rawCustom, rawShadeIndex] = await Promise.all([
+    const [rawMode, rawTheme, rawCustom] = await Promise.all([
       settingsStore.get("colorMode"),
       settingsStore.get("colorTheme"),
       settingsStore.get("customPrimary"),
-      settingsStore.get("selectedShadeIndex"),
     ]);
     set({
       colorMode: validateColorMode(rawMode),
       colorTheme: validateColorTheme(rawTheme),
       customPrimary: validateCustomPrimary(rawCustom),
-      selectedShadeIndex: validateSelectedShadeIndex(rawShadeIndex),
+      selectedShadeIndex: undefined, // selectedShadeIndex 不跨会话持久化
       loaded: true,
     });
   },

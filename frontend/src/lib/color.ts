@@ -168,7 +168,7 @@ export function hexToHsl(hex: string): [number, number, number] {
   if (max === min) return [0, 0, l];
   const d = max - min;
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
+  let h;
   if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
   else if (max === g) h = ((b - r) / d + 2) / 6;
   else h = ((r - g) / d + 4) / 6;
@@ -190,4 +190,13 @@ export function hslToHex(h: number, s: number, l: number): string {
   else { r = c; b = x; }
   const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+// ── 主题工具 ──
+
+/** 将主色调降低饱和度并调整亮度，生成暗色表面色 */
+export function tintForDarkSurface(hex: string, targetLightness: number): string {
+  const [h, s] = hexToHsl(hex);
+  const lowSat = Math.max(s * 0.12, 6);
+  return hslToHex(h, lowSat, targetLightness);
 }

@@ -48,9 +48,10 @@ pub async fn convert_ascii_art_from_path(
         let source_name = source_name_from_path(&image_path);
 
         let img = image::open(&image_path).map_err(|e| e.to_string())?;
-        let mut output = AsciiArtEngine::convert_from_image(&params, &img, |progress: AsciiArtProgress| {
-            let _ = handle.emit("ascii-art://progress", progress);
-        })?;
+        let mut output =
+            AsciiArtEngine::convert_from_image(&params, &img, |progress: AsciiArtProgress| {
+                let _ = handle.emit("ascii-art://progress", progress);
+            })?;
 
         // PNG mode: write to temp file
         if let Some(ref png_bytes) = output.image_data {
@@ -60,11 +61,14 @@ pub async fn convert_ascii_art_from_path(
             output.image_data = None;
         }
 
-        let _ = app_handle.emit("ascii-art://progress", AsciiArtProgress {
-            stage: "encode".to_string(),
-            progress: 1.0,
-            elapsed_ms: start_time.elapsed().as_millis() as u64,
-        });
+        let _ = app_handle.emit(
+            "ascii-art://progress",
+            AsciiArtProgress {
+                stage: "encode".to_string(),
+                progress: 1.0,
+                elapsed_ms: start_time.elapsed().as_millis() as u64,
+            },
+        );
 
         Ok(output)
     })
@@ -89,9 +93,10 @@ pub async fn save_temp_image_and_convert(
         std::fs::write(&temp_path, &image_bytes).map_err(|e| e.to_string())?;
 
         let img = image::load_from_memory(&image_bytes).map_err(|e| e.to_string())?;
-        let mut output = AsciiArtEngine::convert_from_image(&params, &img, |progress: AsciiArtProgress| {
-            let _ = handle.emit("ascii-art://progress", progress);
-        })?;
+        let mut output =
+            AsciiArtEngine::convert_from_image(&params, &img, |progress: AsciiArtProgress| {
+                let _ = handle.emit("ascii-art://progress", progress);
+            })?;
 
         // PNG mode: write to temp file
         if let Some(ref png_bytes) = output.image_data {
@@ -101,11 +106,14 @@ pub async fn save_temp_image_and_convert(
             output.image_data = None;
         }
 
-        let _ = app_handle.emit("ascii-art://progress", AsciiArtProgress {
-            stage: "encode".to_string(),
-            progress: 1.0,
-            elapsed_ms: start_time.elapsed().as_millis() as u64,
-        });
+        let _ = app_handle.emit(
+            "ascii-art://progress",
+            AsciiArtProgress {
+                stage: "encode".to_string(),
+                progress: 1.0,
+                elapsed_ms: start_time.elapsed().as_millis() as u64,
+            },
+        );
 
         Ok((temp_path.to_string_lossy().to_string(), output))
     })

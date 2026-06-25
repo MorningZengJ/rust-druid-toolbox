@@ -1,6 +1,8 @@
-use crate::model::video_frame_state::{ExtractParams, ExtractedFrame, LogEntry, ProgressInfo, VideoInfo};
+use crate::model::video_frame_state::{
+    ExtractParams, ExtractedFrame, LogEntry, ProgressInfo, VideoInfo,
+};
 use crate::utils::video_frame_engine::VideoFrameEngine;
-use notify::{RecommendedWatcher, Watcher, RecursiveMode, EventKind};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::sync::{Arc, Mutex};
 use tauri::Emitter;
 
@@ -15,7 +17,6 @@ impl FrameWatcherState {
         }
     }
 }
-
 
 /// Check if FFmpeg is available
 #[tauri::command]
@@ -99,9 +100,7 @@ pub fn start_frame_watcher(
 
 /// Stop watching output directory
 #[tauri::command]
-pub fn stop_frame_watcher(
-    state: tauri::State<FrameWatcherState>,
-) -> Result<(), String> {
+pub fn stop_frame_watcher(state: tauri::State<FrameWatcherState>) -> Result<(), String> {
     let mut guard = state.watcher.lock().map_err(|e| e.to_string())?;
     *guard = None;
     Ok(())

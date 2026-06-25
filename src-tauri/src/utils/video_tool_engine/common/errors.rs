@@ -1,5 +1,6 @@
 /// 视频工具统一错误类型
 #[derive(Debug)]
+#[allow(dead_code)]
 pub(crate) enum VideoToolError {
     FFmpeg(String),
     Io(std::io::Error),
@@ -29,8 +30,9 @@ impl From<std::io::Error> for VideoToolError {
 }
 
 // 当前阶段不替换 anyhow::Result，保持 backward-compatible。
-// 新增 helper 用于统一转换。
+// 新增 helper 用于统一转换（脚手架，后续替换 anyhow 时使用）。
 impl VideoToolError {
+    #[allow(dead_code)]
     pub fn to_anyhow(self) -> anyhow::Error {
         anyhow::anyhow!("{}", self)
     }

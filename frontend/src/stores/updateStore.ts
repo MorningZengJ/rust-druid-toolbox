@@ -258,9 +258,10 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 
   // ── setAutoCheck ───────────────────────────────────────
 
-  setAutoCheck: (enabled) => {
+  setAutoCheck: async (enabled) => {
     set({ autoCheck: enabled });
-    settingsStore.set("autoCheckUpdate", enabled);
+    await settingsStore.set("autoCheckUpdate", enabled);
+    await settingsStore.save();
   },
 }));
 

@@ -1,5 +1,5 @@
-use super::VideoToolEngine;
 use super::convert_video_setup::ConvertVideoConfig;
+use super::VideoToolEngine;
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -19,7 +19,11 @@ impl VideoToolEngine {
         Self::log_info(log_cb, task_id, "使用重编码转换模式");
 
         let config = Self::probe_convert_config(params)?;
-        Self::log_info(log_cb, task_id, &format!("使用编码器: {}", config.codec_name));
+        Self::log_info(
+            log_cb,
+            task_id,
+            &format!("使用编码器: {}", config.codec_name),
+        );
 
         let (mut output, mut encoder) = Self::setup_convert_output(params, &config)?;
 
@@ -28,8 +32,11 @@ impl VideoToolEngine {
         let (has_audio, mut audio_enc, mut audio_dec, mut audio_resampler, audio_info) =
             Self::setup_audio_pipeline(params, &config, &mut output, &input_for_audio)?;
         if let Some(ref msg) = audio_info {
-            if has_audio { Self::log_info(log_cb, task_id, msg); }
-            else { Self::log_warn(log_cb, task_id, msg); }
+            if has_audio {
+                Self::log_info(log_cb, task_id, msg);
+            } else {
+                Self::log_warn(log_cb, task_id, msg);
+            }
         }
         drop(input_for_audio);
 
@@ -40,23 +47,41 @@ impl VideoToolEngine {
         let has_cover = !cover_stream_indices.is_empty();
         drop(input_for_cover);
 
-        output.write_header().map_err(|e| anyhow!("写入输出头失败: {}", e))?;
+        output
+            .write_header()
+            .map_err(|e| anyhow!("写入输出头失败: {}", e))?;
 
         let mut input = ffmpeg_next::format::input(&params.input_path)
             .map_err(|e| anyhow!("打开输入文件失败: {}", e))?;
-        let video_stream = input.streams().best(ffmpeg_next::media::Type::Video)
+        let video_stream = input
+            .streams()
+            .best(ffmpeg_next::media::Type::Video)
             .ok_or_else(|| anyhow!("输入文件未找到视频流"))?;
-        let decoder_ctx = ffmpeg_next::codec::context::Context::from_parameters(video_stream.parameters())
-            .map_err(|e| anyhow!("创建解码上下文失败: {}", e))?;
-        let mut decoder = decoder_ctx.decoder().video()
+        let decoder_ctx =
+            ffmpeg_next::codec::context::Context::from_parameters(video_stream.parameters())
+                .map_err(|e| anyhow!("创建解码上下文失败: {}", e))?;
+        let mut decoder = decoder_ctx
+            .decoder()
+            .video()
             .map_err(|e| anyhow!("创建视频解码器失败: {}", e))?;
 
         let (scaled_w, scaled_h) = Self::calculate_aspect_ratio_resize(
-            decoder.width(), decoder.height(), config.width, config.height,
+            decoder.width(),
+            decoder.height(),
+            config.width,
+            config.height,
         );
         let needs_padding = scaled_w != config.width || scaled_h != config.height;
-        let x_off = if needs_padding { (config.width - scaled_w) / 2 } else { 0 };
-        let y_off = if needs_padding { (config.height - scaled_h) / 2 } else { 0 };
+        let x_off = if needs_padding {
+            (config.width - scaled_w) / 2
+        } else {
+            0
+        };
+        let y_off = if needs_padding {
+            (config.height - scaled_h) / 2
+        } else {
+            0
+        };
 
         // 放大用 LANCZOS（高质量），缩小用 BILINEAR（足够且更快）
         let is_upscale = scaled_w > decoder.width() || scaled_h > decoder.height();
@@ -66,21 +91,39 @@ impl VideoToolEngine {
             ffmpeg_next::software::scaling::Flags::BILINEAR
         };
         let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
-            decoder.format(), decoder.width(), decoder.height(),
-            ffmpeg_next::format::Pixel::YUV420P, scaled_w, scaled_h,
+            decoder.format(),
+            decoder.width(),
+            decoder.height(),
+            ffmpeg_next::format::Pixel::YUV420P,
+            scaled_w,
+            scaled_h,
             scale_algo,
-        ).map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
+        )
+        .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
 
         if needs_padding {
-            Self::log_info(log_cb, task_id, &format!(
-                "视频分辨率 {}x{} 与目标 {}x{} 不同，保持宽高比缩放至 {}x{} 并添加黑边",
-                decoder.width(), decoder.height(), config.width, config.height, scaled_w, scaled_h
-            ));
+            Self::log_info(
+                log_cb,
+                task_id,
+                &format!(
+                    "视频分辨率 {}x{} 与目标 {}x{} 不同，保持宽高比缩放至 {}x{} 并添加黑边",
+                    decoder.width(),
+                    decoder.height(),
+                    config.width,
+                    config.height,
+                    scaled_w,
+                    scaled_h
+                ),
+            );
         }
 
         let total_frames = {
             let dur_secs = input.duration() as f64 / 1_000_000.0;
-            if dur_secs > 0.0 { (dur_secs * config.fps) as u64 } else { 0 }
+            if dur_secs > 0.0 {
+                (dur_secs * config.fps) as u64
+            } else {
+                0
+            }
         };
 
         let mut frame_count: u64 = 0;
@@ -92,28 +135,66 @@ impl VideoToolEngine {
 
             if mt == ffmpeg_next::media::Type::Video {
                 Self::process_convert_video_packet(
-                    &packet, &mut decoder, &mut sws_ctx, &mut encoder, &mut output,
-                    config.enc_tb, &config, scaled_w, scaled_h, x_off, y_off,
-                    needs_padding, &mut frame_count, total_frames, start, task_id,
-                    progress_cb, log_cb,
+                    &packet,
+                    &mut decoder,
+                    &mut sws_ctx,
+                    &mut encoder,
+                    &mut output,
+                    config.enc_tb,
+                    &config,
+                    scaled_w,
+                    scaled_h,
+                    x_off,
+                    y_off,
+                    needs_padding,
+                    &mut frame_count,
+                    total_frames,
+                    start,
+                    task_id,
+                    progress_cb,
+                    log_cb,
                 )?;
             } else if mt == ffmpeg_next::media::Type::Audio && has_audio {
                 if let (Some(ref mut dec), Some(ref mut enc)) = (&mut audio_dec, &mut audio_enc) {
                     Self::process_audio_packet(
-                        &packet, dec, enc, &mut audio_resampler, &mut output, log_cb, task_id,
+                        &packet,
+                        dec,
+                        enc,
+                        &mut audio_resampler,
+                        &mut output,
+                        log_cb,
+                        task_id,
                     );
                 }
             } else if has_cover {
                 Self::try_write_cover(
-                    &packet, &stream, mt, &cover_stream_indices, &mut cover_counter,
-                    &mut output, log_cb, task_id,
+                    &packet,
+                    &stream,
+                    mt,
+                    &cover_stream_indices,
+                    &mut cover_counter,
+                    &mut output,
+                    log_cb,
+                    task_id,
                 );
             }
         }
 
         // ── 刷新视频解码器 ──
-        Self::flush_video_decoder_simple(&mut decoder, &mut sws_ctx, &mut encoder, &mut output,
-            config.enc_tb, &config, scaled_w, scaled_h, x_off, y_off, needs_padding, &mut frame_count);
+        Self::flush_video_decoder_simple(
+            &mut decoder,
+            &mut sws_ctx,
+            &mut encoder,
+            &mut output,
+            config.enc_tb,
+            &config,
+            scaled_w,
+            scaled_h,
+            x_off,
+            y_off,
+            needs_padding,
+            &mut frame_count,
+        );
 
         Self::encode_and_write(&mut encoder, None, &mut output, config.enc_tb)?;
 
@@ -122,20 +203,32 @@ impl VideoToolEngine {
             Self::flush_audio_encoder(audio_dec, audio_enc, audio_resampler, &mut output);
         }
 
-        output.write_trailer().map_err(|e| anyhow!("写入文件尾失败: {}", e))?;
+        output
+            .write_trailer()
+            .map_err(|e| anyhow!("写入文件尾失败: {}", e))?;
 
-        let file_size = std::fs::metadata(&params.output_path).map(|m| m.len()).unwrap_or(0);
+        let file_size = std::fs::metadata(&params.output_path)
+            .map(|m| m.len())
+            .unwrap_or(0);
 
         progress_cb(VideoToolProgress {
-            task_id: task_id.to_string(), progress: 1.0,
-            current_step: "done".to_string(), elapsed_ms: start.elapsed().as_millis() as u64,
+            task_id: task_id.to_string(),
+            progress: 1.0,
+            current_step: "done".to_string(),
+            elapsed_ms: start.elapsed().as_millis() as u64,
             ..Default::default()
         });
 
-        Self::log_info(log_cb, task_id, &format!(
-            "转换完成，共编码 {} 帧，文件大小 {}，耗时 {:.1} 秒",
-            frame_count, Self::format_size(file_size), start.elapsed().as_secs_f64()
-        ));
+        Self::log_info(
+            log_cb,
+            task_id,
+            &format!(
+                "转换完成，共编码 {} 帧，文件大小 {}，耗时 {:.1} 秒",
+                frame_count,
+                Self::format_size(file_size),
+                start.elapsed().as_secs_f64()
+            ),
+        );
 
         Ok(ConvertFormatResult {
             output_path: params.output_path.to_string_lossy().to_string(),
@@ -153,11 +246,21 @@ impl VideoToolEngine {
         output: &mut ffmpeg_next::format::context::Output,
         enc_tb: ffmpeg_next::Rational,
         config: &ConvertVideoConfig,
-        scaled_w: u32, scaled_h: u32, x_off: u32, y_off: u32, needs_padding: bool,
-        frame_count: &mut u64, total_frames: u64, start: Instant,
-        task_id: &str, progress_cb: &mut P, log_cb: &mut L,
+        scaled_w: u32,
+        scaled_h: u32,
+        x_off: u32,
+        y_off: u32,
+        needs_padding: bool,
+        frame_count: &mut u64,
+        total_frames: u64,
+        start: Instant,
+        task_id: &str,
+        progress_cb: &mut P,
+        log_cb: &mut L,
     ) -> Result<()>
-    where P: FnMut(VideoToolProgress), L: FnMut(VideoToolLog),
+    where
+        P: FnMut(VideoToolProgress),
+        L: FnMut(VideoToolLog),
     {
         if let Err(e) = decoder.send_packet(packet) {
             Self::log_warn(log_cb, task_id, &format!("跳过损坏的视频 packet: {}", e));
@@ -166,8 +269,15 @@ impl VideoToolEngine {
         let mut decoded = ffmpeg_next::frame::Video::empty();
         while decoder.receive_frame(&mut decoded).is_ok() {
             let yuv = Self::scale_and_pad_frame(
-                &decoded, sws_ctx, config.width, config.height,
-                scaled_w, scaled_h, x_off, y_off, needs_padding,
+                &decoded,
+                sws_ctx,
+                config.width,
+                config.height,
+                scaled_w,
+                scaled_h,
+                x_off,
+                y_off,
+                needs_padding,
             )?;
             let mut frame = yuv;
             frame.set_pts(Some(*frame_count as i64));
@@ -196,12 +306,16 @@ impl VideoToolEngine {
         log_cb: &mut impl FnMut(VideoToolLog),
         task_id: &str,
     ) {
-        if dec.send_packet(packet).is_err() { return; }
+        if dec.send_packet(packet).is_err() {
+            return;
+        }
         let mut decoded_frame = ffmpeg_next::frame::Audio::empty();
         while dec.receive_frame(&mut decoded_frame).is_ok() {
             let frame_to_encode = if let Some(ref mut resamp) = resampler {
                 let mut resampled = ffmpeg_next::frame::Audio::empty();
-                if resamp.run(&decoded_frame, &mut resampled).is_err() { continue; }
+                if resamp.run(&decoded_frame, &mut resampled).is_err() {
+                    continue;
+                }
                 resampled
             } else {
                 decoded_frame.clone()
@@ -228,15 +342,26 @@ impl VideoToolEngine {
         output: &mut ffmpeg_next::format::context::Output,
         enc_tb: ffmpeg_next::Rational,
         config: &ConvertVideoConfig,
-        scaled_w: u32, scaled_h: u32, x_off: u32, y_off: u32, needs_padding: bool,
+        scaled_w: u32,
+        scaled_h: u32,
+        x_off: u32,
+        y_off: u32,
+        needs_padding: bool,
         frame_count: &mut u64,
     ) {
         decoder.send_eof().ok();
         let mut decoded = ffmpeg_next::frame::Video::empty();
         while decoder.receive_frame(&mut decoded).is_ok() {
             if let Ok(yuv) = Self::scale_and_pad_frame(
-                &decoded, sws_ctx, config.width, config.height,
-                scaled_w, scaled_h, x_off, y_off, needs_padding,
+                &decoded,
+                sws_ctx,
+                config.width,
+                config.height,
+                scaled_w,
+                scaled_h,
+                x_off,
+                y_off,
+                needs_padding,
             ) {
                 let mut frame = yuv;
                 frame.set_pts(Some(*frame_count as i64));
@@ -254,16 +379,21 @@ impl VideoToolEngine {
         output: &mut ffmpeg_next::format::context::Output,
     ) {
         let (mut dec, mut enc) = match (audio_dec, audio_enc) {
-            (Some(d), Some(e)) => (d, e), _ => return,
+            (Some(d), Some(e)) => (d, e),
+            _ => return,
         };
         dec.send_eof().ok();
         let mut decoded_frame = ffmpeg_next::frame::Audio::empty();
         while dec.receive_frame(&mut decoded_frame).is_ok() {
             let frame_to_encode = if let Some(ref mut resamp) = audio_resampler {
                 let mut resampled = ffmpeg_next::frame::Audio::empty();
-                if resamp.run(&decoded_frame, &mut resampled).is_err() { continue; }
+                if resamp.run(&decoded_frame, &mut resampled).is_err() {
+                    continue;
+                }
                 resampled
-            } else { decoded_frame.clone() };
+            } else {
+                decoded_frame.clone()
+            };
             enc.send_frame(&frame_to_encode).ok();
             let mut pkt = ffmpeg_next::Packet::empty();
             while enc.receive_packet(&mut pkt).is_ok() {

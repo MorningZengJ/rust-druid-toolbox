@@ -1,6 +1,6 @@
-use super::VideoToolEngine;
-use super::common::{now_ms, find_video_encoder_for_format};
+use super::common::{find_video_encoder_for_format, now_ms};
 use super::merge_setup::FirstInputProbe;
+use super::VideoToolEngine;
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::path::Path;
@@ -42,10 +42,8 @@ impl VideoToolEngine {
             timestamp: now_ms(),
         });
 
-        let codec_name = find_video_encoder_for_format(
-            &params.output_format,
-            params.video_codec.as_deref(),
-        )?;
+        let codec_name =
+            find_video_encoder_for_format(&params.output_format, params.video_codec.as_deref())?;
         Self::log_info(log_cb, task_id, &format!("使用编码器: {}", codec_name));
 
         let probe = Self::probe_first_input(params)?;
@@ -65,20 +63,40 @@ impl VideoToolEngine {
         let total = params.input_paths.len();
 
         for (i, input_path) in params.input_paths.iter().enumerate() {
-            Self::log_info(log_cb, task_id, &format!("处理第 {}/{} 个文件", i + 1, total));
+            Self::log_info(
+                log_cb,
+                task_id,
+                &format!("处理第 {}/{} 个文件", i + 1, total),
+            );
             Self::process_single_input(
-                input_path, i, total, &probe, params, task_id, &mut output, &mut encoder,
-                enc_tb, &cover_stream_indices, &mut state, start, progress_cb, log_cb,
+                input_path,
+                i,
+                total,
+                &probe,
+                params,
+                task_id,
+                &mut output,
+                &mut encoder,
+                enc_tb,
+                &cover_stream_indices,
+                &mut state,
+                start,
+                progress_cb,
+                log_cb,
             )?;
         }
 
         Self::encode_and_write(&mut encoder, None, &mut output, enc_tb)?;
-        output.write_trailer().map_err(|e| anyhow!("写入文件尾失败: {}", e))?;
+        output
+            .write_trailer()
+            .map_err(|e| anyhow!("写入文件尾失败: {}", e))?;
         drop(output);
 
         Self::generate_cover_if_needed(params, task_id, log_cb);
 
-        let file_size = std::fs::metadata(&params.output_path).map(|m| m.len()).unwrap_or(0);
+        let file_size = std::fs::metadata(&params.output_path)
+            .map(|m| m.len())
+            .unwrap_or(0);
 
         progress_cb(VideoToolProgress {
             task_id: task_id.to_string(),
@@ -92,10 +110,15 @@ impl VideoToolEngine {
             ..Default::default()
         });
 
-        Self::log_info(log_cb, task_id, &format!(
-            "合并完成，共编码 {} 帧，耗时 {:.1} 秒",
-            state.frame_count, start.elapsed().as_secs_f64()
-        ));
+        Self::log_info(
+            log_cb,
+            task_id,
+            &format!(
+                "合并完成，共编码 {} 帧，耗时 {:.1} 秒",
+                state.frame_count,
+                start.elapsed().as_secs_f64()
+            ),
+        );
 
         Ok(MergeVideosResult {
             output_path: params.output_path.to_string_lossy().to_string(),
@@ -126,11 +149,14 @@ impl VideoToolEngine {
         P: FnMut(VideoToolProgress),
         L: FnMut(VideoToolLog),
     {
-        let mut input = ffmpeg_next::format::input(input_path)
-            .map_err(|e| {
-                Self::log_error(log_cb, task_id, &format!("打开视频 {} 失败: {}", input_path.display(), e));
-                anyhow!("打开视频 {} 失败: {}", input_path.display(), e)
-            })?;
+        let mut input = ffmpeg_next::format::input(input_path).map_err(|e| {
+            Self::log_error(
+                log_cb,
+                task_id,
+                &format!("打开视频 {} 失败: {}", input_path.display(), e),
+            );
+            anyhow!("打开视频 {} 失败: {}", input_path.display(), e)
+        })?;
 
         let video_stream = input
             .streams()
@@ -146,11 +172,22 @@ impl VideoToolEngine {
             .map_err(|e| anyhow!("创建视频解码器失败: {}", e))?;
 
         let (scaled_w, scaled_h) = Self::calculate_aspect_ratio_resize(
-            decoder.width(), decoder.height(), probe.width, probe.height,
+            decoder.width(),
+            decoder.height(),
+            probe.width,
+            probe.height,
         );
         let needs_padding = scaled_w != probe.width || scaled_h != probe.height;
-        let x_off = if needs_padding { (probe.width - scaled_w) / 2 } else { 0 };
-        let y_off = if needs_padding { (probe.height - scaled_h) / 2 } else { 0 };
+        let x_off = if needs_padding {
+            (probe.width - scaled_w) / 2
+        } else {
+            0
+        };
+        let y_off = if needs_padding {
+            (probe.height - scaled_h) / 2
+        } else {
+            0
+        };
 
         // 放大用 LANCZOS（高质量），缩小用 BILINEAR（足够且更快）
         let is_upscale = scaled_w > decoder.width() || scaled_h > decoder.height();
@@ -160,18 +197,31 @@ impl VideoToolEngine {
             ffmpeg_next::software::scaling::Flags::BILINEAR
         };
         let mut sws_ctx = ffmpeg_next::software::scaling::Context::get(
-            decoder.format(), decoder.width(), decoder.height(),
-            ffmpeg_next::format::Pixel::YUV420P, scaled_w, scaled_h,
+            decoder.format(),
+            decoder.width(),
+            decoder.height(),
+            ffmpeg_next::format::Pixel::YUV420P,
+            scaled_w,
+            scaled_h,
             scale_algo,
         )
         .map_err(|e| anyhow!("创建颜色转换上下文失败: {}", e))?;
 
         if needs_padding {
-            Self::log_info(log_cb, task_id, &format!(
-                "视频 {} 分辨率 {}x{} 与目标 {}x{} 不同，保持宽高比缩放至 {}x{} 并添加黑边",
-                input_path.display(), decoder.width(), decoder.height(),
-                probe.width, probe.height, scaled_w, scaled_h
-            ));
+            Self::log_info(
+                log_cb,
+                task_id,
+                &format!(
+                    "视频 {} 分辨率 {}x{} 与目标 {}x{} 不同，保持宽高比缩放至 {}x{} 并添加黑边",
+                    input_path.display(),
+                    decoder.width(),
+                    decoder.height(),
+                    probe.width,
+                    probe.height,
+                    scaled_w,
+                    scaled_h
+                ),
+            );
         }
 
         let mut audio_packets: Vec<(ffmpeg_next::Packet, ffmpeg_next::Rational)> = Vec::new();
@@ -182,9 +232,25 @@ impl VideoToolEngine {
 
             if mt == ffmpeg_next::media::Type::Video {
                 Self::decode_encode_packet(
-                    &packet, input_path, &mut decoder, &mut sws_ctx, encoder, output,
-                    enc_tb, probe, needs_padding, scaled_w, scaled_h, x_off, y_off,
-                    state, start, file_index, total_files, progress_cb, log_cb,
+                    &packet,
+                    input_path,
+                    &mut decoder,
+                    &mut sws_ctx,
+                    encoder,
+                    output,
+                    enc_tb,
+                    probe,
+                    needs_padding,
+                    scaled_w,
+                    scaled_h,
+                    x_off,
+                    y_off,
+                    state,
+                    start,
+                    file_index,
+                    total_files,
+                    progress_cb,
+                    log_cb,
                 )?;
             } else if mt == ffmpeg_next::media::Type::Audio && probe.has_audio {
                 if Self::is_audio_compatible(stream.parameters().id(), &params.output_format) {
@@ -192,21 +258,49 @@ impl VideoToolEngine {
                 }
             } else if !cover_stream_indices.is_empty() && file_index == 0 {
                 Self::try_write_cover(
-                    &packet, &stream, mt, cover_stream_indices, &mut cover_idx, output, log_cb, task_id,
+                    &packet,
+                    &stream,
+                    mt,
+                    cover_stream_indices,
+                    &mut cover_idx,
+                    output,
+                    log_cb,
+                    task_id,
                 );
             }
         }
 
         // 刷新解码器
         Self::flush_decoder(
-            &mut decoder, &mut sws_ctx, encoder, output, enc_tb, probe,
-            needs_padding, scaled_w, scaled_h, x_off, y_off,
-            state, start, file_index, total_files, input_path, progress_cb,
+            &mut decoder,
+            &mut sws_ctx,
+            encoder,
+            output,
+            enc_tb,
+            probe,
+            needs_padding,
+            scaled_w,
+            scaled_h,
+            x_off,
+            y_off,
+            state,
+            start,
+            file_index,
+            total_files,
+            input_path,
+            progress_cb,
         );
 
         // 写入音频
         if probe.has_audio {
-            Self::write_audio(audio_packets, output, &mut state.last_audio_dts, input_path, log_cb, task_id)?;
+            Self::write_audio(
+                audio_packets,
+                output,
+                &mut state.last_audio_dts,
+                input_path,
+                log_cb,
+                task_id,
+            )?;
         }
 
         Ok(())
@@ -240,27 +334,49 @@ impl VideoToolEngine {
         L: FnMut(VideoToolLog),
     {
         decoder.send_packet(packet).map_err(|e| {
-            Self::log_error(log_cb, "", &format!("处理文件 {} 时解码失败: {}", input_path.display(), e));
+            Self::log_error(
+                log_cb,
+                "",
+                &format!("处理文件 {} 时解码失败: {}", input_path.display(), e),
+            );
             anyhow!("处理文件 {} 时解码失败: {}", input_path.display(), e)
         })?;
 
         let mut decoded = ffmpeg_next::frame::Video::empty();
         while decoder.receive_frame(&mut decoded).is_ok() {
             let yuv = Self::scale_and_pad_frame(
-                &decoded, sws_ctx, probe.width, probe.height,
-                scaled_w, scaled_h, x_off, y_off, needs_padding,
+                &decoded,
+                sws_ctx,
+                probe.width,
+                probe.height,
+                scaled_w,
+                scaled_h,
+                x_off,
+                y_off,
+                needs_padding,
             )?;
             let mut yuv = yuv;
             yuv.set_pts(Some(state.frame_count as i64));
             state.frame_count += 1;
 
             Self::encode_and_write(encoder, Some(&yuv), output, enc_tb).map_err(|e| {
-                Self::log_error(log_cb, "", &format!("处理文件 {} 时编码失败: {}", input_path.display(), e));
+                Self::log_error(
+                    log_cb,
+                    "",
+                    &format!("处理文件 {} 时编码失败: {}", input_path.display(), e),
+                );
                 anyhow!("处理文件 {} 时编码失败: {}", input_path.display(), e)
             })?;
 
             if state.frame_count % 30 == 0 {
-                Self::report_progress(state, start, file_index, total_files, input_path, progress_cb);
+                Self::report_progress(
+                    state,
+                    start,
+                    file_index,
+                    total_files,
+                    input_path,
+                    progress_cb,
+                );
             }
         }
         Ok(())
@@ -293,15 +409,29 @@ impl VideoToolEngine {
         let mut decoded = ffmpeg_next::frame::Video::empty();
         while decoder.receive_frame(&mut decoded).is_ok() {
             if let Ok(yuv) = Self::scale_and_pad_frame(
-                &decoded, sws_ctx, probe.width, probe.height,
-                scaled_w, scaled_h, x_off, y_off, needs_padding,
+                &decoded,
+                sws_ctx,
+                probe.width,
+                probe.height,
+                scaled_w,
+                scaled_h,
+                x_off,
+                y_off,
+                needs_padding,
             ) {
                 let mut yuv = yuv;
                 yuv.set_pts(Some(state.frame_count as i64));
                 state.frame_count += 1;
                 let _ = Self::encode_and_write(encoder, Some(&yuv), output, enc_tb);
                 if state.frame_count % 30 == 0 && state.estimated_total_frames > 0 {
-                    Self::report_progress(state, start, file_index, total_files, input_path, progress_cb);
+                    Self::report_progress(
+                        state,
+                        start,
+                        file_index,
+                        total_files,
+                        input_path,
+                        progress_cb,
+                    );
                 }
             }
         }
@@ -335,15 +465,25 @@ impl VideoToolEngine {
                 }
             }
 
-            if let Some(p) = pkt.pts() { pkt.set_pts(Some(p + dts_offset)); }
-            if let Some(d) = pkt.dts() { pkt.set_dts(Some(d + dts_offset)); }
+            if let Some(p) = pkt.pts() {
+                pkt.set_pts(Some(p + dts_offset));
+            }
+            if let Some(d) = pkt.dts() {
+                pkt.set_dts(Some(d + dts_offset));
+            }
 
             let cur = pkt.dts().unwrap_or_else(|| pkt.pts().unwrap_or(0));
-            if cur > *last_audio_dts { *last_audio_dts = cur; }
+            if cur > *last_audio_dts {
+                *last_audio_dts = cur;
+            }
 
             pkt.set_position(-1);
             pkt.write_interleaved(output).map_err(|e| {
-                Self::log_error(log_cb, task_id, &format!("处理文件 {} 时写入音频失败: {}", input_path.display(), e));
+                Self::log_error(
+                    log_cb,
+                    task_id,
+                    &format!("处理文件 {} 时写入音频失败: {}", input_path.display(), e),
+                );
                 anyhow!("处理文件 {} 时写入音频失败: {}", input_path.display(), e)
             })?;
         }
@@ -367,9 +507,15 @@ impl VideoToolEngine {
             ((file_index as f32 + 0.5) / total_files as f32).min(0.95)
         };
         let elapsed = start.elapsed().as_secs_f64();
-        let speed = if elapsed > 0.0 { state.frame_count as f64 / elapsed } else { 0.0 };
+        let speed = if elapsed > 0.0 {
+            state.frame_count as f64 / elapsed
+        } else {
+            0.0
+        };
         let eta_ms = if speed > 0.0 && state.estimated_total_frames > state.frame_count {
-            Some(((state.estimated_total_frames - state.frame_count) as f64 / speed * 1000.0) as u64)
+            Some(
+                ((state.estimated_total_frames - state.frame_count) as f64 / speed * 1000.0) as u64,
+            )
         } else {
             None
         };
@@ -380,7 +526,13 @@ impl VideoToolEngine {
             elapsed_ms: start.elapsed().as_millis() as u64,
             current_file_index: Some(file_index),
             total_files: Some(total_files),
-            current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
+            current_file_name: Some(
+                input_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string(),
+            ),
             speed: Some(speed),
             eta_ms,
             frames_processed: Some(state.frame_count.min(state.estimated_total_frames)),
@@ -389,26 +541,34 @@ impl VideoToolEngine {
     }
 
     /// 生成并嵌入封面图（如果输入没有封面）
-    fn generate_cover_if_needed<L>(
-        params: &MergeVideosParams,
-        task_id: &str,
-        log_cb: &mut L,
-    ) where
+    fn generate_cover_if_needed<L>(params: &MergeVideosParams, task_id: &str, log_cb: &mut L)
+    where
         L: FnMut(VideoToolLog),
     {
         let has_cover = ffmpeg_next::format::input(&params.input_paths[0])
-            .map(|inp| inp.streams().any(|s| {
-                let mt = s.parameters().medium();
-                mt == ffmpeg_next::media::Type::Attachment
-                    || s.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC)
-            }))
+            .map(|inp| {
+                inp.streams().any(|s| {
+                    let mt = s.parameters().medium();
+                    mt == ffmpeg_next::media::Type::Attachment
+                        || s.disposition()
+                            .contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC)
+                })
+            })
             .unwrap_or(false);
-        if has_cover { return; }
+        if has_cover {
+            return;
+        }
 
         Self::log_info(log_cb, task_id, "输入视频无封面图，正在从视频内容生成...");
         match Self::generate_jpeg_cover_from_video(&params.output_path) {
             Ok((jpeg_data, w, h)) => {
-                if let Err(e) = Self::embed_cover_art(&params.output_path, &jpeg_data, w, h, &params.output_format) {
+                if let Err(e) = Self::embed_cover_art(
+                    &params.output_path,
+                    &jpeg_data,
+                    w,
+                    h,
+                    &params.output_format,
+                ) {
                     Self::log_warn(log_cb, task_id, &format!("嵌入封面图失败: {}", e));
                 }
             }
@@ -417,5 +577,4 @@ impl VideoToolEngine {
             }
         }
     }
-
 }

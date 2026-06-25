@@ -1,10 +1,12 @@
-use super::VideoToolEngine;
 use super::common::reset_codec_tag;
+use super::VideoToolEngine;
 use anyhow::{anyhow, Result};
 
 impl VideoToolEngine {
     /// 从视频中解码一帧并编码为 JPEG，返回 (jpeg_bytes, width, height)
-    pub(super) fn generate_jpeg_cover_from_video(video_path: &std::path::Path) -> Result<(Vec<u8>, u32, u32)> {
+    pub(super) fn generate_jpeg_cover_from_video(
+        video_path: &std::path::Path,
+    ) -> Result<(Vec<u8>, u32, u32)> {
         let mut input = ffmpeg_next::format::input(video_path)
             .map_err(|e| anyhow!("打开视频文件失败: {}", e))?;
 
@@ -105,11 +107,12 @@ impl VideoToolEngine {
 
         let temp_path = video_path.with_extension("tmp_cover");
 
-        let mut input = ffmpeg_next::format::input(video_path)
-            .map_err(|e| anyhow!("打开原视频失败: {}", e))?;
+        let mut input =
+            ffmpeg_next::format::input(video_path).map_err(|e| anyhow!("打开原视频失败: {}", e))?;
 
-        let mut output = ffmpeg_next::format::output_as(&temp_path, Self::normalize_format_name(output_format))
-            .map_err(|e| anyhow!("创建临时输出失败: {}", e))?;
+        let mut output =
+            ffmpeg_next::format::output_as(&temp_path, Self::normalize_format_name(output_format))
+                .map_err(|e| anyhow!("创建临时输出失败: {}", e))?;
 
         let mut stream_mapping: Vec<Option<usize>> = vec![None; input.nb_streams() as usize];
         for stream in input.streams() {
@@ -178,8 +181,7 @@ impl VideoToolEngine {
 
         drop(input);
         drop(output);
-        std::fs::rename(&temp_path, video_path)
-            .map_err(|e| anyhow!("替换原文件失败: {}", e))?;
+        std::fs::rename(&temp_path, video_path).map_err(|e| anyhow!("替换原文件失败: {}", e))?;
 
         Ok(())
     }

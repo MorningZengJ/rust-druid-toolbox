@@ -1,6 +1,13 @@
 use crate::model::video_tool_state::*;
+use crate::state::video_tasks::VideoTaskRegistry;
 use crate::utils::video_tool_engine::VideoToolEngine;
 use tauri::Emitter;
+
+/// 取消正在运行的视频任务
+#[tauri::command]
+pub fn cancel_task(task_id: String, registry: tauri::State<'_, VideoTaskRegistry>) -> bool {
+    registry.cancel(&task_id)
+}
 
 #[tauri::command]
 pub fn check_video_encoders() -> Vec<(String, bool)> {
@@ -26,9 +33,9 @@ pub fn check_audio_encoders() -> Vec<(String, bool)> {
     format_encoders
         .iter()
         .map(|(format, encoders)| {
-            let available = encoders.iter().any(|&name| {
-                ffmpeg_next::codec::encoder::find_by_name(name).is_some()
-            });
+            let available = encoders
+                .iter()
+                .any(|&name| ffmpeg_next::codec::encoder::find_by_name(name).is_some());
             (format.to_string(), available)
         })
         .collect()

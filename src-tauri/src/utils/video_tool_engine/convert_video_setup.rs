@@ -1,8 +1,8 @@
-use super::VideoToolEngine;
 use super::common::{
     apply_quality_config, find_audio_encoder_for_codec, find_video_encoder_for_format,
     get_quality_config, reset_codec_tag,
 };
+use super::VideoToolEngine;
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 
@@ -253,13 +253,7 @@ impl VideoToolEngine {
 
         let info_msg = format!("音频将重编码为 {} ({}Hz)", enc_codec_name, enc_rate);
 
-        Ok((
-            true,
-            Some(opened_enc),
-            Some(dec),
-            resamp,
-            Some(info_msg),
-        ))
+        Ok((true, Some(opened_enc), Some(dec), resamp, Some(info_msg)))
     }
 
     /// 设置封面流

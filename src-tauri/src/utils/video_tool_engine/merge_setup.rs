@@ -1,5 +1,5 @@
-use super::VideoToolEngine;
 use super::common::{apply_quality_config, get_quality_config, reset_codec_tag};
+use super::VideoToolEngine;
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::path::Path;
@@ -200,7 +200,11 @@ impl VideoToolEngine {
                         .best(ffmpeg_next::media::Type::Video)
                         .map(|s| {
                             let r = s.avg_frame_rate();
-                            if r.1 > 0 { r.0 as f64 / r.1 as f64 } else { 25.0 }
+                            if r.1 > 0 {
+                                r.0 as f64 / r.1 as f64
+                            } else {
+                                25.0
+                            }
                         })
                         .unwrap_or(25.0);
                     total += (dur_secs * fps) as u64;

@@ -225,7 +225,7 @@ export const useRenameStore = create<RenameState>((set, get) => ({
     try {
       const info = await renameApi.applyRuleTemplate(template);
       const { replaceInfos, ruleHistory } = get();
-      const [newRules, newHistory] = applyTemplatePure(replaceInfos, ruleHistory, template);
+      const [newRules, newHistory] = applyTemplatePure(replaceInfos, ruleHistory);
       set({
         ruleHistory: newHistory,
         replaceInfos: [...newRules, info],

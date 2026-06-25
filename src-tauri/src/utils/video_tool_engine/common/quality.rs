@@ -104,8 +104,10 @@ fn set_enc_opt(
     key: &str,
     val: &str,
 ) -> Result<(), anyhow::Error> {
-    let c_key = std::ffi::CString::new(key).map_err(|e| anyhow!("invalid C string for key '{}': {}", key, e))?;
-    let c_val = std::ffi::CString::new(val).map_err(|e| anyhow!("invalid C string for val '{}': {}", val, e))?;
+    let c_key = std::ffi::CString::new(key)
+        .map_err(|e| anyhow!("invalid C string for key '{}': {}", key, e))?;
+    let c_val = std::ffi::CString::new(val)
+        .map_err(|e| anyhow!("invalid C string for val '{}': {}", val, e))?;
     unsafe {
         ffmpeg_next::sys::av_opt_set(
             enc.as_mut_ptr() as *mut std::ffi::c_void,

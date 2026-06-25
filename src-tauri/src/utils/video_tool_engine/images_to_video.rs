@@ -1,5 +1,8 @@
+use super::common::{
+    apply_quality_config, find_video_encoder_for_format, get_quality_config, now_ms,
+    reset_codec_tag,
+};
 use super::VideoToolEngine;
-use super::common::{apply_quality_config, find_video_encoder_for_format, get_quality_config, now_ms, reset_codec_tag};
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -147,7 +150,16 @@ impl VideoToolEngine {
             .ok_or_else(|| anyhow!("输出视频流索引越界"))?
             .time_base();
 
-        for (i, img_path) in params.image_paths.iter().enumerate() {
+        let loops = params.loop_count.unwrap_or(1).max(1) as usize;
+        let total_frames = params.image_paths.len() * loops;
+
+        for (i, img_path) in params
+            .image_paths
+            .iter()
+            .cycle()
+            .take(total_frames)
+            .enumerate()
+        {
             let img = image::open(img_path)
                 .map_err(|e| anyhow!("打开图片 {} 失败: {}", img_path.display(), e))?;
 
@@ -212,7 +224,10 @@ impl VideoToolEngine {
         let mut encoded_packet = ffmpeg_next::Packet::empty();
         while encoder.receive_packet(&mut encoded_packet).is_ok() {
             encoded_packet.set_stream(0);
-            let out_tb = output.stream(0).ok_or_else(|| anyhow!("输出流索引越界"))?.time_base();
+            let out_tb = output
+                .stream(0)
+                .ok_or_else(|| anyhow!("输出流索引越界"))?
+                .time_base();
             encoded_packet.rescale_ts(time_base, out_tb);
             encoded_packet
                 .write_interleaved(&mut output)
@@ -220,8 +235,7 @@ impl VideoToolEngine {
         }
 
         if let Some(mut ainput) = audio_input {
-            let audio_idx = audio_stream_idx
-                .ok_or_else(|| anyhow!("音频流索引未初始化"))?;
+            let audio_idx = audio_stream_idx.ok_or_else(|| anyhow!("音频流索引未初始化"))?;
             log_cb(VideoToolLog {
                 task_id: task_id.clone(),
                 level: "info".to_string(),

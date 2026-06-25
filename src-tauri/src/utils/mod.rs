@@ -1,7 +1,7 @@
 pub mod ascii_art_engine;
 pub mod common_utils;
-mod font_renderer;
 pub mod file_utils;
+mod font_renderer;
 pub mod rename_logic;
 #[cfg(feature = "video-frame")]
 pub mod video_frame_engine;

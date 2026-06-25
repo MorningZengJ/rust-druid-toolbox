@@ -1,14 +1,18 @@
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useComputedColorScheme } from "@mantine/core";
 import { useThemeStore } from "@/stores/themeStore";
 import { getThemeWithPrimary } from "@/mantine-theme";
-import { hexToHsl, hslToHex, hexToRgb } from "@/lib/color";
+import { hexToRgb, tintForDarkSurface } from "@/lib/color";
 
-/** 将主色调降低饱和度并调整亮度，生成暗色表面色 */
-export function tintForDarkSurface(hex: string, targetLightness: number): string {
-  const [h, s] = hexToHsl(hex);
-  const lowSat = Math.max(s * 0.12, 6); // 饱和度降至 ~12%，最低 6%
-  return hslToHex(h, lowSat, targetLightness);
+/**
+ * 生成主题指纹，用于判断主题是否真正变化（跳过 transition 的重复设置）
+ */
+function themeFingerprint(
+  colorTheme: string,
+  customPrimary: string | undefined,
+  selectedShadeIndex: number | undefined,
+): string {
+  return `${colorTheme}|${customPrimary ?? ""}|${selectedShadeIndex ?? ""}`;
 }
 
 /** 主色调同步到 CSS 变量 + 暗色表面色微调 */
@@ -19,20 +23,27 @@ export function CssVariableSync() {
   const colorScheme = useComputedColorScheme();
   const isDark = colorScheme === "dark";
 
-  // 直接计算主题，与 ThemeProvider 使用相同逻辑，避免 Mantine 上下文传播延迟
-  const theme = getThemeWithPrimary(colorTheme, customPrimary, selectedShadeIndex);
-  const primary = theme.colors?.[theme.primaryColor];
-  const primaryHex = primary?.[5];
+  // 记录上一次的主题指纹，避免重复设置 transition
+  const prevFingerprintRef = useRef("");
 
+  // 将所有计算放在 useLayoutEffect 内部，确保闭包始终捕获最新值
   useLayoutEffect(() => {
+    const theme = getThemeWithPrimary(colorTheme, customPrimary, selectedShadeIndex);
+    const primary = theme.colors?.[theme.primaryColor];
+    const primaryHex = primary?.[5];
+
     if (!primary || !primaryHex) return;
 
     const root = document.documentElement;
     const accentRgb = hexToRgb(primary[5]);
 
-    // 主题切换过渡动画
-    root.style.transition =
-      "background-color 300ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease";
+    // 仅在主题真正变化时设置过渡动画，避免每次 effect 都重设
+    const fp = themeFingerprint(colorTheme, customPrimary, selectedShadeIndex) + "|" + (isDark ? "dark" : "light");
+    if (fp !== prevFingerprintRef.current) {
+      prevFingerprintRef.current = fp;
+      root.style.transition =
+        "background-color 300ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease";
+    }
 
     // 主色调
     root.style.setProperty("--accent-primary", primary[5]);

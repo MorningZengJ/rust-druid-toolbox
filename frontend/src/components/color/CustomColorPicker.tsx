@@ -50,14 +50,16 @@ function CustomColorPicker({
   const alphaRef = useRef<HTMLDivElement>(null);
 
   const hsvRef = useRef(hsv);
-  hsvRef.current = hsv;
+  // Sync refs in effect — avoids react-hooks/refs lint error
+  useEffect(() => { hsvRef.current = hsv; });
+  useEffect(() => { onChangeRef.current = onChange; });
 
-  const isDraggingField = useRef(false);
-  const isDraggingHue = useRef(false);
-  const isDraggingAlpha = useRef(false);
+  // Dragging state for CSS transition usage (must be state, not refs)
+  const [draggingField, setDraggingField] = useState(false);
+  const [draggingHue, setDraggingHue] = useState(false);
+  const [draggingAlpha, setDraggingAlpha] = useState(false);
 
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
 
   const rgb = hsvToRgb(hsv.h, hsv.s, hsv.v);
   const hex = rgbaToHex(rgb.r, rgb.g, rgb.b, hsv.a);
@@ -70,13 +72,15 @@ function CustomColorPicker({
     })) as PresetColor[]);
 
   // 外部 value 同步：仅在非拖拽状态下更新内部 HSV
+  /* eslint-disable react-hooks/set-state-in-effect -- legitimate sync of external controlled value */
   useEffect(() => {
-    if (!isDraggingField.current && !isDraggingHue.current && !isDraggingAlpha.current && value) {
+    if (!draggingField && !draggingHue && !draggingAlpha && value) {
       const rgba = hexToRgba(value);
       const hsvData = hexToHsv(value);
       setHsv({ h: hsvData.h, s: hsvData.s, v: hsvData.v, a: rgba.a });
     }
-  }, [value]);
+  }, [value, draggingField, draggingHue, draggingAlpha]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // -- Saturation / Brightness field 拖拽逻辑 --
 
@@ -93,7 +97,7 @@ function CustomColorPicker({
 
   const onFieldPointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
-    isDraggingField.current = true;
+    setDraggingField(true);
     const pos = getClientPos(e.nativeEvent);
     const newHex = updateFromField(pos.x, pos.y);
     if (newHex) onChangeRef.current(newHex);
@@ -104,7 +108,7 @@ function CustomColorPicker({
       if (h) onChangeRef.current(h);
     };
     const onUp = () => {
-      isDraggingField.current = false;
+      setDraggingField(false);
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       const current = hsvRef.current;
@@ -128,7 +132,7 @@ function CustomColorPicker({
 
   const onHuePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
-    isDraggingHue.current = true;
+    setDraggingHue(true);
     const pos = getClientPos(e.nativeEvent);
     const newHex = updateFromHue(pos.x);
     if (newHex) onChangeRef.current(newHex);
@@ -139,7 +143,7 @@ function CustomColorPicker({
       if (h) onChangeRef.current(h);
     };
     const onUp = () => {
-      isDraggingHue.current = false;
+      setDraggingHue(false);
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       const current = hsvRef.current;
@@ -163,7 +167,7 @@ function CustomColorPicker({
 
   const onAlphaPointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
-    isDraggingAlpha.current = true;
+    setDraggingAlpha(true);
     const pos = getClientPos(e.nativeEvent);
     const newHex = updateFromAlpha(pos.x);
     if (newHex) onChangeRef.current(newHex);
@@ -174,7 +178,7 @@ function CustomColorPicker({
       if (h) onChangeRef.current(h);
     };
     const onUp = () => {
-      isDraggingAlpha.current = false;
+      setDraggingAlpha(false);
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       const current = hsvRef.current;
@@ -188,9 +192,9 @@ function CustomColorPicker({
   // 组件卸载时兜底清理
   useEffect(() => {
     return () => {
-      isDraggingField.current = false;
-      isDraggingHue.current = false;
-      isDraggingAlpha.current = false;
+      setDraggingField(false);
+      setDraggingHue(false);
+      setDraggingAlpha(false);
     };
   }, []);
 
@@ -253,7 +257,7 @@ function CustomColorPicker({
               "0 0 0 1px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.35)",
             transform: "translate(-50%, -50%)",
             pointerEvents: "none",
-            transition: isDraggingField.current
+            transition: draggingField
               ? "none"
               : "left 80ms ease-out, top 80ms ease-out",
           }}
@@ -289,7 +293,7 @@ function CustomColorPicker({
               "0 0 0 1px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.35)",
             transform: "translate(-50%, -50%)",
             pointerEvents: "none",
-            transition: isDraggingHue.current
+            transition: draggingHue
               ? "none"
               : "left 80ms ease-out",
           }}
@@ -336,7 +340,7 @@ function CustomColorPicker({
               "0 0 0 1px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.35)",
             transform: "translate(-50%, -50%)",
             pointerEvents: "none",
-            transition: isDraggingAlpha.current
+            transition: draggingAlpha
               ? "none"
               : "left 80ms ease-out",
           }}

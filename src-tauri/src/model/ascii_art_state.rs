@@ -89,11 +89,12 @@ impl CharsetPreset {
         match self {
             Self::Simple => " .:-=+*#%@",
             Self::Standard => " .,:;i1tfLCG08@",
-            Self::Complex => " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+            Self::Complex => {
+                " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+            }
             Self::Custom => "",
         }
     }
-
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -112,4 +113,3 @@ pub enum Background {
     White,
     Transparent,
 }
-

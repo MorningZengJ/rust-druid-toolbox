@@ -1,5 +1,5 @@
-use super::VideoToolEngine;
 use super::common::{now_ms, reset_codec_tag};
+use super::VideoToolEngine;
 use crate::model::video_tool_state::*;
 use anyhow::{anyhow, Result};
 use std::time::Instant;
@@ -133,7 +133,9 @@ impl VideoToolEngine {
         for stream in first_input.streams() {
             let media_type = stream.parameters().medium();
             let is_cover = media_type == ffmpeg_next::media::Type::Attachment
-                || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                || stream
+                    .disposition()
+                    .contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
             if media_type == ffmpeg_next::media::Type::Video
                 || media_type == ffmpeg_next::media::Type::Audio
                 || (is_cover && supports_cover)
@@ -154,11 +156,13 @@ impl VideoToolEngine {
             return Err(anyhow!("第一个视频中未找到视频或音频流"));
         }
 
-        let has_cover_art = supports_cover && first_input.streams().any(|s| {
-            let mt = s.parameters().medium();
-            mt == ffmpeg_next::media::Type::Attachment
-                || s.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC)
-        });
+        let has_cover_art = supports_cover
+            && first_input.streams().any(|s| {
+                let mt = s.parameters().medium();
+                mt == ffmpeg_next::media::Type::Attachment
+                    || s.disposition()
+                        .contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC)
+            });
 
         output
             .write_header()
@@ -212,7 +216,9 @@ impl VideoToolEngine {
             for stream in input.streams() {
                 let media_type = stream.parameters().medium();
                 let is_cover = media_type == ffmpeg_next::media::Type::Attachment
-                    || stream.disposition().contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
+                    || stream
+                        .disposition()
+                        .contains(ffmpeg_next::format::stream::Disposition::ATTACHED_PIC);
                 let should_map = media_type == ffmpeg_next::media::Type::Video
                     || media_type == ffmpeg_next::media::Type::Audio
                     || (is_cover && file_idx == 0);
@@ -273,7 +279,11 @@ impl VideoToolEngine {
                         message: format!("处理文件 {} 时写入失败: {}", input_path.display(), e),
                         timestamp: now_ms(),
                     });
-                    return Err(anyhow!("处理文件 {} 时写入失败: {}", input_path.display(), e));
+                    return Err(anyhow!(
+                        "处理文件 {} 时写入失败: {}",
+                        input_path.display(),
+                        e
+                    ));
                 }
 
                 packets_since_progress += 1;
@@ -284,20 +294,23 @@ impl VideoToolEngine {
                     let file_dur = input_durations.get(file_idx).copied().unwrap_or(0.0);
                     let intra_progress = if file_dur > 0.0 {
                         let ts = stream.time_base();
-                        let pts_secs = packet.pts().unwrap_or(0).max(0) as f64 * ts.0 as f64 / ts.1 as f64;
+                        let pts_secs =
+                            packet.pts().unwrap_or(0).max(0) as f64 * ts.0 as f64 / ts.1 as f64;
                         (pts_secs / file_dur).min(1.0)
                     } else {
                         0.5
                     };
 
                     let overall = if total_duration_all > 0.0 {
-                        ((cumulative_duration + file_dur * intra_progress) / total_duration_all).min(0.95) as f32
+                        ((cumulative_duration + file_dur * intra_progress) / total_duration_all)
+                            .min(0.95) as f32
                     } else {
                         ((file_idx as f32 + intra_progress as f32) / total_inputs as f32).min(0.95)
                     };
 
                     let elapsed_ms = start.elapsed().as_millis() as u64;
-                    let remaining_dur = total_duration_all - cumulative_duration - file_dur * intra_progress;
+                    let remaining_dur =
+                        total_duration_all - cumulative_duration - file_dur * intra_progress;
                     let processed_dur = cumulative_duration + file_dur * intra_progress;
                     let eta_ms = if processed_dur > 0.0 && elapsed_ms > 0 {
                         Some((remaining_dur / processed_dur * elapsed_ms as f64) as u64)
@@ -312,7 +325,13 @@ impl VideoToolEngine {
                         elapsed_ms,
                         current_file_index: Some(file_idx),
                         total_files: Some(total_inputs),
-                        current_file_name: Some(input_path.file_name().unwrap_or_default().to_string_lossy().to_string()),
+                        current_file_name: Some(
+                            input_path
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .to_string(),
+                        ),
                         eta_ms,
                         ..Default::default()
                     });
@@ -337,7 +356,13 @@ impl VideoToolEngine {
             });
             match Self::generate_jpeg_cover_from_video(&params.output_path) {
                 Ok((jpeg_data, w, h)) => {
-                    if let Err(e) = Self::embed_cover_art(&params.output_path, &jpeg_data, w, h, &params.output_format) {
+                    if let Err(e) = Self::embed_cover_art(
+                        &params.output_path,
+                        &jpeg_data,
+                        w,
+                        h,
+                        &params.output_format,
+                    ) {
                         log_cb(VideoToolLog {
                             task_id: task_id.to_string(),
                             level: "warn".to_string(),
@@ -380,9 +405,8 @@ impl VideoToolEngine {
 
         Ok(MergeVideosResult {
             output_path: params.output_path.to_string_lossy().to_string(),
-            duration_secs: 0.0,
+            duration_secs: total_duration_all,
             file_size_bytes: file_size,
         })
     }
-
 }

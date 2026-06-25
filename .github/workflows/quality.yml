@@ -1,0 +1,66 @@
+name: Quality Gate
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  frontend:
+    name: Frontend (lint + typecheck + build + i18n)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:i18n || echo "i18n warnings (non-blocking)"
+      - run: npm run check:i18n-usage || echo "i18n usage warnings (non-blocking)"
+      - run: npm run build
+
+  rust-baseline:
+    name: Rust baseline (no FFmpeg)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - run: cargo fmt --check --manifest-path src-tauri/Cargo.toml
+      - run: cargo check --manifest-path src-tauri/Cargo.toml --no-default-features
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --no-default-features
+
+  # Video feature requires FFmpeg static libraries — only run on self-hosted or Windows
+  # rust-video:
+  #   name: Rust (with video-frame)
+  #   runs-on: [self-hosted, windows]
+  #   if: false  # Enable when FFmpeg static env is available in CI
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions-rust-lang/setup-rust-toolchain@v1
+  #       with: { toolchain: stable }
+  #     - run: cargo check --manifest-path src-tauri/Cargo.toml --features video-frame
+  #     - run: cargo test --manifest-path src-tauri/Cargo.toml --features video-frame
+
+  version-check:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-version-consistency.cjs

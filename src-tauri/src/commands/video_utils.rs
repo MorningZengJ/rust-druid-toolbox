@@ -24,7 +24,10 @@ pub fn list_images_in_folder(folder_path: String) -> Vec<String> {
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|e| e.to_lowercase());
-            if ext.map(|e| image_extensions.contains(&e.as_str())).unwrap_or(false) {
+            if ext
+                .map(|e| image_extensions.contains(&e.as_str()))
+                .unwrap_or(false)
+            {
                 Some(path.to_string_lossy().to_string())
             } else {
                 None
@@ -33,8 +36,14 @@ pub fn list_images_in_folder(folder_path: String) -> Vec<String> {
         .collect();
 
     images.sort_by(|a, b| {
-        let name_a = Path::new(a).file_name().and_then(|n| n.to_str()).unwrap_or("");
-        let name_b = Path::new(b).file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let name_a = Path::new(a)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        let name_b = Path::new(b)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
         natural_compare(name_a, name_b)
     });
 
@@ -45,8 +54,7 @@ pub fn list_images_in_folder(folder_path: String) -> Vec<String> {
 #[tauri::command]
 pub fn list_media_files_in_folder(folder_path: String) -> Vec<String> {
     let media_extensions: &[&str] = &[
-        "mp4", "mkv", "avi", "webm", "mov", "flv", "ts",
-        "mp3", "aac", "wav", "flac", "ogg", "opus",
+        "mp4", "mkv", "avi", "webm", "mov", "flv", "ts", "mp3", "aac", "wav", "flac", "ogg", "opus",
     ];
 
     let entries = match std::fs::read_dir(&folder_path) {
@@ -66,7 +74,10 @@ pub fn list_media_files_in_folder(folder_path: String) -> Vec<String> {
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|e| e.to_lowercase());
-            if ext.map(|e| media_extensions.contains(&e.as_str())).unwrap_or(false) {
+            if ext
+                .map(|e| media_extensions.contains(&e.as_str()))
+                .unwrap_or(false)
+            {
                 Some(path.to_string_lossy().to_string())
             } else {
                 None
@@ -75,8 +86,14 @@ pub fn list_media_files_in_folder(folder_path: String) -> Vec<String> {
         .collect();
 
     files.sort_by(|a, b| {
-        let name_a = Path::new(a).file_name().and_then(|n| n.to_str()).unwrap_or("");
-        let name_b = Path::new(b).file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let name_a = Path::new(a)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        let name_b = Path::new(b)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
         natural_compare(name_a, name_b)
     });
 

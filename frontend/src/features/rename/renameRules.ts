@@ -1,4 +1,4 @@
-import type { ReplaceInfo, RuleTemplate } from "@/types";
+import type { ReplaceInfo } from "@/types";
 
 // ── Factory ──
 
@@ -72,17 +72,12 @@ export function updateRule(
   ];
 }
 
+/** Pure helper: snapshot history before a template is applied. */
 export function applyTemplate(
   rules: ReplaceInfo[],
   history: ReplaceInfo[][],
-  _template: RuleTemplate,
 ): [ReplaceInfo[], ReplaceInfo[][]] {
-  // Note: the actual template → ReplaceInfo conversion is done by backend.
-  // This helper only handles state structure.
-  return [
-    rules,
-    pushHistory(history, rules),
-  ];
+  return [rules, pushHistory(history, rules)];
 }
 
 export function clearRules(

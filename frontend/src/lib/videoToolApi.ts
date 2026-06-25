@@ -65,6 +65,10 @@ export async function stopFrameWatcher(): Promise<void> {
   return invoke<void>("stop_frame_watcher");
 }
 
+export async function cancelTask(taskId: string): Promise<boolean> {
+  return invoke<boolean>("cancel_task", { taskId });
+}
+
 // ── Media file listing ──
 
 export async function listImagesInFolder(folder: string): Promise<string[]> {

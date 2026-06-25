@@ -11,10 +11,7 @@ impl CommonUtils {
     }
 
     pub fn join_path(path: &str, name: &str) -> String {
-        Path::new(path)
-            .join(name)
-            .to_string_lossy()
-            .to_string()
+        Path::new(path).join(name).to_string_lossy().to_string()
     }
 }
 

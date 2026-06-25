@@ -1,4 +1,4 @@
-use image::{RgbaImage, Rgba};
+use image::{Rgba, RgbaImage};
 use std::time::Instant;
 
 use super::AsciiArtEngine;
@@ -156,7 +156,8 @@ impl AsciiArtEngine {
                     run_chars.push_str(&Self::escape_html_char(*ch));
                 } else {
                     let x_pos = run_start_x as f64 * char_width;
-                    let color = format!("#{:02x}{:02x}{:02x}", run_color.0, run_color.1, run_color.2);
+                    let color =
+                        format!("#{:02x}{:02x}{:02x}", run_color.0, run_color.1, run_color.2);
                     svg.push_str(&format!(
                         r#"<tspan x="{}" y="{}" fill="{}">{}</tspan>"#,
                         x_pos, y_pos, color, run_chars
