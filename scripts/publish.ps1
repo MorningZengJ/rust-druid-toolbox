@@ -64,6 +64,21 @@ function Write-Info { param([string]$Msg); Write-Host "  $Msg" -ForegroundColor 
 function Write-Warn { param([string]$Msg); Write-Host "  WARN: $Msg" -ForegroundColor Yellow }
 function Write-Err  { param([string]$Msg); Write-Host "  ERROR: $Msg" -ForegroundColor Red }
 
+function Remove-FileWithRetry {
+    param([string]$Path, [int]$MaxRetries = 5, [int]$BaseDelayMs = 1000)
+    for ($i = 0; $i -lt $MaxRetries; $i++) {
+        if (-not (Test-Path $Path)) { return $true }
+        try {
+            Remove-Item $Path -Force -ErrorAction Stop
+            return $true
+        } catch {
+            Write-Warn "Cannot remove ${Path} (attempt $($i+1)/$MaxRetries): $_"
+            Start-Sleep -Milliseconds ($BaseDelayMs * [Math]::Pow(2, $i))
+        }
+    }
+    return $false
+}
+
 function Confirm-Action {
     param([string]$Prompt)
     if ($SkipConfirm) { return $true }
@@ -241,6 +256,17 @@ try {
 
         # 7b: MSI — built separately; light.exe may fail due to file locking
         Write-Info "Building MSI installer..."
+
+        # Pre-clean: remove old MSI to release stale file locks
+        $msiOut = "$BundleMsiDir/${ProductName}_${Version}_x64_en-US.msi"
+        if (Test-Path $msiOut) {
+            Write-Info "Removing old MSI file..."
+            if (-not (Remove-FileWithRetry $msiOut)) {
+                throw "Cannot remove locked MSI: $msiOut. Close any programs that may be holding it."
+            }
+            Write-Info "Old MSI file removed."
+        }
+
         Push-Location $RepoRoot
         try {
             cargo tauri build --bundles msi
@@ -248,25 +274,18 @@ try {
                 Write-Info "MSI installer built."
             } else {
                 # light.exe often fails with IOException (file locked by another process).
-                # Fall back to manual invocation after a short delay.
+                # Fall back to manual invocation with exponential backoff retry.
                 Write-Warn "cargo tauri build --bundles msi failed (likely light.exe file lock)."
-                Write-Info "Attempting manual MSI build via light.exe + retry..."
+                Write-Info "Retrying with manual light.exe..."
 
                 $wixObj   = "$RepoRoot/target/release/wix/x64/main.wixobj"
                 $wxl      = "$RepoRoot/target/release/wix/x64/locale.wxl"
-                $msiOut   = "$BundleMsiDir/${ProductName}_${Version}_x64_en-US.msi"
                 $wixTools = "$env:LOCALAPPDATA/tauri/WixTools314"
                 $lightExe = "$wixTools/light.exe"
 
                 if (-not (Test-Path $wixObj)) {
                     throw "WiX object file not found: $wixObj. MSI build cannot proceed."
                 }
-
-                # Ensure output directory exists
-                New-Item -ItemType Directory -Force -Path $BundleMsiDir | Out-Null
-
-                # Short delay to let lingering file handles release
-                Start-Sleep -Seconds 3
 
                 $lightArgs = @(
                     "-nologo",
@@ -278,11 +297,29 @@ try {
                     "-loc", $wxl,
                     "-cultures:en-US"
                 )
-                & $lightExe @lightArgs
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Manual light.exe invocation failed (exit code: $LASTEXITCODE). Try closing other programs or restarting."
+
+                # Exponential backoff retry loop
+                $maxRetries = 5
+                $success = $false
+                for ($retry = 0; $retry -lt $maxRetries; $retry++) {
+                    $delay = [Math]::Pow(2, $retry + 1)  # 2, 4, 8, 16, 32 seconds
+                    Write-Info "Retry $($retry+1)/$maxRetries — waiting ${delay}s..."
+                    Start-Sleep -Seconds $delay
+
+                    # Re-delete MSI in case a previous failed attempt left a locked file
+                    Remove-Item $msiOut -Force -ErrorAction SilentlyContinue
+
+                    & $lightExe @lightArgs
+                    if ($LASTEXITCODE -eq 0) {
+                        $success = $true
+                        Write-Info "MSI built via manual light.exe (attempt $($retry+1))."
+                        break
+                    }
+                    Write-Warn "light.exe failed (exit code: $LASTEXITCODE), retrying..."
                 }
-                Write-Info "MSI built via manual light.exe."
+                if (-not $success) {
+                    throw "Manual light.exe failed after $maxRetries attempts."
+                }
             }
         } finally { Pop-Location }
 
