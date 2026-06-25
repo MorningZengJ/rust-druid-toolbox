@@ -38,7 +38,7 @@ async function preloadTheme() {
     root.style.setProperty("--accent-light", primary[3]);
     root.style.setProperty("--accent-dark", primary[7]);
     root.style.setProperty("--accent-glow", `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.15)`);
-  } catch (e) {
+  } catch {
     // 首次运行或读取出错，不做任何事，CssVariableSync 会兜底
   }
 }
