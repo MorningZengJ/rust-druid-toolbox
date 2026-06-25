@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize, LogicalPosition } from "@tauri-apps/api/dpi";
 import { settingsStore } from "./lib/store";
-import { validateWindowState, validateColorTheme, validateCustomPrimary } from "./lib/configValidator";
+import { validateWindowState, validateColorTheme, validateCustomPrimary, validateSelectedShadeIndex } from "./lib/configValidator";
 import { getThemeWithPrimary } from "./mantine-theme";
 import { hexToRgb } from "./lib/color";
 import ThemeProvider from "./components/ThemeProvider";
@@ -19,15 +19,16 @@ import "./globals.css";
  */
 async function preloadTheme() {
   try {
-    const [rawTheme, rawCustom] = await Promise.all([
+    const [rawTheme, rawCustom, rawShadeIndex] = await Promise.all([
       settingsStore.get("colorTheme"),
       settingsStore.get("customPrimary"),
+      settingsStore.get("selectedShadeIndex"),
     ]);
     const colorTheme = validateColorTheme(rawTheme);
     const customPrimary = validateCustomPrimary(rawCustom);
+    const selectedShadeIndex = validateSelectedShadeIndex(rawShadeIndex);
 
-    // preloadTheme 不使用 selectedShadeIndex（不跨会话持久化）
-    const theme = getThemeWithPrimary(colorTheme, customPrimary, undefined);
+    const theme = getThemeWithPrimary(colorTheme, customPrimary, selectedShadeIndex);
     const primary = theme.colors?.[theme.primaryColor];
     if (!primary?.[5]) return;
 

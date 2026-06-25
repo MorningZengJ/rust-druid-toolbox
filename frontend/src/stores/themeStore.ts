@@ -51,15 +51,15 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       selectedShadeIndex: undefined,
       customPrimary: theme !== "default" ? undefined : get().customPrimary,
     });
-    // 2) 异步持久化
+    // 2) 异步持久化 — 使用 delete() 而非 set(key, undefined)
+    //    undefined 在 Tauri IPC JSON 序列化时会被丢弃，导致旧值残留
     try {
       await settingsStore.set("colorTheme", theme);
-      await settingsStore.set("selectedShadeIndex", undefined);
-      await settingsStore.save();
+      await settingsStore.delete("selectedShadeIndex");
       if (theme !== "default") {
-        await settingsStore.set("customPrimary", undefined);
-        await settingsStore.save();
+        await settingsStore.delete("customPrimary");
       }
+      await settingsStore.save();
     } catch (e) {
       console.error("Failed to persist colorTheme:", e);
     }
@@ -72,15 +72,17 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       selectedShadeIndex: undefined,
       colorTheme: hex ? "default" : get().colorTheme,
     });
-    // 2) 异步持久化
+    // 2) 异步持久化 — 使用 delete() 而非 set(key, undefined)
+    //    undefined 在 Tauri IPC JSON 序列化时会被丢弃，导致旧值残留
     try {
-      await settingsStore.set("customPrimary", hex);
-      await settingsStore.set("selectedShadeIndex", undefined);
-      await settingsStore.save();
       if (hex) {
+        await settingsStore.set("customPrimary", hex);
         await settingsStore.set("colorTheme", "default");
-        await settingsStore.save();
+      } else {
+        await settingsStore.delete("customPrimary");
       }
+      await settingsStore.delete("selectedShadeIndex");
+      await settingsStore.save();
     } catch (e) {
       console.error("Failed to persist customPrimary:", e);
     }
@@ -89,9 +91,14 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   setSelectedShadeIndex: async (index) => {
     // 1) 同步更新 zustand 状态
     set({ selectedShadeIndex: index });
-    // 2) 异步持久化
+    // 2) 异步持久化 — 使用 delete() 而非 set(key, undefined)
+    //    undefined 在 Tauri IPC JSON 序列化时会被丢弃，导致旧值残留
     try {
-      await settingsStore.set("selectedShadeIndex", index);
+      if (index !== undefined) {
+        await settingsStore.set("selectedShadeIndex", index);
+      } else {
+        await settingsStore.delete("selectedShadeIndex");
+      }
       await settingsStore.save();
     } catch (e) {
       console.error("Failed to persist selectedShadeIndex:", e);
@@ -99,16 +106,17 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   loadFromStore: async () => {
-    const [rawMode, rawTheme, rawCustom] = await Promise.all([
+    const [rawMode, rawTheme, rawCustom, rawShadeIndex] = await Promise.all([
       settingsStore.get("colorMode"),
       settingsStore.get("colorTheme"),
       settingsStore.get("customPrimary"),
+      settingsStore.get("selectedShadeIndex"),
     ]);
     set({
       colorMode: validateColorMode(rawMode),
       colorTheme: validateColorTheme(rawTheme),
       customPrimary: validateCustomPrimary(rawCustom),
-      selectedShadeIndex: undefined, // selectedShadeIndex 不跨会话持久化
+      selectedShadeIndex: validateSelectedShadeIndex(rawShadeIndex),
       loaded: true,
     });
   },
