@@ -1,15 +1,15 @@
 {
-  "version": "0.1.7",
-  "notes": "Changes since v0.1.6:\n\n- fix: 修复 publish.ps1 MSI 构建 light.exe 文件锁定问题 - chore: enforce CRLF line endings via .gitattributes - feat: 自定义主题颜色系统与设置页面重构",
-  "pub_date": "2026-06-23T09:51:59Z",
+  "version": "0.1.8",
+  "notes": "Changes since v0.1.7:\n\n- fix: useWindowState 使用 innerSize 替代 outerSize 保存窗口大小 - fix: 修复多处 i18n 键名错误并重构 CodecSelector 国际化 - feat: 主题色板支持点击色阶，基于选中色阶生成自定义色板 - feat: 完善前端质量门禁与 CssVariableSync 主题同步优化 - refactor: 重构前端布局与视频引擎模块，引入 features 架构 - refactor: 重构 Rust 后端视频引擎架构，新增任务注册表与异步持久化 - fix: 修复 selectedShadeIndex 跨会话持久化，改用 delete() 清除序列化值 - fix: 修复 publish.ps1 MSI 签名时 --private-key-path 与同名环境变量冲突 - fix: 增强 publish.ps1 MSI 构建文件锁定重试机制 - refactor: publish.ps1 构建流程幂等化，支持增量重跑",
+  "pub_date": "2026-06-25T08:06:25Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDN5Q2NpbGpCekcxdTZSTnJHVlN4Y0xKMEdNL3VhdjdaZEJJOEJkejlXRDQ3am5ZR3E3ZnhiWmRCQ3Q3blhKUVFVRlU0bUR3YkVzbzZSbGY3UnhNZ0FFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjA4MTI4CWZpbGU6TVRvb2xib3hfMC4xLjdfeDY0LXNldHVwLmV4ZQpXVlBWaFNycC9yM3IxRTZ0bmNJakdmN0pTNnFLMXovQXZSY1UzcUhQdzYxdkdLeURUTFI4NGdoaGNoamFMNEtmbU51aFR4Y0NHanNUR3M0eU5lcXhDdz09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.7/MToolbox_0.1.7_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDBCSW9tbHRjTXFUNk1KNzNwUGxuV3ZweC9MaGdlRFZ4d0pSZmE1NG9lVzF1ak5IMzlFZmRvanVNTUlrcWRHZUNZY2NYUjlmTGRqb2ZaSGhoZ1Z5VEFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMzc0NzgxCWZpbGU6TVRvb2xib3hfMC4xLjhfeDY0LXNldHVwLmV4ZQpSTkpSZ2hqYUJNeGoyRnkzckhjUHpkaWFyaXNhZnV6emJ3T1hOTmtpSWJaUFVYMFhpY3dXVWxKYzl1SUdRR01GVTVnRVhYenJ6UGtENmxCNzlISjNBUT09Cg==",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.8/MToolbox_0.1.8_x64-setup.exe"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDlsK1VZSmlJZlpBUTdVaUVpb1k0RU5tdEZzUUdaeTQwdUpOMVlZVmhTcnpHRUNpNE5hZVljYXRpQ0FGS0ZXcWFCdFkwaGRmYitYY09JMng5cjI0QlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjA4MzE4CWZpbGU6TVRvb2xib3hfMC4xLjdfeDY0X2VuLVVTLm1zaQpYSWFDa0I4dGQ3OTlScjFSKzdjWjdtTXorNU1KRExDRVZ6Qk9CM0dvaURLYThmYVZyZGprMDN4UzB0WkIwd2lpWlJwMFFMa3B3dWgwK3JUU21aT2RBUT09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.7/MToolbox_0.1.7_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDVyUnQ5SldDL0w2aCtMaU4zNHk3OTVoZkxBSGJIVnpFSGoraWovTHhsWmM2dnd0TW9SNytvZzFiZFpmMTVEcDVzUnpPZnV1bklnbzlIdnZURkN0Zmd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMzc0Nzg1CWZpbGU6TVRvb2xib3hfMC4xLjhfeDY0X2VuLVVTLm1zaQpyRi9xdks2c1hpSmFMOGVoQndlVy9nY1BKcStaVkhDSDZaWTE3M3lDYStzWjVvbUJvMzJUY3NKbVlmUkRjUDlZbkpEeFUyeXgvSDhEdjc3LzVyOTZDQT09Cg==",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.8/MToolbox_0.1.8_x64_en-US.msi"
     }
   }
 }
