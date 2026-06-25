@@ -294,9 +294,26 @@ try {
             try {
                 $msiFile = "$BundleMsiDir/${ProductName}_${Version}_x64_en-US.msi"
                 if ($env:TAURI_SIGNING_PRIVATE_KEY_PATH) {
-                    cargo tauri signer sign --private-key-path $env:TAURI_SIGNING_PRIVATE_KEY_PATH $msiFile
+                    # Temporarily clear TAURI_SIGNING_PRIVATE_KEY to avoid conflict with --private-key-path
+                    $savedPrivateKey = $env:TAURI_SIGNING_PRIVATE_KEY
+                    Remove-Item Env:\TAURI_SIGNING_PRIVATE_KEY -ErrorAction SilentlyContinue
+                    try {
+                        cargo tauri signer sign --private-key-path $env:TAURI_SIGNING_PRIVATE_KEY_PATH $msiFile
+                    } finally {
+                        $env:TAURI_SIGNING_PRIVATE_KEY = $savedPrivateKey
+                    }
                 } else {
-                    cargo tauri signer sign --private-key $env:TAURI_SIGNING_PRIVATE_KEY $msiFile
+                    # Temporarily clear TAURI_SIGNING_PRIVATE_KEY_PATH to avoid conflict with --private-key
+                    # (unlikely but defensive — the env var might be set from a previous run)
+                    $savedPrivateKeyPath = $env:TAURI_SIGNING_PRIVATE_KEY_PATH
+                    Remove-Item Env:\TAURI_SIGNING_PRIVATE_KEY_PATH -ErrorAction SilentlyContinue
+                    try {
+                        cargo tauri signer sign --private-key $env:TAURI_SIGNING_PRIVATE_KEY $msiFile
+                    } finally {
+                        if ($savedPrivateKeyPath) {
+                            $env:TAURI_SIGNING_PRIVATE_KEY_PATH = $savedPrivateKeyPath
+                        }
+                    }
                 }
                 if ($LASTEXITCODE -ne 0) { throw "MSI signing failed." }
                 Write-Info "MSI signed."
