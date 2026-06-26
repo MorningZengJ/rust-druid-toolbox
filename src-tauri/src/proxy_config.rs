@@ -400,6 +400,28 @@ pub fn load_and_apply_proxy(app_handle: &tauri::AppHandle) {
     }
 }
 
+/// 根据当前保存的代理配置返回有效代理 URL（供 updater 等组件使用）
+/// - Direct 模式 → None
+/// - System 模式 → Windows 上读取 IE 代理，非 Windows 返回 None
+/// - Manual 模式 → 返回手动配置的代理 URL
+pub fn get_effective_proxy_url(app_handle: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let config = load_config(app_handle)?;
+    Ok(match config.mode {
+        ProxyMode::Direct => None,
+        ProxyMode::System => {
+            #[cfg(windows)]
+            {
+                read_ie_proxy_url()
+            }
+            #[cfg(not(windows))]
+            {
+                None
+            }
+        }
+        ProxyMode::Manual => config.manual.as_ref().map(|m| m.to_proxy_url()),
+    })
+}
+
 // ── Proxy connection test ──
 
 /// 使用当前保存的代理配置向指定 URL 发起 HTTP GET 请求，返回测试结果

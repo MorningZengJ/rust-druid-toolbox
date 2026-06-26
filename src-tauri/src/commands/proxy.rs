@@ -34,6 +34,13 @@ pub fn get_current_proxy_state() -> ProxyState {
     }
 }
 
+/// 获取当前代理配置对应的有效代理 URL（供 updater 等需要显式代理的组件使用）
+/// Direct 模式返回 null，System 模式在 Windows 上读取 IE 代理，Manual 模式返回手动配置的 URL
+#[tauri::command]
+pub fn get_effective_proxy_url(app: AppHandle) -> Result<Option<String>, String> {
+    proxy_config::get_effective_proxy_url(&app)
+}
+
 /// 使用当前代理配置测试与目标 URL 的连接
 #[tauri::command]
 pub async fn test_proxy_connection(

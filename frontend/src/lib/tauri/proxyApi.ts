@@ -33,6 +33,11 @@ export function getCurrentProxyState(): Promise<ProxyState> {
   return invoke<ProxyState>("get_current_proxy_state");
 }
 
+/** 获取当前代理配置对应的有效代理 URL（供 updater 等组件使用） */
+export function getEffectiveProxyUrl(): Promise<string | null> {
+  return invoke<string | null>("get_effective_proxy_url");
+}
+
 /** 使用当前代理配置测试与目标 URL 的连接 */
 export function testProxyConnection(testUrl: string): Promise<ProxyTestResult> {
   return invoke<ProxyTestResult>("test_proxy_connection", { testUrl });

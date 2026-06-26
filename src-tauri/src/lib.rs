@@ -58,6 +58,7 @@ pub fn run() {
         commands::proxy::get_proxy_config,
         commands::proxy::set_proxy_config,
         commands::proxy::get_current_proxy_state,
+        commands::proxy::get_effective_proxy_url,
         commands::proxy::test_proxy_connection,
         // Video commands (feature-gated via #[cfg] — generate_handler! supports attrs per entry)
         #[cfg(feature = "video-frame")]

@@ -5,6 +5,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { settingsStore } from "../lib/store";
 import { validateAutoCheck } from "../lib/configValidator";
 import { log } from "../lib/logger";
+import { getEffectiveProxyUrl } from "../lib/tauri/proxyApi";
 import type { UpdateStatus, UpdateProgress, UpdateErrorCode } from "@/types";
 
 // ── Constants ──────────────────────────────────────────────
@@ -61,13 +62,14 @@ async function checkWithRetry(
   timeout: number,
   maxRetries: number,
   baseDelay: number,
+  proxyUrl: string | null,
 ): Promise<Update | null> {
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      log.info(`Check attempt ${attempt + 1}/${maxRetries + 1} (timeout: ${timeout}ms)`);
-      return await check({ timeout });
+      log.info(`Check attempt ${attempt + 1}/${maxRetries + 1} (timeout: ${timeout}ms)${proxyUrl ? `, proxy: ${proxyUrl}` : ""}`);
+      return await check({ timeout, ...(proxyUrl ? { proxy: proxyUrl } : {}) });
     } catch (err) {
       lastError = err;
       log.warn(`Attempt ${attempt + 1} failed`, err);
@@ -154,8 +156,19 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 
     log.info("Starting update check...");
 
+    // Fetch effective proxy URL from current settings
+    let proxyUrl: string | null = null;
     try {
-      const update = await checkWithRetry(CHECK_TIMEOUT_MS, MAX_RETRIES, RETRY_BASE_DELAY_MS);
+      proxyUrl = await getEffectiveProxyUrl();
+      if (proxyUrl) {
+        log.info(`Using proxy for update check: ${proxyUrl}`);
+      }
+    } catch {
+      log.warn("Failed to get effective proxy URL, proceeding without proxy");
+    }
+
+    try {
+      const update = await checkWithRetry(CHECK_TIMEOUT_MS, MAX_RETRIES, RETRY_BASE_DELAY_MS, proxyUrl);
 
       if (update) {
         log.info(`Update available: v${update.version}`);
@@ -205,7 +218,14 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
       let update = state.updateRef;
       if (!update) {
         log.warn("No stored Update ref, calling check() as fallback");
-        update = await checkWithRetry(CHECK_TIMEOUT_MS, MAX_RETRIES, RETRY_BASE_DELAY_MS);
+        // Fetch effective proxy URL for the fallback check
+        let proxyUrl: string | null = null;
+        try {
+          proxyUrl = await getEffectiveProxyUrl();
+        } catch {
+          log.warn("Failed to get effective proxy URL for fallback check");
+        }
+        update = await checkWithRetry(CHECK_TIMEOUT_MS, MAX_RETRIES, RETRY_BASE_DELAY_MS, proxyUrl);
         if (!update) {
           log.info("Fallback check returned no update");
           set({ status: "no-update" });
