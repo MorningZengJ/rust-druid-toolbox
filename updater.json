@@ -1,15 +1,15 @@
 {
-  "version": "0.1.9",
-  "notes": "Changes since v0.1.8:\n\n- fix: 修复 CI 工作流三个失败项 — 版本一致性、前端 lint、Rust 系统依赖 - feat: 新增代理配置系统（WinHTTP + 环境变量），支持 Direct/System/Manual 三种模式 - feat: 新增代理连接测试功能，支持三种模式下的连通性检测 - feat: 代理配置集成更新检查，updater 自动使用当前代理设置",
-  "pub_date": "2026-06-26T02:34:51Z",
+  "version": "0.1.10",
+  "notes": "Changes since v0.1.9:\n\n- chore: 补提交 Cargo.lock 版本号更新，修复 publish.ps1 Get-ReleaseNotes 输出格式\n- chore: 升级 CI actions 版本，修复前端 lint 警告，Rust 代码格式化\n- cleanup: 移除 proxy_config.rs 中 read_ie_proxy_url 的非 Windows 空桩\n- feat: 更新页面使用 ReactMarkdown 渲染 release notes",
+  "pub_date": "2026-06-26T08:48:48Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbHdWVjA2SDJKSjNLOHd6ZDhOTStKWTdIeGdtMEg0OHBqNVFkMlkwRXdZRDMwZDVvSkErRnJGTHZYVXJVdWRVYW1KTlhOcnRMRVEzTVlxc0dpaE9ONndrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDQxMTU2CWZpbGU6TVRvb2xib3hfMC4xLjlfeDY0LXNldHVwLmV4ZQo3N0JHaGVGMzRYOVJ4dzdXY2FKaFlwcDNiZGdUYTU3NVNnV3c1dEMwWURoYitwRWR5NG1SRU1VZHVHSUNZb2xqTHpsa2laemQvOU5DS3lwV2J1eW1BZz09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.9/MToolbox_0.1.9_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbHliZHV6dHM4NEZSZytHZEw1RTNKdnppc1NnTlV5c29xTXBWZDRQR1NsU3g1eGxXc3FkV3RwRUd6bCtCbmZTT2g2alNYT0V1eVhrcXVKeXV2bHVIV3dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDYzNTU5CWZpbGU6TVRvb2xib3hfMC4xLjEwX3g2NC1zZXR1cC5leGUKdE1CZ0tTcXVocytVbnhMK2hTYmtiTzBicDNqMk92U3poL1hZSjJxRU52L3lXK3BVMUhVV0lVOVBaOFM4S3A5Y21RUVFpM3BqQ0o3NmZTUDVOQldGRFE9PQo=",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.10/MToolbox_0.1.10_x64-setup.exe"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDZxbGJLWUc2RUVOSDY2dVB3YUxVbzY2N0sxWHdqTktDL2hLaStYdkNTY2lMUFdmZUxxVE5WMDFyYzZZbVgwdS9PclBmMFh4V0lDYTNIQ1BGL09lbXdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDQxMjkxCWZpbGU6TVRvb2xib3hfMC4xLjlfeDY0X2VuLVVTLm1zaQpYTmRsdjBwcTErL1p1MzZCbDk5U1lvcHZrMFZWUGR3QXZMOXZ5c0ZUL0ZsZHdDWXVNdkJISnFSMmYxcHY2eHBNc2I0aGJsOWZiUjBCOU9tSEVCY2VEdz09Cg==",
-      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.9/MToolbox_0.1.9_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTZUNUWklSSjNxbDQzaDRFaXRXN1JqbG1XdUgrWDhqK1ZWRUQwclFoUXBxMENPSmxmVm1wU3VYYkxTR0ZEYmlSblFqanZXb3E0MWRSNHZjSDB1ckNFUjJvM2NnN3MvY3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDYzNzI4CWZpbGU6TVRvb2xib3hfMC4xLjEwX3g2NF9lbi1VUy5tc2kKUVVsNVArbWM5dXdBMDR6TWZUcVhrQUpKZ3dUVHI1c0ZBZWExcktPYjNpZG9INGVxbWhxOTQ2aE80aFhFT3dCRm1ici8zUGRlaEVNQ1V4UzY0WUZLQmc9PQo=",
+      "url": "https://github.com/MorningZengJ/mtoolbox/releases/download/v0.1.10/MToolbox_0.1.10_x64_en-US.msi"
     }
   }
 }
