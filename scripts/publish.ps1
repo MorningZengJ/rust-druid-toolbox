@@ -95,7 +95,7 @@ function Get-ReleaseNotes {
     if (-not $prevTag) {
         return ""
     }
-    $log = git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse 2>$null
+    $log = (git log "$prevTag..HEAD" --pretty=format:"- %s" --reverse 2>$null | Out-String).TrimEnd()
     if (-not $log) { return "" }
     return "Changes since ${prevTag}:`r`n`r`n${log}"
 }
