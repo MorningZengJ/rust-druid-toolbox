@@ -106,6 +106,8 @@ export interface ManualProxyConfig {
 export interface ProxyConfig {
   mode: "direct" | "system" | "manual";
   manual: ManualProxyConfig | null;
+  /** 上次使用的代理测试地址 */
+  lastTestUrl?: string;
 }
 
 const VALID_PROXY_MODES = new Set(["direct", "system", "manual"]);
@@ -147,8 +149,14 @@ export function validateProxyConfig(raw: unknown): ProxyConfig {
   const obj = raw as Record<string, unknown>;
   const mode = obj.mode;
 
+  // 保留 lastTestUrl（可选字段，仅校验类型）
+  const lastTestUrl =
+    typeof obj.lastTestUrl === "string" && obj.lastTestUrl.length > 0
+      ? obj.lastTestUrl
+      : undefined;
+
   if (typeof mode !== "string" || !VALID_PROXY_MODES.has(mode)) {
-    return { mode: "system", manual: null };
+    return { mode: "system", manual: null, lastTestUrl };
   }
 
   const validMode = mode as "direct" | "system" | "manual";
@@ -157,10 +165,10 @@ export function validateProxyConfig(raw: unknown): ProxyConfig {
     const manual = validateManualProxy(obj.manual);
     if (!manual) {
       // Manual 模式但配置不合法，回退到 system
-      return { mode: "system", manual: null };
+      return { mode: "system", manual: null, lastTestUrl };
     }
-    return { mode: "manual", manual };
+    return { mode: "manual", manual, lastTestUrl };
   }
 
-  return { mode: validMode, manual: null };
+  return { mode: validMode, manual: null, lastTestUrl };
 }

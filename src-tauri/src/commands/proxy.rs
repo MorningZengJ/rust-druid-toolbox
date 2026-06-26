@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 
-use crate::proxy_config::{self, ProxyConfig, ProxyState};
+use crate::proxy_config::{self, ProxyConfig, ProxyState, ProxyTestResult};
 
 /// 获取当前持久化的代理配置
 #[tauri::command]
@@ -34,12 +34,22 @@ pub fn get_current_proxy_state() -> ProxyState {
     }
 }
 
+/// 使用当前代理配置测试与目标 URL 的连接
+#[tauri::command]
+pub async fn test_proxy_connection(
+    app: AppHandle,
+    test_url: String,
+) -> Result<ProxyTestResult, String> {
+    proxy_config::test_connection(&app, &test_url).await
+}
+
 // ── Validation ──
 
 fn validate_config(config: &ProxyConfig) -> Result<(), String> {
     if let ProxyConfig {
         mode: proxy_config::ProxyMode::Manual,
         manual: None,
+        ..
     } = config
     {
         return Err("Manual mode requires manual proxy configuration".to_string());

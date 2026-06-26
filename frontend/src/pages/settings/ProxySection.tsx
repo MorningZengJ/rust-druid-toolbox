@@ -10,7 +10,10 @@ import {
   PasswordInput,
   Box,
   Collapse,
+  Modal,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import {
   ShieldOff,
   Monitor,
@@ -18,10 +21,14 @@ import {
   Network,
   ChevronDown,
   Globe,
+  Search,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useProxyStore } from "@/stores/proxyStore";
 import type { ProxyConfig } from "@/lib/configValidator";
+import type { ProxyTestResult } from "@/lib/tauri/proxyApi";
 import ThemeCard from "@/components/theme/ThemeCard";
 
 type ProxyMode = ProxyConfig["mode"];
@@ -43,6 +50,43 @@ function buildManualUrl(config: ProxyConfig): string | null {
   if (config.mode !== "manual" || !config.manual) return null;
   const { protocol, host, port } = config.manual;
   return `${protocol}://${host}:${port}`;
+}
+
+/** 根据错误分类返回对应的 i18n 键 */
+function getErrorI18nKey(errorKind: string | null): string {
+  const map: Record<string, string> = {
+    timeout: "proxy.test.errors.timeout",
+    dns: "proxy.test.errors.dns",
+    connection_refused: "proxy.test.errors.connectionRefused",
+    auth_failed: "proxy.test.errors.authFailed",
+    tls_error: "proxy.test.errors.tlsError",
+    proxy_refused: "proxy.test.errors.proxyRefused",
+    http_error: "proxy.test.errors.httpError",
+  };
+  return map[errorKind ?? ""] ?? "proxy.test.errors.unknown";
+}
+
+/** 显示代理测试结果通知 */
+function showTestNotification(result: ProxyTestResult, t: TFunc) {
+  if (result.success) {
+    notifications.show({
+      title: t("proxy.test.successTitle"),
+      message: t("proxy.test.successMessage", {
+        latency: result.latencyMs,
+        status: result.statusCode,
+      }),
+      color: "green",
+      icon: <CheckCircle size={16} />,
+    });
+  } else {
+    const errorKey = getErrorI18nKey(result.errorKind);
+    notifications.show({
+      title: t("proxy.test.failTitle"),
+      message: t(errorKey, { error: result.error, status: result.statusCode }),
+      color: "red",
+      icon: <XCircle size={16} />,
+    });
+  }
 }
 
 // ── Sub-components ──
@@ -336,9 +380,18 @@ function StatusLed({ config, t }: { config: ProxyConfig; t: TFunc }) {
 
 export default function ProxySection() {
   const { t } = useTranslation("settings");
-  const { config, setConfig } = useProxyStore();
+  const { config, setConfig, testing, testConnection } = useProxyStore();
   const [showRestartHint, setShowRestartHint] = useState(false);
   const [hintTimer, setHintTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  // 测试连接 Modal 状态
+  const [testModalOpen, { open: openTestModal, close: closeTestModal }] = useDisclosure(false);
+  const [testUrlInput, setTestUrlInput] = useState(config.lastTestUrl ?? "https://www.google.com");
+
+  const handleOpenTestModal = useCallback(() => {
+    setTestUrlInput(config.lastTestUrl ?? "https://www.google.com");
+    openTestModal();
+  }, [config.lastTestUrl, openTestModal]);
 
   const handleModeChange = useCallback(
     (mode: ProxyMode) => {
@@ -403,6 +456,35 @@ export default function ProxySection() {
           <StatusLed config={config} t={t} />
         </Group>
 
+        {/* 测试连接区域 — 所有模式均可用 */}
+        <Box
+          p="sm"
+          style={{
+            borderRadius: 10,
+            backgroundColor: "var(--surface-panel)",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          <Group justify="space-between" align="center">
+            {config.lastTestUrl ? (
+              <Text size="xs" c="dimmed" truncate style={{ maxWidth: 220 }}>
+                {t("proxy.test.lastUrl")}: {config.lastTestUrl}
+              </Text>
+            ) : (
+              <Text size="xs" c="dimmed">{t("proxy.test.hint")}</Text>
+            )}
+            <Button
+              size="compact-xs"
+              variant="light"
+              leftSection={<Search size={12} />}
+              onClick={handleOpenTestModal}
+              radius="md"
+            >
+              {t("proxy.test.button")}
+            </Button>
+          </Group>
+        </Box>
+
         {/* 重启提示 */}
         <Collapse expanded={showRestartHint} transitionDuration={300}>
           <Box
@@ -419,6 +501,71 @@ export default function ProxySection() {
           </Box>
         </Collapse>
       </Stack>
+
+      {/* 测试连接 Modal */}
+      <Modal
+        opened={testModalOpen}
+        onClose={closeTestModal}
+        title={t("proxy.test.modalTitle")}
+        size="sm"
+        radius="md"
+        closeOnClickOutside={!testing}
+      >
+        <Stack gap="sm">
+          <TextInput
+            label={t("proxy.test.urlLabel")}
+            placeholder={t("proxy.test.urlPlaceholder")}
+            value={testUrlInput}
+            onChange={(e) => setTestUrlInput(e.currentTarget.value)}
+            disabled={testing}
+            radius="md"
+            styles={inputStyles}
+            error={
+              testUrlInput.length > 0 &&
+              !/^https?:\/\/.+/.test(testUrlInput)
+                ? t("proxy.test.invalidUrl")
+                : undefined
+            }
+          />
+          <Group justify="flex-end" gap="xs">
+            <Button
+              variant="default"
+              onClick={closeTestModal}
+              disabled={testing}
+              radius="md"
+            >
+              {t("proxy.test.cancel")}
+            </Button>
+            <Button
+              onClick={async () => {
+                closeTestModal();
+                try {
+                  const result = await testConnection(testUrlInput);
+                  showTestNotification(result, t);
+                } catch (e) {
+                  const errMsg =
+                    e instanceof Error ? e.message : String(e ?? "");
+                  console.error("[ProxySection] testConnection error:", errMsg);
+                  notifications.show({
+                    title: t("proxy.test.failTitle"),
+                    message: errMsg || t("proxy.test.errors.unknown", { error: "" }),
+                    color: "red",
+                    icon: <XCircle size={16} />,
+                  });
+                }
+              }}
+              loading={testing}
+              radius="md"
+              disabled={
+                !testUrlInput.trim() ||
+                !/^https?:\/\/.+/.test(testUrlInput)
+              }
+            >
+              {testing ? t("proxy.test.testing") : t("proxy.test.startTest")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </ThemeCard>
   );
 }

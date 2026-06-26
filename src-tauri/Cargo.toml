@@ -50,3 +50,6 @@ anyhow = "1"
 
 # File system watching
 notify = "7"
+
+# HTTP client (proxy testing)
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "socks"] }

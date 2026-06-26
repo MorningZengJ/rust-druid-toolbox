@@ -9,6 +9,15 @@ export interface ProxyState {
   noProxy: string | null;
 }
 
+/** 代理连接测试结果 */
+export interface ProxyTestResult {
+  success: boolean;
+  statusCode: number | null;
+  latencyMs: number;
+  error: string | null;
+  errorKind: string | null;
+}
+
 /** 获取当前持久化的代理配置 */
 export function getProxyConfig(): Promise<ProxyConfig> {
   return invoke<ProxyConfig>("get_proxy_config");
@@ -22,4 +31,9 @@ export function setProxyConfig(config: ProxyConfig): Promise<void> {
 /** 读取当前进程环境变量快照 */
 export function getCurrentProxyState(): Promise<ProxyState> {
   return invoke<ProxyState>("get_current_proxy_state");
+}
+
+/** 使用当前代理配置测试与目标 URL 的连接 */
+export function testProxyConnection(testUrl: string): Promise<ProxyTestResult> {
+  return invoke<ProxyTestResult>("test_proxy_connection", { testUrl });
 }

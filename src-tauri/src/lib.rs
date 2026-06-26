@@ -32,9 +32,7 @@ pub fn run() {
         .manage(commands::video_frame::FrameWatcherState::new())
         .manage(state::video_tasks::VideoTaskRegistry::new());
 
-    // ── Command registration ──
-
-    // Base commands (always available)
+    // ── Command registration (single handler — never call invoke_handler twice, it replaces) ──
     let builder = builder.invoke_handler(tauri::generate_handler![
         // Rename
         commands::rename::list_files,
@@ -60,22 +58,31 @@ pub fn run() {
         commands::proxy::get_proxy_config,
         commands::proxy::set_proxy_config,
         commands::proxy::get_current_proxy_state,
-    ]);
-
-    // Video commands (feature-gated)
-    #[cfg(feature = "video-frame")]
-    let builder = builder.invoke_handler(tauri::generate_handler![
+        commands::proxy::test_proxy_connection,
+        // Video commands (feature-gated via #[cfg] — generate_handler! supports attrs per entry)
+        #[cfg(feature = "video-frame")]
         commands::video_frame::check_ffmpeg,
+        #[cfg(feature = "video-frame")]
         commands::video_frame::probe_video,
+        #[cfg(feature = "video-frame")]
         commands::video_frame::extract_frames,
+        #[cfg(feature = "video-frame")]
         commands::video_frame::start_frame_watcher,
+        #[cfg(feature = "video-frame")]
         commands::video_frame::stop_frame_watcher,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::check_video_encoders,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::check_audio_encoders,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::merge_videos,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::images_to_video,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::convert_format,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::batch_convert_format,
+        #[cfg(feature = "video-frame")]
         commands::video_tool::cancel_task,
     ]);
 

@@ -98,6 +98,31 @@
     "validation": {
       "hostRequired": "Host address is required",
       "portInvalid": "Port must be between 1–65535"
+    },
+    "test": {
+      "button": "Test Connection",
+      "hint": "Verify your proxy settings work",
+      "lastUrl": "Last",
+      "modalTitle": "Test Proxy Connection",
+      "urlLabel": "Test URL",
+      "urlPlaceholder": "https://www.google.com",
+      "invalidUrl": "Must start with http:// or https://",
+      "cancel": "Cancel",
+      "startTest": "Start Test",
+      "testing": "Testing...",
+      "successTitle": "Connection Successful",
+      "successMessage": "Latency: {{latency}}ms · HTTP {{status}}",
+      "failTitle": "Connection Failed",
+      "errors": {
+        "timeout": "Connection timed out. Check if the proxy is reachable.",
+        "dns": "Cannot resolve hostname. Check DNS or proxy settings.",
+        "connectionRefused": "Connection refused. The proxy may not be running.",
+        "authFailed": "Proxy authentication failed. Check username and password.",
+        "tlsError": "TLS connection error. The target site may require different proxy settings.",
+        "proxyRefused": "Proxy refused the connection.",
+        "httpError": "Server returned HTTP {{status}}",
+        "unknown": "{{error}}"
+      }
     }
   }
 }

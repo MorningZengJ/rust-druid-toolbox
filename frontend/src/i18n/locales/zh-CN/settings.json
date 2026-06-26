@@ -98,6 +98,31 @@
     "validation": {
       "hostRequired": "主机地址不能为空",
       "portInvalid": "端口必须在 1–65535 之间"
+    },
+    "test": {
+      "button": "测试连接",
+      "hint": "验证代理设置是否可用",
+      "lastUrl": "上次",
+      "modalTitle": "测试代理连接",
+      "urlLabel": "测试地址",
+      "urlPlaceholder": "https://www.google.com",
+      "invalidUrl": "必须以 http:// 或 https:// 开头",
+      "cancel": "取消",
+      "startTest": "开始测试",
+      "testing": "测试中...",
+      "successTitle": "连接成功",
+      "successMessage": "延迟: {{latency}}ms · HTTP {{status}}",
+      "failTitle": "连接失败",
+      "errors": {
+        "timeout": "连接超时，请检查代理是否可达",
+        "dns": "无法解析主机名，请检查 DNS 或代理设置",
+        "connectionRefused": "连接被拒绝，代理可能未启动",
+        "authFailed": "代理认证失败，请检查用户名和密码",
+        "tlsError": "TLS 连接错误，目标站点可能需要不同的代理设置",
+        "proxyRefused": "代理拒绝连接",
+        "httpError": "服务器返回 HTTP {{status}}",
+        "unknown": "{{error}}"
+      }
     }
   }
 }
