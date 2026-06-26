@@ -22,6 +22,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useUpdateStore } from "@/stores/updateStore";
 import type { UpdateStatus } from "@/types";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function UpdateSection() {
   const { t } = useTranslation(["settings", "common"]);
@@ -185,9 +187,34 @@ export default function UpdateSection() {
                   overflow: "auto",
                 }}
               >
-                <Text size="xs" c="dimmed" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => (
+                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.6, margin: 0 }}>
+                        {children}
+                      </Text>
+                    ),
+                    ul: ({ children }) => (
+                      <ul style={{ margin: "4px 0", paddingLeft: 16, lineHeight: 1.6 }}>
+                        {children}
+                      </ul>
+                    ),
+                    li: ({ children }) => (
+                      <li style={{ fontSize: "12px", color: "var(--text-dimmed)" }}>{children}</li>
+                    ),
+                    strong: ({ children }) => (
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{children}</span>
+                    ),
+                    a: ({ href, children }) => (
+                      <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-primary)" }}>
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
                   {releaseNotes}
-                </Text>
+                </ReactMarkdown>
               </Box>
             )}
           </Stack>
