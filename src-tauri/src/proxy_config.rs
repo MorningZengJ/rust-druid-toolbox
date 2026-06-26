@@ -291,11 +291,6 @@ fn parse_ie_proxy_server(proxy_str: &str) -> Option<String> {
     }
 }
 
-#[cfg(not(windows))]
-fn read_ie_proxy_url() -> Option<String> {
-    None // 非 Windows：由 reqwest 通过环境变量自行检测
-}
-
 // ── Core apply function ──
 
 /// 根据配置设置当前进程的代理环境（仅修改进程内存）
