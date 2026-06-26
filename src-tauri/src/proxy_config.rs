@@ -92,7 +92,10 @@ impl ManualProxyConfig {
         if let (Some(user), Some(pass)) = (&self.username, &self.password) {
             let encoded_user = percent_encode(user);
             let encoded_pass = percent_encode(pass);
-            format!("{}://{}:{}@{}:{}", scheme, encoded_user, encoded_pass, host, self.port)
+            format!(
+                "{}://{}:{}@{}:{}",
+                scheme, encoded_user, encoded_pass, host, self.port
+            )
         } else if let Some(user) = &self.username {
             let encoded_user = percent_encode(user);
             format!("{}://{}@{}:{}", scheme, encoded_user, host, self.port)
@@ -186,9 +189,11 @@ fn winhttp_reset_default() {
 
 // Non-Windows stubs
 #[cfg(not(windows))]
-fn winhttp_set_no_proxy() { /* no-op */ }
+fn winhttp_set_no_proxy() { /* no-op */
+}
 #[cfg(not(windows))]
-fn winhttp_reset_default() { /* no-op */ }
+fn winhttp_reset_default() { /* no-op */
+}
 
 // ── Read system proxy for connection test (Windows only) ──
 
@@ -320,7 +325,9 @@ pub fn apply_proxy(config: &ProxyConfig) {
                 eprintln!("[proxy] Mode: Manual — using {}", url);
             } else {
                 // Manual 模式但配置缺失，回退到 System
-                eprintln!("[proxy] Mode: Manual requested but config missing, falling back to System");
+                eprintln!(
+                    "[proxy] Mode: Manual requested but config missing, falling back to System"
+                );
                 winhttp_reset_default();
                 remove_proxy_vars();
             }
@@ -353,8 +360,8 @@ pub fn load_config(app_handle: &tauri::AppHandle) -> Result<ProxyConfig, String>
         }
     };
 
-    let parsed: serde_json::Value =
-        serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings.json: {}", e))?;
+    let parsed: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse settings.json: {}", e))?;
 
     match parsed.get("proxy") {
         Some(v) => serde_json::from_value(v.clone())
@@ -374,14 +381,17 @@ pub fn save_config(app_handle: &tauri::AppHandle, config: &ProxyConfig) -> Resul
         .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
 
     // 更新 "proxy" 键
-    let proxy_value = serde_json::to_value(config).map_err(|e| format!("Serialization error: {}", e))?;
+    let proxy_value =
+        serde_json::to_value(config).map_err(|e| format!("Serialization error: {}", e))?;
     if let Some(obj) = root.as_object_mut() {
         obj.insert("proxy".to_string(), proxy_value);
     }
 
     // 回写文件
-    let json = serde_json::to_string_pretty(&root).map_err(|e| format!("Serialization error: {}", e))?;
-    std::fs::write(&settings_path, &json).map_err(|e| format!("Failed to write settings.json: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(&root).map_err(|e| format!("Serialization error: {}", e))?;
+    std::fs::write(&settings_path, &json)
+        .map_err(|e| format!("Failed to write settings.json: {}", e))?;
 
     Ok(())
 }
@@ -444,8 +454,8 @@ pub async fn test_connection(
                 .as_ref()
                 .ok_or_else(|| "Manual mode configuration is missing".to_string())?;
             let proxy_url = manual.to_proxy_url();
-            let proxy = reqwest::Proxy::all(&proxy_url)
-                .map_err(|e| format!("Invalid proxy URL: {}", e))?;
+            let proxy =
+                reqwest::Proxy::all(&proxy_url).map_err(|e| format!("Invalid proxy URL: {}", e))?;
             client_builder
                 .proxy(proxy)
                 .build()
@@ -546,7 +556,9 @@ fn classify_reqwest_error(e: &reqwest::Error) -> (String, String) {
                 "auth_failed".to_string(),
                 format!("Proxy authentication failed: {}", e),
             )
-        } else if msg_lower.contains("tls") || msg_lower.contains("certificate") || msg_lower.contains("ssl")
+        } else if msg_lower.contains("tls")
+            || msg_lower.contains("certificate")
+            || msg_lower.contains("ssl")
         {
             ("tls_error".to_string(), format!("TLS error: {}", e))
         } else {

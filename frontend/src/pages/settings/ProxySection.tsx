@@ -301,7 +301,7 @@ function ConnectionDiagram({
       <Text span size="xs" fw={600} ff="var(--font-display)" c="var(--text-primary)">
         MToolbox
       </Text>
-      {segments.map((seg, _i) => (
+      {segments.map((seg) => (
         <Group key={seg.key} gap={4} wrap="nowrap">
           <Box
             style={{
@@ -337,8 +337,8 @@ function ConnectionDiagram({
 
 /** LED 状态指示灯 */
 function StatusLed({ config, t }: { config: ProxyConfig; t: TFunc }) {
-  let color = "var(--text-dimmed)";
-  let text = "";
+  let color: string;
+  let text: string;
 
   if (config.mode === "manual") {
     const url = buildManualUrl(config);
